@@ -1,0 +1,45 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: fit-content;
+    width: 90%;
+    background-color: white;
+    border-radius: 1vh;
+    padding: 1.5vh 2vw;
+    margin-bottom: 2vh;
+}
+
+.bt-abrir-ponto {
+    background-color: #0050c3;
+    color: white;
+    font-size: medium;
+    font-weight: bold;
+    margin-right: auto;
+    margin-bottom: 2vh;
+}
+
+.table-ponto {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: white;
+    margin-bottom: 2vh;
+}
+
+.table-ponto th, td {
+    border: 1px solid black;
+    text-align: center;
+    font-size: small;
+    word-wrap: break-word;
+    padding-top: 1vh;
+    padding-bottom: 1vh;
+}
+
+@media screen and (max-width: 768px) {
+
+    .table-ponto th, td {
+        font-size: x-small;
+    }
+    
+}

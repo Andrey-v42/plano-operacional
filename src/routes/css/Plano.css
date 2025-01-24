@@ -1,0 +1,32 @@
+table {
+    margin-top: 2vh;
+    box-shadow: 3px 0 5px 3px rgba(0, 0, 0, 0.2);
+}
+
+td, th {
+    border: none;
+    text-align: left;
+    font-size: 2.5vh;
+}
+
+.info-pdv {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-evenly;
+    margin-bottom: 1vh;
+}
+
+.info-pdv .column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 1%;
+}   
+
+@media screen and (max-width: 768px) {
+    td, th {
+        font-size: 1vh;
+    }
+}

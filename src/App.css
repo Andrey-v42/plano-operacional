@@ -1,0 +1,21 @@
+#root {
+  width: 100vw;
+  height: fit-content;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  font-family: 'Poppins', sans-serif;
+  background-image: url("/bg/bg_zig_blue.png");
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: fit-content;
+  margin-top: 2.5vh;
+}
+
