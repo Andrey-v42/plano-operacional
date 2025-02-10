@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import './css/Ponto.css';
 import ModalPonto from '../components/ponto/ModalPonto';
-import { Table, Button, Flex, Modal, Breadcrumb, notification } from 'antd';
+import { Table, Button, Flex, Drawer, Breadcrumb, notification, Form } from 'antd';
 import { SmileOutlined } from '@ant-design/icons';
 
 const Ponto = () => {
@@ -246,7 +246,6 @@ const Ponto = () => {
                 }))
 
                 setFiltersFunction(funcoes)
-                console.log(funcoes)
                 setFiltersName(nomes)
                 setDocs(dataPonto);
                 setTableLoading(false)
@@ -286,7 +285,7 @@ const Ponto = () => {
                         </Button>
 
                     </Flex>
-                    <Table style={{ width: "85vw" }} loading={tableLoading} columns={columns} dataSource={docs} scroll={{ x: "max-content" }} bordered />
+                    <Table style={{ width: "100%" }} loading={tableLoading} columns={columns} dataSource={docs} scroll={{ x: "max-content" }} bordered />
                 </Flex>
                 {modalPonto ? <ModalPonto toggleModal={toggleModalPonto}></ModalPonto> : ''}
             </div>

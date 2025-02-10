@@ -56,6 +56,7 @@ const App = () => {
                             icon: <img src='./logos/logo_zig_blue.png' style={{ width: '40px', marginLeft: '-10px' }} />,
                             label: 'Field Zigger'
                         },
+
                         {
                             key: '1',
                             icon: <ShakeOutlined />,
@@ -63,6 +64,7 @@ const App = () => {
                             onClick: () => {
                                 setSelectedKey(['1'])
                                 navigate(`/plano?pipeId=${pipeId}`);
+                                setCollapsed(true)
                             }
                         },
                         {
@@ -72,6 +74,7 @@ const App = () => {
                             onClick: () => {
                                 setSelectedKey(['2'])
                                 navigate(`/ponto?pipeId=${pipeId}`);
+                                setCollapsed(true)
                             }
                         },
                         {
@@ -81,6 +84,7 @@ const App = () => {
                             onClick: () => {
                                 setSelectedKey(['3'])
                                 navigate(`/cartao?pipeId=${pipeId}`);
+                                setCollapsed(true)
                             }
                         },
                         {
@@ -90,6 +94,7 @@ const App = () => {
                             onClick: () => {
                                 setSelectedKey(['4'])
                                 navigate(`/fechamento?pipeId=${pipeId}`);
+                                setCollapsed(true)
                             }
                         },
                         {
@@ -98,6 +103,7 @@ const App = () => {
                             label: 'GPT-Z',
                             onClick: () => {
                                 setSelectedKey(['5'])
+                                setCollapsed(true)
                             }
                         }
                     ]}

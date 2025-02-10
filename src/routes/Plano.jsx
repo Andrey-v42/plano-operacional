@@ -70,8 +70,11 @@ const Plano = () => {
     const [valuePowerbank, setValuePowerbank] = useState(0)
     const [valueTomada, setValueTomada] = useState(0)
 
+    const [createPonto, setCreatePonto] = useState(false)
+
     const [formValues, setFormValues] = useState({});
     const [formAvarias, setFormAvarias] = useState({});
+    const [formPDV, setFormPDV] = useState({})
     const [avarias, setAvarias] = useState([])
     const [signature, setSignature] = useState('');
 
@@ -82,12 +85,41 @@ const Plano = () => {
     const handleFormSubmit = () => {
         const completeData = { ...formValues, assinatura: signature };
         console.log('Form Data:', completeData);
-        // Handle form submission logic here
     };
 
-    const showDrawer = (record) => {
-        setCurrentRecord(record);
+    const showDrawer = async (record) => {
         setDrawerVisible(true);
+        setCurrentRecord(record);
+        try {
+            setDrawerLoading(true)
+
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias` })
+            })
+            let docs = await response.json()
+            docs = docs.docs?.map(doc => doc.data.avarias)
+
+            const result = docs.map(array => {
+                const [equipamento, tipoAvaria] = array[0].split(": ").map(str => str.trim())
+
+                return {
+                    equipamento,
+                    tipoAvaria,
+                    quantidade: array.length
+                }
+            })
+
+            setAvarias(result)
+
+            setDrawerLoading(false)
+        } catch (error) {
+            console.error(error);
+            setDrawerLoading(false)
+        }
     };
 
     const closeDrawer = () => {
@@ -115,6 +147,21 @@ const Plano = () => {
             message: 'Notificação',
             description:
                 `Ponto de Venda ${operation} com sucesso!`,
+            icon: (
+                <SmileOutlined
+                    style={{
+                        color: '#108ee9',
+                    }}
+                />
+            ),
+        });
+    };
+
+    const openNotificationSucessAvariasAvulsas = () => {
+        api.open({
+            message: 'Notificação',
+            description:
+                `Avarias avulsas lançadas com sucesso!`,
             icon: (
                 <SmileOutlined
                     style={{
@@ -204,6 +251,29 @@ const Plano = () => {
             title: 'Pontos de Tomada',
             dataIndex: 'tomadas',
             key: 'PontosDeTomada',
+        }
+    ]
+
+    const avariasColumns = [
+        {
+            title: 'Equipamento',
+            dataIndex: 'equipamento',
+            key: 'Equipamento',
+        },
+        {
+            title: 'Tipo da Avaria',
+            dataIndex: 'tipoAvaria',
+            key: 'TipoDaAvaria',
+        },
+        {
+            title: 'Qtde',
+            dataIndex: 'quantidade',
+            key: 'Qtde',
+        },
+        {
+            title: 'Assinatura',
+            dataIndex: 'assinatura',
+            key: 'assinatura',
         }
     ]
 
@@ -461,12 +531,12 @@ const Plano = () => {
                                 : 'Entrega Pendente',
                         'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                         modelo: data.MODELO,
-                        cartoes: data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'],
-                        totalTerminais: data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'],
-                        powerbanks: data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'],
-                        carregadores: data.CARREG == ' ' ? '0' : data.CARREG,
-                        capas: data['CAPA SUPORTE'] == ' ' ? '' : data['CAPA SUPORTE'],
-                        tomadas: data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'],
+                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
+                        totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                        powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                        carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                        capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                        tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                         entregaInfo: entregaData,
                         devolucaoInfo: devolucaoData
                     };
@@ -500,10 +570,23 @@ const Plano = () => {
         }
     }, [pipeId]);
 
-    const start = () => {
+    const start = async () => {
         setLoading(true);
 
-        // code here
+        const responseAvarias = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: `pipe/pipeId_teste1234/planoOperacional/PRODUÇÃO/avarias` })
+        })
+
+        if (responseAvarias.ok) {
+            let docsAvarias = await responseAvarias.json()
+            docsAvarias = docsAvarias.docs
+            const arrayAvarias = docsAvarias.map(doc => doc.data.avarias).flat()
+            console.log(arrayAvarias)
+        }
 
         setTimeout(() => {
             setSelectedRowKeys([]);
@@ -627,12 +710,12 @@ const Plano = () => {
                                 : 'Entrega Pendente',
                         'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                         modelo: data.MODELO,
-                        cartoes: data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'],
-                        totalTerminais: data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'],
-                        powerbanks: data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'],
-                        carregadores: data.CARREG == ' ' ? '0' : data.CARREG,
-                        capas: data['CAPA SUPORTE'] == ' ' ? '' : data['CAPA SUPORTE'],
-                        tomadas: data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'],
+                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                        totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                        powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                        carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                        capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                        tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                         entregaInfo: entregaData,
                         devolucaoInfo: devolucaoData
                     };
@@ -761,12 +844,12 @@ const Plano = () => {
                                     : 'Entrega Pendente',
                             'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                             modelo: data.MODELO,
-                            cartoes: data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'],
-                            totalTerminais: data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'],
-                            powerbanks: data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'],
-                            carregadores: data.CARREG == ' ' ? '0' : data.CARREG,
-                            capas: data['CAPA SUPORTE'] == ' ' ? '' : data['CAPA SUPORTE'],
-                            tomadas: data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'],
+                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                            totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                            powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                            carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                            capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                            tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                             entregaInfo: { ...entregaData },
                             devolucaoInfo: { ...devolucaoData }
                         };
@@ -791,7 +874,7 @@ const Plano = () => {
             Array.from({ length: avaria.quantidade }, () => `${avaria.equipamento}: ${avaria.tipoAvaria}`)
         )
         setAvarias([])
-        
+
         try {
             const completeData = {
                 ...formValues,
@@ -818,7 +901,7 @@ const Plano = () => {
                     collectionURL: `pipe/pipeId_${pipeId}/protocolosDevolucao`
                 }),
             })
-
+                {/* Dedico meu esforço e minha vontade   ao batman */}
             if (response.ok) {
                 const responsePlano = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/editDocAlternative', {
                     method: 'POST',
@@ -881,14 +964,14 @@ const Plano = () => {
                                     : 'Entrega Pendente',
                             'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                             modelo: data.MODELO,
-                            cartoes: data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'],
-                            totalTerminais: data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'],
-                            powerbanks: data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'],
-                            carregadores: data.CARREG == ' ' ? '0' : data.CARREG,
-                            capas: data['CAPA SUPORTE'] == ' ' ? '' : data['CAPA SUPORTE'],
-                            tomadas: data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'],
+                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                            totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                            powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                            carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                            capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                            tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                             entregaInfo: { ...entregaData },
-                            devolucaoInfo: { ...devolucaoData }
+                            devolucaoInfo: { ...devolucaoData },
                         };
                     });
 
@@ -906,18 +989,217 @@ const Plano = () => {
 
     const addAvaria = () => {
         if (formAvarias.equipamento && formAvarias.tipoAvaria && formAvarias.quantidade) {
-            setAvarias([...avarias ,formAvarias]);
+            setAvarias([...avarias, formAvarias]);
             setFormAvarias({});
         } else {
             alert("Preencha todos os campos!");
         }
     };
 
+    const lancarAvariasAvulsas = async (record) => {
+        console.log(signature)
+        if (avarias.length > 0 && signature != '') {
+            setDrawerLoading(true)
+            const currentTimeString = new Date().toLocaleString()
+            const avariasFormatadas = avarias.flatMap(avaria =>
+                Array.from({ length: avaria.quantidade }, () => `${avaria.equipamento}: ${avaria.tipoAvaria}`)
+            )
+            setAvarias([])
+
+            const formattedData = {
+                assinatura: signature,
+                avarias: avariasFormatadas,
+                dataHora: currentTimeString
+            }
+            setSignature('')
+
+            try {
+                const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias`, formData: formattedData }),
+                })
+
+                if (response.ok) {
+                    openNotificationSucessAvariasAvulsas()
+                    setDrawerLoading(false)
+                    setDrawerVisible(false)
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        } else {
+
+        }
+    }
+
+    const criarPDV = async () => {
+        setDrawerLoading(true)
+        try {
+            const responseDocs = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional` })
+            })
+
+            const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: 'pipe', docId: `pipeId_${pipeId}` })
+            })
+
+            let dataEvento = await responseEvento.json()
+
+            let data = await responseDocs.json()
+            data = data.docs
+
+            const pontoData = {
+                "NOME PDV": formPDV.nomePonto,
+                "SETOR": formPDV.setor,
+                "CATEGORIA": formPDV.categoria,
+                "COD PLANTA": formPDV.codPlanta,
+                "AREA": formPDV.area,
+                "MODELO": formPDV.modelo,
+                "TOTAL TERM": formPDV.totalTerminais || 0,
+                "CARREG": formPDV.carregadores || 0,
+                "CAPA SUPORTE": formPDV.capas || 0,
+                "CARTÃO CASHLES": formPDV.cartoes || 0,
+                "POWER BANK": formPDV.powerbanks || 0,
+                "PONTOS TOMADA": formPDV.tomadas || 0,
+                "PIPEID": pipeId,
+                "rowNumber": data.length + 1,
+                "EVENTO": dataEvento.EVENTO,
+                "ENDERECO": dataEvento.ENDERECO,
+                "taskId": dataEvento.taskId
+            }
+
+            const responseCreate = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDoc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/planoOperacional`, docId: formPDV.nomePonto, formData: pontoData })
+            })
+
+            if (responseCreate.ok) {
+
+                const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional` }),
+                });
+
+                const responseEntrega = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosEntrega` }),
+                });
+
+                const responseDevolucao = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosDevolucao` }),
+                });
+
+                let docs = await response.json();
+                docs = docs.docs;
+
+                let docsEntrega = await responseEntrega.json()
+                docsEntrega = docsEntrega.docs;
+
+                let docsDevolucao = await responseDevolucao.json()
+                docsDevolucao = docsDevolucao.docs;
+
+                const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
+                const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
+
+                const formattedData = docs.map((doc) => {
+                    const data = doc.data;
+                    const entregaData = entregaMap[doc.id] || {};
+                    const devolucaoData = devolucaoMap[doc.id] || {};
+
+                    return {
+                        key: doc.id,
+                        ID: data.rowNumber,
+                        Setor: data.SETOR || 'N/A',
+                        'Ponto de Venda': data['NOME PDV'],
+                        Categoria: data.CATEGORIA || 'N/A',
+                        Status: data.aberto && !data.devolvido ? 'Entregue'
+                            : data.aberto && data.devolvido ? 'Devolvido'
+                                : 'Entrega Pendente',
+                        'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
+                        modelo: data.MODELO,
+                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                        totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                        powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                        carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                        capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                        tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
+                        entregaInfo: { ...entregaData },
+                        devolucaoInfo: { ...devolucaoData }
+                    };
+                });
+
+                setDataPlano(formattedData)
+                setFormPDV({})
+                setCreatePonto(false)
+                setDrawerLoading(false)
+            } else {
+                console.log(responseCreate.statusText)
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const hasSelected = selectedRowKeys.length > 0;
+
+    const components = {
+        body: {
+          row: (props) => (
+            <tr {...props} style={{ backgroundColor: "#f9f9f9", height: "50px" }} />
+          ),
+          cell: (props) => (
+            <td
+              {...props}
+              style={{
+                borderBottom: "2px solid #ddd",
+                padding: "12px",
+                fontSize: "14px",
+              }}
+            />
+          ),
+        },
+        header: {
+          cell: (props) => (
+            <th
+              {...props}
+              style={{
+                color: "black",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            />
+          ),
+        },
+      };
 
     return (
         <>
             {contextHolder}
+            {/* Drawer Detalhes do PDV */}
             <Drawer
                 open={drawerVisible}
                 onClose={closeDrawer}
@@ -934,39 +1216,6 @@ const Plano = () => {
                                 dataSource={[currentRecord]}
                                 pagination={false}
                             />
-
-                            {/* <table>
-                                <tbody>
-                                <tr>
-                                    <td>Modelo</td>
-                                    <td>{currentRecord.modelo}</td>
-                                </tr>
-                                <tr>
-                                    <td>Qtd. Terminais</td>
-                                    <td>{currentRecord.totalTerminais}</td>
-                                </tr>
-                                <tr>
-                                    <td>Carregadores</td>
-                                    <td>{currentRecord.carregadores}</td>
-                                </tr>
-                                <tr>
-                                    <td>Capas / Suportes</td>
-                                    <td>{currentRecord.capas}</td>
-                                </tr>
-                                <tr>
-                                    <td>Cartões Cashless</td>
-                                    <td>{currentRecord.cartoes}</td>
-                                </tr>
-                                <tr>
-                                    <td>Powerbanks</td>
-                                    <td>{currentRecord.powerbanks}</td>
-                                </tr>
-                                <tr>
-                                    <td>Pontos de Tomada</td>
-                                    <td>{currentRecord.tomadas}</td>
-                                </tr>
-                                </tbody>
-                            </table> */}
                         </div>
 
                         {currentRecord.Status == 'Devolvido' ? '' :
@@ -1013,24 +1262,20 @@ const Plano = () => {
                                                     <Button type="primary" onClick={addAvaria}>Adicionar Avaria</Button>
                                                 </Form.Item>
 
-                                                <table className='tableAvaria'>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Equipamento</th>
-                                                            <th>Tipo da Avaria</th>
-                                                            <th>Quantidade</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {avarias.map((avaria, index) => (
-                                                            <tr key={index}>
-                                                                <td>{avaria.equipamento}</td>
-                                                                <td>{avaria.tipoAvaria}</td>
-                                                                <td>{avaria.quantidade}</td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
+                                                <Table
+                                                    scroll={{ x: "max-content" }}
+                                                    columns={avariasColumns}
+                                                    dataSource={avarias}
+                                                    pagination={false}
+                                                    style={{ marginBottom: '2vh' }} />
+
+                                                <Button
+                                                    type='primary'
+                                                    onClick={() => lancarAvariasAvulsas(currentRecord)}
+                                                    style={{ marginBottom: '2vh' }}   >
+                                                    Lançar avarias avulsas
+                                                </Button>
+
                                             </Form>
                                         </>
                                     }
@@ -1044,6 +1289,58 @@ const Plano = () => {
                 )}
 
             </Drawer>
+            {/* Drawer Criador de PDV */}
+            <Drawer
+                open={createPonto}
+                onClose={() => setCreatePonto(false)}
+                title='Criar Ponto de Venda'
+                loading={drawerLoading}>
+                <Form layout='vertical' onValuesChange={(changedValues, allValues) => setFormPDV(allValues)}>
+                    <Form.Item label='Nome do Ponto de Venda' name='nomePonto'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Setor' name='setor'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Área' name='area'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Código da planta' name='codPlanta'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Parceiro' name='parceiro'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Categoria' name='categoria'>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label='Modelo do Terminal' name='modelo'>
+                        <Select options={selectEquipamento} />
+                    </Form.Item>
+                    <Form.Item label='Quantidade de Terminais' name='totalTerminais'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item label='Carregadores' name='carregadores'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item label='Capas / Suportes' name='capas'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item label='Cartões Cashless' name='cartoes'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item label='Powerbanks' name='powerbanks'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item label='Pontos de Tomada' name='tomadas'>
+                        <InputNumber defaultValue={0} />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type='primary' onClick={criarPDV}>Criar Ponto de Venda</Button>
+                    </Form.Item>
+                </Form>
+            </Drawer>
+
             <div style={{ backgroundColor: "#FFFD", width: '100%', margin: '0 auto auto auto', padding: '15px' }}>
                 <Flex gap="middle" vertical style={{ marginTop: "2vh" }}>
                     <Flex>
@@ -1051,6 +1348,8 @@ const Plano = () => {
                     </Flex>
 
                     <Flex align="center" gap="middle">
+                        <Button type='primary' onClick={setCreatePonto}>Criar novo ponto de venda</Button>
+
                         <Button type="primary" onClick={start} disabled={!hasSelected} loading={loading}>
                             Reload
                         </Button>
