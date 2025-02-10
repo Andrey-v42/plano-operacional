@@ -2,7 +2,7 @@
   "name": "react-app",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://Andrey-v42.github.io/plano-digital",
+  "homepage": "https://Andrey-v42.github.io/plano-operacional",
   "type": "module",
   "scripts": {
     "predeploy": "npm run build",
