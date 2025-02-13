@@ -84,7 +84,6 @@ const Plano = () => {
 
     const handleFormSubmit = () => {
         const completeData = { ...formValues, assinatura: signature };
-        console.log('Form Data:', completeData);
     };
 
     const showDrawer = async (record) => {
@@ -561,7 +560,7 @@ const Plano = () => {
                 setDataPlano(formattedData);
                 setTableLoading(false)
             } catch (error) {
-                console.log('Error fetching data:', error);
+                console.error('Error fetching data:', error);
             }
         };
 
@@ -572,22 +571,6 @@ const Plano = () => {
 
     const start = async () => {
         setLoading(true);
-
-        const responseAvarias = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ url: `pipe/pipeId_teste1234/planoOperacional/PRODUÇÃO/avarias` })
-        })
-
-        if (responseAvarias.ok) {
-            let docsAvarias = await responseAvarias.json()
-            docsAvarias = docsAvarias.docs
-            const arrayAvarias = docsAvarias.map(doc => doc.data.avarias).flat()
-            console.log(arrayAvarias)
-        }
-
         setTimeout(() => {
             setSelectedRowKeys([]);
             setLoading(false);
@@ -997,7 +980,6 @@ const Plano = () => {
     };
 
     const lancarAvariasAvulsas = async (record) => {
-        console.log(signature)
         if (avarias.length > 0 && signature != '') {
             setDrawerLoading(true)
             const currentTimeString = new Date().toLocaleString()
@@ -1157,7 +1139,7 @@ const Plano = () => {
                 setCreatePonto(false)
                 setDrawerLoading(false)
             } else {
-                console.log(responseCreate.statusText)
+                console.error(responseCreate.statusText)
             }
         } catch (error) {
             console.error(error)

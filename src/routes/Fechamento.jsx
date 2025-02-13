@@ -383,21 +383,21 @@ const Fechamento = () => {
             let jsonEvento = await dataEvento.json()
             if(jsonEvento.taskId) {
                 loadingFechamento('Anexando documentos no ClickUp. Por favor, aguarde...')
-                // const responseToken = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getToken', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //     },
-                // })
+                const responseToken = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getToken', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
                 
                 for(const file of filesArray) {
                     const formData = new FormData();
                     formData.append('attachment', file);
-    
+
                     const responseFechamento = await fetch(`https://api.clickup.com/api/v2/task/${jsonEvento.taskId}/attachment`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE",
+                            'Authorization': responseToken,
                         },
                         body: formData
                     });
@@ -411,14 +411,13 @@ const Fechamento = () => {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/JSON',
-                                'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE"
+                                'Authorization': responseToken
                             },
                             body: JSON.stringify({
                                 value: JSON.stringify({ value: relatorioOcorrencias.relatorio })
                             })
                         }
                     );
-                    console.log(relatorioOcorrencias)
                 }
             }
 

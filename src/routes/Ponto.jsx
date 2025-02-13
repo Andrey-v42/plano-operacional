@@ -104,7 +104,7 @@ const Ponto = () => {
                     }
                 );
             } else {
-                console.log('Geolocation is not supported by this browser.');
+                console.error('Geolocation is not supported by this browser.');
             }
         };
 

@@ -131,7 +131,6 @@ const Cartao = () => {
     ]
 
     const showDrawer = (record) => {
-        console.log(record)
         setCurrentRecord(record)
         setDrawerVisible(true)
     }
@@ -222,7 +221,7 @@ const Cartao = () => {
                     for (const docEnt of dataEntregas) {
                         qtdEntregues += parseInt(docEnt.data.quantidade)
                     }
-                    console.log(qtdEntregues)
+                    console.error(qtdEntregues)
                 }
 
                 const formattedData = data.map(doc => {
@@ -239,7 +238,7 @@ const Cartao = () => {
             }
 
         } catch (error) {
-            console.log(error)
+            console.error(error)
             setOkLoading(false)
         }
     }
@@ -358,7 +357,7 @@ const Cartao = () => {
                 closeDrawer()
             }
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
@@ -418,7 +417,7 @@ const Cartao = () => {
             setEstoque(placeholderEstoque)
             setDataCartao(formattedData)
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
@@ -433,9 +432,6 @@ const Cartao = () => {
             return
         }
 
-        console.log(devolucaoValues.trocaProduto)
-        console.log(devolucaoValues.naoUtilizados)
-        console.log(currentRecord.cartoesAtivos)
         try {
             setDevolucaoLoading(true)
             const now = new Date().toLocaleString()
@@ -529,12 +525,11 @@ const Cartao = () => {
                 closeDrawer()
             }
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
     const addParceiro = async () => {
-        console.log(parceiroValues)
         if(!parceiroValues.nome || !parceiroValues.empresa || !parceiroValues.cpf || !parceiroValues.telefone) {
             openNotificationFailure('Todos os campos devem ser preenchidos.')
             return
@@ -629,7 +624,7 @@ const Cartao = () => {
                 setOkLoading(false)
             }
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
