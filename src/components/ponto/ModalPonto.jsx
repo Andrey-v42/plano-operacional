@@ -90,6 +90,7 @@ const ModalPonto = ({ toggleModal }) => {
             nome,
             [`localizacao_${operacaoPonto}`]: [location.latitude, location.longitude],
             funcao,
+            [`acao_usuario_${operacaoPonto}`]: localStorage.getItem('currentUser')
         };
 
         const now = new Date();

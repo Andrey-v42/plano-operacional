@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import './css/Ponto.css';
 import ModalPonto from '../components/ponto/ModalPonto';
-import { Table, Button, Flex, Drawer, Breadcrumb, notification, Form } from 'antd';
-import { SmileOutlined } from '@ant-design/icons';
+import { Table, Button, Flex, Drawer, Breadcrumb, notification, Form, Select } from 'antd';
+import { SmileOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
 const Ponto = () => {
     const [searchParams] = useSearchParams();
@@ -15,6 +15,8 @@ const Ponto = () => {
     const [tableLoading, setTableLoading] = useState(false)
     const [filtersName, setFiltersName] = useState([])
     const [filtersFunction, setFiltersFunction] = useState([])
+    const [drawerVisible, setDrawerVisible] = useState(false)
+    const [pontoValues, setPontoValues] = useState({})
 
     const [api, contextHolder] = notification.useNotification()
 
@@ -82,6 +84,22 @@ const Ponto = () => {
         }
     ]
 
+    const optionsFuncao = [
+        { value: "tecnico", label: "Técnico" },
+        { value: "supervisor", label: "Supervisor" },
+        { value: "c-cco", label: "C-CCO" },
+        { value: "c-rh", label: "Coordenador de RH" },
+        { value: "tec-rh", label: "Técnico de RH" },
+        { value: "estoque", label: "Estoque" },
+        { value: "c-controle", label: "Coordenador de Controle" },
+        { value: "head", label: "Head" }
+    ];
+    
+    const optionsOperacao = [
+        { value: "retirada", label: "Retirada de Equipamentos"},
+        { value: "entrada", label: "Chegada no Evento"}
+    ]
+
     useEffect(() => {
         const getLocation = () => {
             if (navigator.geolocation) {
@@ -135,6 +153,20 @@ const Ponto = () => {
         });
     };
 
+    const openNotificationFailure = (text) => {
+        api.open({
+            message: 'Erro',
+            description: text,
+            icon: (
+                <ExclamationCircleOutlined
+                    style={{
+                        color: '#108ee9',
+                    }}
+                />
+            ),
+        });
+    };
+
     const adicionarPonto = async (id) => {
         if (window.confirm('Confirma o registro do ponto?')) {
             setTableLoading(true)
@@ -149,7 +181,8 @@ const Ponto = () => {
             const collectionPath = 'controlePonto';
             const data = {
                 [operacao]: currentTimeString,
-                [`localizacao_${operacao}`]: [location.latitude, location.longitude]
+                [`localizacao_${operacao}`]: [location.latitude, location.longitude],
+                [`acao_usuario_${operacao}`]: localStorage.getItem('currentUser')
             };
 
             try {
@@ -200,6 +233,79 @@ const Ponto = () => {
             }
         }
     };
+
+    const registrarPonto = async (values) => {
+        if(location === null) {
+            openNotificationFailure('Erro ao registrar local. Por favor, ative o serviço de localização do dispositivo ou permita o acesso.')
+            return
+        }
+
+        try {
+            const formData = {
+                nome: localStorage.getItem('currentUser'),
+                [`localizacao_${values.operacao}`]: [location.latitude, location.longitude],
+                funcao: values.funcao
+            }
+
+            const now = new Date();
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            const currentTimeString = now.toLocaleDateString('pt-BR', options) + ' ' + now.toLocaleTimeString('pt-BR');
+
+            if(values.operacao == 'retirada') {
+                formData.retirada = currentTimeString
+            } else {
+                formData.entrada = currentTimeString
+            }
+
+            const responseRegistro = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/controlePonto`, formData }),
+            });
+
+            if(responseRegistro.ok) {
+                openNotificationSucess('Ponto registrado com sucesso!')
+                setDrawerVisible(false)
+                setTableLoading(true)
+                const response = await fetch(
+                    'https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/controlePonto` }),
+                    }
+                );
+
+                const result = await response.json();
+
+                const dataPonto = result.docs.map((doc) => {
+                    const data = doc.data
+                    return {
+                        key: doc.id,
+                        nome: data.nome,
+                        funcao: data.funcao,
+                        retirada: !data.retirada ? '-' : data.retirada,
+                        entrada: !data.entrada ? '+' : data.entrada,
+                        saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                        devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                    }
+                })
+
+                setDocs(dataPonto);
+                setTableLoading(false)
+            }
+        } catch (error) {
+            openNotificationFailure('Erro ao registrar ponto: ' + error);
+        }
+    }
+
+    const onFinishFailed = () => {
+
+    }
 
     useEffect(() => {
         const fetchDataPonto = async () => {
@@ -273,6 +379,22 @@ const Ponto = () => {
     return (
         <>
             {contextHolder}
+            <Drawer title='Abrir novo ponto' open={drawerVisible} onClose={() => setDrawerVisible(false)}>
+                <Form
+                    onFinish={registrarPonto}
+                    onFinishFailed={onFinishFailed}
+                    layout='vertical'>
+                    <Form.Item label='Função' name='funcao' rules={[{ required: true, message: "Selecione sua função!" }]}>
+                        <Select options={optionsFuncao}></Select>
+                    </Form.Item>
+                    <Form.Item label='Operação' name='operacao' rules={[{ required: true, message: "Selecione o horário de entrada!" }]}>
+                        <Select options={optionsOperacao}></Select>
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type='primary' htmlType='submit'>Registrar ponto</Button>
+                    </Form.Item>
+                </Form>
+            </Drawer>
             <div style={{ backgroundColor: "#FFFD", width: '100%', margin: '0 auto auto auto', padding: '15px' }}>
                 <Flex gap="middle" vertical style={{ marginTop: "2vh" }}>
                     <Flex>
@@ -280,7 +402,7 @@ const Ponto = () => {
                     </Flex>
 
                     <Flex align="center" gap="middle">
-                        <Button loading={loading} onClick={toggleModalPonto} type="primary">
+                        <Button loading={loading} onClick={setDrawerVisible} type="primary">
                             Abrir novo ponto
                         </Button>
 

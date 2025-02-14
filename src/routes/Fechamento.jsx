@@ -397,7 +397,7 @@ const Fechamento = () => {
                     const responseFechamento = await fetch(`https://api.clickup.com/api/v2/task/${jsonEvento.taskId}/attachment`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': responseToken,
+                            'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE",
                         },
                         body: formData
                     });

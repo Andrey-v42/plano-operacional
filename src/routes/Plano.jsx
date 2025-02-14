@@ -515,7 +515,7 @@ const Plano = () => {
                 const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
                 const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
 
-                const formattedData = docs.map((doc) => {
+                const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
                     const data = doc.data;
                     const entregaData = entregaMap[doc.id] || {};
                     const devolucaoData = devolucaoMap[doc.id] || {};
@@ -677,7 +677,7 @@ const Plano = () => {
                 const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
                 const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
 
-                const formattedData = docs.map((doc) => {
+                const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
                     const data = doc.data;
                     const entregaData = entregaMap[doc.id] || {};
                     const devolucaoData = devolucaoMap[doc.id] || {};
@@ -742,6 +742,7 @@ const Plano = () => {
         try {
             const completeData = {
                 ...formValues,
+                TecnicoResponsavel: localStorage.getItem('currentUser'),
                 assinatura: signature,
                 dataHora: currentTimeString,
                 modelo_terminal: record.modelo || 'N/A',
@@ -751,6 +752,7 @@ const Plano = () => {
                 qtd_cartao: parseInt(record.cartoes) || 0,
                 qtd_powerbank: parseInt(record.powerbanks) || 0,
                 qtd_tomada: parseInt(record.tomadas) || 0,
+                timestamp: new Date().getTime()
             };
 
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDoc', {
@@ -811,7 +813,7 @@ const Plano = () => {
                     const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
                     const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
 
-                    const formattedData = docs.map((doc) => {
+                    const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
                         const data = doc.data;
                         const entregaData = entregaMap[doc.id] || {};
                         const devolucaoData = devolucaoMap[doc.id] || {};
@@ -861,6 +863,7 @@ const Plano = () => {
         try {
             const completeData = {
                 ...formValues,
+                TecnicoResponsavel: localStorage.getItem('currentUser'),
                 assinatura: signature,
                 dataHora: currentTimeString,
                 modelo_terminal: record.modelo || 'N/A',
@@ -870,7 +873,8 @@ const Plano = () => {
                 qtd_cartao: parseInt(record.cartoes) || 0,
                 qtd_powerbank: parseInt(record.powerbanks) || 0,
                 qtd_tomada: parseInt(record.tomadas) || 0,
-                Avarias: avariasFormatadas
+                Avarias: avariasFormatadas,
+                timestamp: new Date().getTime()
             };
 
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDoc', {
@@ -884,7 +888,7 @@ const Plano = () => {
                     collectionURL: `pipe/pipeId_${pipeId}/protocolosDevolucao`
                 }),
             })
-                {/* Dedico meu esforço e minha vontade   ao batman */}
+
             if (response.ok) {
                 const responsePlano = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/editDocAlternative', {
                     method: 'POST',
@@ -931,7 +935,7 @@ const Plano = () => {
                     const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
                     const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
 
-                    const formattedData = docs.map((doc) => {
+                    const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
                         const data = doc.data;
                         const entregaData = entregaMap[doc.id] || {};
                         const devolucaoData = devolucaoMap[doc.id] || {};
@@ -991,7 +995,9 @@ const Plano = () => {
             const formattedData = {
                 assinatura: signature,
                 avarias: avariasFormatadas,
-                dataHora: currentTimeString
+                dataHora: currentTimeString,
+                timestamp: new Date().getTime(),
+                tecnicoResponsavel: localStorage.getItem('currentUser'),
             }
             setSignature('')
 
@@ -1058,7 +1064,8 @@ const Plano = () => {
                 "rowNumber": data.length + 1,
                 "EVENTO": dataEvento.EVENTO,
                 "ENDERECO": dataEvento.ENDERECO,
-                "taskId": dataEvento.taskId
+                "taskId": dataEvento.taskId,
+                "tecnicoResponsavel": localStorage.getItem('currentUser'),
             }
 
             const responseCreate = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDoc', {
@@ -1107,7 +1114,7 @@ const Plano = () => {
                 const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
                 const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
 
-                const formattedData = docs.map((doc) => {
+                const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
                     const data = doc.data;
                     const entregaData = entregaMap[doc.id] || {};
                     const devolucaoData = devolucaoMap[doc.id] || {};
@@ -1206,9 +1213,6 @@ const Plano = () => {
 
                                 <Form layout='vertical'
                                     onValuesChange={(changedValues, allValues) => setFormValues(allValues)}>
-                                    <Form.Item label='Técnico Responsável' name='TecnicoResponsavel'>
-                                        <Input />
-                                    </Form.Item>
                                     <Form.Item label='Parceiro Responsável' name='Cliente'>
                                         <Input />
                                     </Form.Item>

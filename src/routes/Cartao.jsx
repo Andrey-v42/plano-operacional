@@ -272,7 +272,9 @@ const Cartao = () => {
             const formData = {
                 assinatura: signature,
                 dataEntrega: now,
-                quantidade: entregaValues.quantidade
+                quantidade: entregaValues.quantidade,
+                timestamp: new Date().getTime(),
+                tecnicoResponsavel: localStorage.getItem('currentUser'),
             }
             setEntregaValues({})
             setSignature('')
@@ -441,7 +443,9 @@ const Cartao = () => {
                 totalDevolvido: devolucaoValues.trocaProduto + devolucaoValues.naoUtilizados,
                 trocaProduto: devolucaoValues.trocaProduto,
                 naoUtilizado: devolucaoValues.naoUtilizados,
-                totalEntregue: currentRecord.totalEntregues
+                totalEntregue: currentRecord.totalEntregues,
+                timestamp: new Date().getTime(),
+                tecnicoResponsavel: localStorage.getItem('currentUser'),
             }
             setDevolucaoValues({})
             setSignatureDevolucao('')
@@ -541,7 +545,8 @@ const Cartao = () => {
                 "NOME PARCEIRO": parceiroValues.nome,
                 "EMPRESA": parceiroValues.empresa,
                 "CPF": parceiroValues.cpf,
-                "TELEFONE": parceiroValues.telefone
+                "TELEFONE": parceiroValues.telefone,
+                "tecnicoResponsavel": localStorage.getItem('currentUser'),
             }
 
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDoc', {

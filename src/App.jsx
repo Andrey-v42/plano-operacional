@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import {
     MenuFoldOutlined,
@@ -9,7 +9,7 @@ import {
     CreditCardOutlined,
     MessageOutlined
 } from '@ant-design/icons';
-import { Button, Layout, Menu, theme } from 'antd';
+import { Button, Layout, Menu, theme, Flex } from 'antd';
 const { Header, Sider, Content } = Layout;
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import Ponto from './routes/Ponto';
@@ -17,6 +17,7 @@ import Plano from './routes/Plano';
 import Cartao from './routes/Cartao';
 import Fechamento from './routes/Fechamento';
 import Chat from './routes/Chat';
+import Login from './routes/Login';
 
 function NotFound() {
     return <div>Page not found</div>;
@@ -28,10 +29,33 @@ const App = () => {
     const navigate = useNavigate();
     const [collapsed, setCollapsed] = useState(false);
     const [selectedKey, setSelectedKey] = useState(['1'])
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
 
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
+
+    useEffect(() => {
+        const getAuthentication = async () => {
+            const authStatus = JSON.parse(localStorage.getItem('isAuthenticated'));
+
+            if (!authStatus || !authStatus.value || !authStatus.expirationDate) {
+                navigate(`/login?pipeId=${pipeId}`);
+                return;
+            }
+    
+            const isValid = authStatus.value === 'true' && authStatus.expirationDate >= new Date().getTime();
+    
+            if (isValid) {
+                setIsAuthenticated(true);
+            } else {
+                localStorage.removeItem('isAuthenticated');
+                navigate(`/login?pipeId=${pipeId}`);
+            }
+        }
+        
+        getAuthentication()
+    }, [navigate])
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -118,7 +142,7 @@ const App = () => {
                         top: 0,
                         zIndex: '999'
                     }}
-                >
+                >   <Flex>
                     <Button
                         type="text"
                         icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -130,6 +154,8 @@ const App = () => {
                         }}
                     />
 
+                    {localStorage.getItem('isAuthenticated') && <p style={{ margin: '0 5% 0 auto' }}><b>Sessão válida até: {new Date(JSON.parse(localStorage.getItem('isAuthenticated')).expirationDate).toLocaleTimeString()}</b></p> }
+                    </Flex>
 
 
                 </Header>
@@ -150,7 +176,8 @@ const App = () => {
                         <Route path="/cartao" element={<Cartao />} />
                         <Route path="/fechamento" element={<Fechamento />} />
                         <Route path="/chat" element={<Chat />} />
-                        <Route path="/" element={<Plano />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Content>
