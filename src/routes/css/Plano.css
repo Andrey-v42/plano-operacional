@@ -23,7 +23,12 @@ td, th {
     align-items: center;
     text-align: center;
     padding: 1%;
-}   
+}
+
+.deactivated-row {
+    background-color: lightgray;
+    color: black;
+}
 
 @media screen and (max-width: 768px) {
     td, th {

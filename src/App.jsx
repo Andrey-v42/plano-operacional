@@ -18,6 +18,7 @@ import Cartao from './routes/Cartao';
 import Fechamento from './routes/Fechamento';
 import Chat from './routes/Chat';
 import Login from './routes/Login';
+import Cronometro from './routes/Cronometro';
 
 function NotFound() {
     return <div>Page not found</div>;
@@ -129,6 +130,16 @@ const App = () => {
                                 setSelectedKey(['5'])
                                 setCollapsed(true)
                             }
+                        },
+                        {
+                            key: '6',
+                            icon: <ClockCircleOutlined />,
+                            label: 'Cronômetro Config',
+                            onClick: () => {
+                                setSelectedKey(['6'])
+                                navigate(`/cronometro?pipeId=${pipeId}`);
+                                setCollapsed(true)
+                            }
                         }
                     ]}
                 />
@@ -177,6 +188,7 @@ const App = () => {
                         <Route path="/fechamento" element={<Fechamento />} />
                         <Route path="/chat" element={<Chat />} />
                         <Route path="/login" element={<Login />} />
+                        <Route path="/cronometro" element={<Cronometro />} />
                         <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>

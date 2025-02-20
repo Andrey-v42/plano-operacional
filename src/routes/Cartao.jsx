@@ -163,7 +163,7 @@ const Cartao = () => {
         });
     };
 
-    const editQuantity = async (docId) => {
+    const editQuantity = async (docId, oldValue) => {
         setOkLoading(true)
         try {
             const formData = {
@@ -178,7 +178,17 @@ const Cartao = () => {
                 body: JSON.stringify({ data: formData, docId: `pipeId_${pipeId}/planoOperacional/${docId}` })
             })
 
+            
             if (response.ok) {
+                const responseModification = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addModificationCard', {
+                    method: 'POST',
+                    headers: {
+                        "Content-Type": "application/JSON",
+                        "Authorization": `Bearer ${JSON.parse(localStorage.getItem('authToken')).token}`
+                    },
+                    body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/planoOperacional`, docId: docId, formData: { equipment: 'CARTÃO CASHLES', newEquipmentValue: valueEditCartao, oldEquipmentValue: oldValue, currentUser: localStorage.getItem('currentUser') } })
+                })
+
                 setOkLoading(false)
                 openNotificationSucess('Alteração salva com sucesso!')
                 setEditCartao(false)
@@ -221,7 +231,6 @@ const Cartao = () => {
                     for (const docEnt of dataEntregas) {
                         qtdEntregues += parseInt(docEnt.data.quantidade)
                     }
-                    console.error(qtdEntregues)
                 }
 
                 const formattedData = data.map(doc => {
@@ -829,7 +838,7 @@ const Cartao = () => {
                                         {editCartao ? (
                                             <>
                                                 <InputNumber onChange={(value) => setValueEditCartao(value)} min={0} defaultValue={record.quantidade} style={{ margin: '0 5px 0 0' }} />
-                                                <Button type='primary' onClick={() => editQuantity(record.id)} loading={okLoading}>Ok</Button>
+                                                <Button type='primary' onClick={() => editQuantity(record.id, record.quantidade)} loading={okLoading}>Ok</Button>
                                             </>
                                         ) : <a key={'cartao_' + record.id}
                                             onClick={() => {
