@@ -535,7 +535,7 @@ const Fechamento = () => {
             render: (comprovante) => {
                 return (
                     comprovante.includes('pdf') ?
-                        <a href={blobUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={comprovante} target="_blank" rel="noopener noreferrer">
                             Abrir PDF
                         </a> : <a target="_blank" rel="noopener noreferrer" href={comprovante}><img src={comprovante} style={{ width: '125px' }} /></a>
                 );
@@ -571,7 +571,7 @@ const Fechamento = () => {
             render: (comprovante) => {
                 return (
                     comprovante.includes('pdf') ?
-                        <a href={blobUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={comprovante} target="_blank" rel="noopener noreferrer">
                             Abrir PDF
                         </a> : <a target="_blank" rel="noopener noreferrer" href={comprovante}><img src={comprovante} style={{ width: '125px' }} /></a>
                 );

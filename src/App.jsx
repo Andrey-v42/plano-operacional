@@ -139,7 +139,8 @@ const App = () => {
                                 setSelectedKey(['6'])
                                 navigate(`/cronometro?pipeId=${pipeId}`);
                                 setCollapsed(true)
-                            }
+                            },
+                            show: false
                         }
                     ]}
                 />

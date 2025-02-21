@@ -406,7 +406,7 @@ const Cronometro = () => {
                                     } />
                                 </Form.Item>
                                 
-                                <Button type='primary' onClick={sendToClickup}>Enviar p/ Clickup</Button>
+                                <Button type='primary' disabled={primeiraEtapaFinalizada == true && segundaEtapaFinalizada == true && terceiraEtapaFinalizada == true && quartaEtapaFinalizada == true ? false : true} onClick={sendToClickup}>Sincronizar com clickup</Button>
                             </Flex>
                         </Form>
 
