@@ -140,7 +140,7 @@ const App = () => {
                                 navigate(`/cronometro?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             },
-                            show: false
+                            disabled: localStorage.getItem('permission') == 'config' || 'admin' ? false : true
                         }
                     ]}
                 />

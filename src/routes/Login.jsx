@@ -35,6 +35,7 @@ const Login = () => {
             const data = await response.json()
             localStorage.setItem('authToken', JSON.stringify({ token: data.token, expirationDate: new Date().getTime() +  60 * 60 * 1000 }))
             localStorage.setItem('currentUser', data.user)
+            localStorage.setItem('permission', data.permission)
             localStorage.setItem('isAuthenticated', JSON.stringify({ value: 'true', expirationDate: new Date().getTime() +  60 * 60 * 1000 }))
             navigate(`/plano?pipeId=${pipeId}`);
         } else {

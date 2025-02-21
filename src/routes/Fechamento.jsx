@@ -383,12 +383,12 @@ const Fechamento = () => {
             let jsonEvento = await dataEvento.json()
             if(jsonEvento.taskId) {
                 loadingFechamento('Anexando documentos no ClickUp. Por favor, aguarde...')
-                const responseToken = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getToken', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                })
+                // const responseToken = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getToken', {
+                //     method: 'POST',
+                //     headers: {
+                //         'Content-Type': 'application/json',
+                //     },
+                // })
                 
                 for(const file of filesArray) {
                     const formData = new FormData();
@@ -514,7 +514,7 @@ const Fechamento = () => {
 
     const columnsDespesas = [
         {
-            title: 'Descrição',
+            title: 'Tipo da Despesa',
             dataIndex: 'tipo',
             key: 'tipo',
         },
@@ -545,7 +545,7 @@ const Fechamento = () => {
 
     const columnsReembolsos = [
         {
-            title: 'Descrição',
+            title: 'Tipo da Despesa',
             dataIndex: 'tipo',
             key: 'tipo',
         },
