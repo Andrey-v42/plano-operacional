@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     viteStaticCopy({
       targets: [
-        { src: '_redirects', dest: '' } // Ensure the _redirects file is copied to the root of dist
+        { src: '_redirects', dest: '' }
       ]
     })
   ],
