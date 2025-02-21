@@ -411,7 +411,7 @@ const Fechamento = () => {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/JSON',
-                                'Authorization': responseToken
+                                'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE",
                             },
                             body: JSON.stringify({
                                 value: JSON.stringify({ value: relatorioOcorrencias.relatorio })

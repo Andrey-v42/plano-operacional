@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Input, Button, Flex, Form, Select, Timeline, notification } from 'antd';
 import { ExclamationCircleOutlined, SmileOutlined } from '@ant-design/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const { Group: InputGroup } = Input;
 const { Group: ButtonGroup } = Button;
 
 const Cronometro = () => {
+    const navigate = useNavigate()
+    const permission = localStorage.getItem('permission')
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
     const [api, contextHolder] = notification.useNotification()
@@ -377,6 +379,12 @@ const Cronometro = () => {
 
         fetchTimelineItems()
     }, [pipeId])
+
+    useEffect(() => {
+        if(permission != 'config' && permission != 'admin') {
+            navigate(`/plano?pipeId=${pipeId}`)
+        }
+    }, [permission])
 
     return (
         <>
