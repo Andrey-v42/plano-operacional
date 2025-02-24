@@ -140,7 +140,7 @@ const App = () => {
                                 navigate(`/cronometro?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             },
-                            disabled: localStorage.getItem('permission') == 'config' || 'admin' ? false : true
+                            disabled: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin'
                         }
                     ]}
                 />

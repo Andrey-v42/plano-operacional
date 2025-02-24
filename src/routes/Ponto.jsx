@@ -19,6 +19,8 @@ const Ponto = () => {
     const [pontoValues, setPontoValues] = useState({})
 
     const [api, contextHolder] = notification.useNotification()
+    const permission = localStorage.getItem('permission')
+    const permissionEvento = localStorage.getItem('permissionEvento')
 
     const columns = [
         {
@@ -208,18 +210,37 @@ const Ponto = () => {
 
                     const result = await responsePonto.json();
 
-                    const dataPonto = result.docs.map((doc) => {
-                        const data = doc.data
-                        return {
-                            key: doc.id,
-                            nome: data.nome,
-                            funcao: data.funcao,
-                            retirada: !data.retirada ? '-' : data.retirada,
-                            entrada: !data.entrada ? '+' : data.entrada,
-                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                    let dataPonto = result.docs.map((doc) => {
+                        if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                            const data = doc.data
+                            return {
+                                key: doc.id,
+                                nome: data.nome,
+                                funcao: data.funcao,
+                                retirada: !data.retirada ? '-' : data.retirada,
+                                entrada: !data.entrada ? '+' : data.entrada,
+                                saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                                devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                            }
+                        } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                            const data = doc.data
+                            return {
+                                key: doc.id,
+                                nome: data.nome,
+                                funcao: data.funcao,
+                                retirada: !data.retirada ? '-' : data.retirada,
+                                entrada: !data.entrada ? '+' : data.entrada,
+                                saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                                devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                            }
+                        } else {
+                            return {
+                            
+                            }
                         }
                     })
+                    
+                    dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
 
                     setDocs(dataPonto)
 
@@ -282,18 +303,37 @@ const Ponto = () => {
 
                 const result = await response.json();
 
-                const dataPonto = result.docs.map((doc) => {
-                    const data = doc.data
-                    return {
-                        key: doc.id,
-                        nome: data.nome,
-                        funcao: data.funcao,
-                        retirada: !data.retirada ? '-' : data.retirada,
-                        entrada: !data.entrada ? '+' : data.entrada,
-                        saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                        devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                let dataPonto = result.docs.map((doc) => {
+                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else {
+                        return {
+                        
+                        }
                     }
                 })
+                
+                dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
 
                 setDocs(dataPonto);
                 setTableLoading(false)
@@ -324,18 +364,37 @@ const Ponto = () => {
 
                 const result = await response.json();
 
-                const dataPonto = result.docs.map((doc) => {
-                    const data = doc.data
-                    return {
-                        key: doc.id,
-                        nome: data.nome,
-                        funcao: data.funcao,
-                        retirada: !data.retirada ? '-' : data.retirada,
-                        entrada: !data.entrada ? '+' : data.entrada,
-                        saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                        devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                let dataPonto = result.docs.map((doc) => {
+                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else {
+                        return {
+                        
+                        }
                     }
                 })
+                
+                dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
 
                 const nomes = [
                     ...new Set(result.docs.map((doc) => doc.data.nome))

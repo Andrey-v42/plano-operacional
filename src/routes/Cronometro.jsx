@@ -100,7 +100,23 @@ const Cronometro = () => {
 
     const justificativaItems = [
         { value: 'Almoço', label: 'Almoço' },
+        { value: 'Pausa', label: 'Pausa'},
         { value: 'Falta de terminais', label: 'Falta de terminais' },
+        { value: 'Erro de EC', label: 'Erro de EC'},
+        { value: 'Tamper', label: 'Tamper' },
+        { value: 'Erro de Chip', label: 'Erro de Chip' },
+        { value: 'Tela Quebrada', label: 'Tela Quebrada' },
+        { value: 'Impressão', label: 'Impressão' },
+        { value: 'Bateria baixa', label: 'Bateria baixa' }
+    ]
+
+    const justificativaItemsTerceira = [
+        { value: 'Almoço', label: 'Almoço' },
+        { value: 'Pausa', label: 'Pausa'},
+        { value: 'Erro de EC no Login', label: 'Erro de EC no Login' },
+        { value: 'Funcionário não encontrado', label: 'Funcionário não encontrado' },
+        { value: 'Falta de cardápio', label: 'Falta de cardápio' },
+        { value: 'Horário errado', label: 'Horário errado' }
     ]
 
     const iniciarEtapa = async (etapa) => {
@@ -295,6 +311,50 @@ const Cronometro = () => {
         })
     }
 
+    const getEquipeEscalada = async () => {
+        const token = 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+        const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+            method: 'POST',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: 'pipe', docId: `pipeId_${pipeId}` })
+        })
+        const dataEvento = await responseEvento.json()
+
+        const relationshipFields = [
+            "Head", "C-CCO", "A&B Supervisores", "Tickets Supervisores", "Autoatendimento Supervisores",
+            "RH Supervisores", "Controle Supervisores", "A&B Técnicos", "Tickets Técnicos",
+            "Autoatendimento Técnicos", "RH Técnicos", "Controle Técnicos", "Runners", "Setup"
+        ]
+
+        const responseTask = await fetch(`https://api.clickup.com/api/v2/task/${dataEvento.taskId}`, {
+            method: 'GET',
+            headers: {
+                accept: 'application/json',
+                Authorization: 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+            }
+        })
+        const dataTask = await responseTask.json()
+        const equipeEscalada = []
+        for(const field of relationshipFields) {
+            for(const customField of dataTask.custom_fields) {
+                if(customField.name == field) {
+                    if(customField.value?.length > 0) {
+                        for(const value of customField.value) {
+                            equipeEscalada.push({ nome: value.name, funcao: customField.name })
+                        }
+                    }
+                }
+            }
+        }
+
+        const responseEquipe = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
+            method: 'POST',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: `pipe`, docId: `pipeId_${pipeId}`, data: { equipeEscalada: equipeEscalada } })
+        })
+        
+    }
+
     useEffect(() => {
         const saveTimeline = async () => {
             if (timelineItems.length > 0) {
@@ -433,7 +493,7 @@ const Cronometro = () => {
 
                             <div style={{ display: 'flex', flexDirection: 'column', height: '15vh', justifyContent: 'space-between' }}>
                                 {terceiraEtapaRunning ? <Button type='primary' disabled={terceiraEtapaFinalizada} onClick={() => interromperEtapa('terceira')} style={{ backgroundColor: 'red' }}>Interromper 3ª Etapa</Button> : <Button disabled={terceiraEtapaFinalizada} onClick={() => iniciarEtapa('terceira')} type='primary'>Iniciar 3ª Etapa</Button>}
-                                {terceiraEtapaRunning ? <Select options={justificativaItems} onSelect={(value) => setJustificativa(value)} /> : null}
+                                {terceiraEtapaRunning ? <Select options={justificativaItemsTerceira} onSelect={(value) => setJustificativa(value)} /> : null}
                                 <Button type='primary' onClick={() => finalizarEtapa('terceira')} disabled={terceiraEtapaFinalizada} style={{ backgroundColor: 'green' }}>Finalizar 3ª Etapa</Button>
                             </div>
 
