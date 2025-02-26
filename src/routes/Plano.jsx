@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SmileOutlined } from '@ant-design/icons';
-import { Table, Button, Flex, Card, InputNumber, Breadcrumb, notification, Drawer, Form, Input, Checkbox, Collapse, Select } from 'antd';
+import { Table, Button, Flex, Card, InputNumber, Breadcrumb, notification, Drawer, Form, Input, Checkbox, Collapse, Select, Modal, Space } from 'antd';
 import './css/Plano.css';
 import { createStyles } from 'antd-style';
 import Canvas from '../components/plano/Canvas'
@@ -51,6 +51,7 @@ const Plano = () => {
     const [selectedRows, setSelectedRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [tableLoading, setTableLoading] = useState(false)
+    const [modalConfirmStatusVisible, setModalConfirmStatusVisible] = useState(false)
     const [drawerLoading, setDrawerLoading] = useState(false)
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [drawerMultipleVisible, setDrawerMultipleVisible] = useState(false)
@@ -58,6 +59,7 @@ const Plano = () => {
     const [currentRecord, setCurrentRecord] = useState(null);
     const [filtersSetor, setFilterSetor] = useState([])
     const [filtersCategoria, setFilterCategoria] = useState([])
+    const [confirmStatusButtonLoading, setConfirmStatusButtonLoading] = useState(false)
 
     const [editTerminais, setEditTerminais] = useState(false)
     const [editCarregador, setEditCarregador] = useState(false)
@@ -86,6 +88,9 @@ const Plano = () => {
     const { styles } = useStyle();
     const [formMultiple] = Form.useForm()
     const [api, contextHolder] = notification.useNotification()
+
+    const permission = localStorage.getItem('permission')
+    const permissionEvento = localStorage.getItem('permissionEvento')
 
 
     const showDrawer = async (record) => {
@@ -304,30 +309,30 @@ const Plano = () => {
 
     const columnsModifications = [
         {
-          title: 'Usuário',
-          dataIndex: 'user',
-          key: 'user',
+            title: 'Usuário',
+            dataIndex: 'user',
+            key: 'user',
         },
         {
-          title: 'Horário',
-          dataIndex: 'timestamp',
-          key: 'timestamp',
-          render: (timestamp) => new Date(timestamp).toLocaleString()
+            title: 'Horário',
+            dataIndex: 'timestamp',
+            key: 'timestamp',
+            render: (timestamp) => new Date(timestamp).toLocaleString()
         },
         {
-          title: 'Equipamento',
-          dataIndex: ['changes', 'field'],
-          key: 'field',
+            title: 'Equipamento',
+            dataIndex: ['changes', 'field'],
+            key: 'field',
         },
         {
-          title: 'Valor antigo',
-          dataIndex: ['changes', 'oldValue'],
-          key: 'oldValue',
+            title: 'Valor antigo',
+            dataIndex: ['changes', 'oldValue'],
+            key: 'oldValue',
         },
         {
-          title: 'Novo valor',
-          dataIndex: ['changes', 'newValue'],
-          key: 'newValue',
+            title: 'Novo valor',
+            dataIndex: ['changes', 'newValue'],
+            key: 'newValue',
         },
     ];
 
@@ -665,7 +670,6 @@ const Plano = () => {
             } else {
                 setFirstStatus(newSelectedRows[0].Status);
             }
-            console.log(newSelectedRows[0].modifications)
             setSelectedRowKeys(newSelectedRowKeys);
             setSelectedRows(newSelectedRows);
         },
@@ -786,7 +790,6 @@ const Plano = () => {
                     const data = doc.data;
                     const entregaData = entregaMap[doc.id] || {};
                     const devolucaoData = devolucaoMap[doc.id] || {};
-
                     return {
                         key: doc.id,
                         ID: data.rowNumber,
@@ -798,13 +801,14 @@ const Plano = () => {
                                 : 'Entrega Pendente',
                         'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                         modelo: data.MODELO,
-                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                         totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                         powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                         carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                         capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                         tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                         desativado: data.desativado == true ? true : false,
+                        modifications: data.modifications ? data.modifications : null,
                         entregaInfo: entregaData,
                         devolucaoInfo: devolucaoData
                     };
@@ -928,7 +932,6 @@ const Plano = () => {
                 const data = doc.data;
                 const entregaData = entregaMap[doc.id] || {};
                 const devolucaoData = devolucaoMap[doc.id] || {};
-
                 return {
                     key: doc.id,
                     ID: data.rowNumber,
@@ -940,18 +943,21 @@ const Plano = () => {
                             : 'Entrega Pendente',
                     'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                     modelo: data.MODELO,
-                    cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                    cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                     totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                     powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                     carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                     capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                     tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                     desativado: data.desativado == true ? true : false,
-                    entregaInfo: { ...entregaData },
-                    devolucaoInfo: { ...devolucaoData }
+                    modifications: data.modifications ? data.modifications : null,
+                    entregaInfo: entregaData,
+                    devolucaoInfo: devolucaoData
                 };
             });
 
+            setSelectedRowKeys([])
+            setSelectedRows([])
             setDataPlano(formattedData)
             openNotificationSucessPDV('entregue')
             setDrawerMultipleVisible(false)
@@ -1052,7 +1058,6 @@ const Plano = () => {
                 const data = doc.data;
                 const entregaData = entregaMap[doc.id] || {};
                 const devolucaoData = devolucaoMap[doc.id] || {};
-
                 return {
                     key: doc.id,
                     ID: data.rowNumber,
@@ -1064,18 +1069,21 @@ const Plano = () => {
                             : 'Entrega Pendente',
                     'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                     modelo: data.MODELO,
-                    cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                    cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                     totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                     powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                     carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                     capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                     tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                     desativado: data.desativado == true ? true : false,
-                    entregaInfo: { ...entregaData },
-                    devolucaoInfo: { ...devolucaoData }
+                    modifications: data.modifications ? data.modifications : null,
+                    entregaInfo: entregaData,
+                    devolucaoInfo: devolucaoData
                 };
             });
 
+            setSelectedRowKeys([])
+            setSelectedRows([])
             setDataPlano(formattedData)
             openNotificationSucessPDV('devolvido')
             setDrawerMultipleLoading(false)
@@ -1171,7 +1179,6 @@ const Plano = () => {
                         const data = doc.data;
                         const entregaData = entregaMap[doc.id] || {};
                         const devolucaoData = devolucaoMap[doc.id] || {};
-
                         return {
                             key: doc.id,
                             ID: data.rowNumber,
@@ -1183,15 +1190,16 @@ const Plano = () => {
                                     : 'Entrega Pendente',
                             'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                             modelo: data.MODELO,
-                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                             totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                             powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                             carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                             capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                             tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                             desativado: data.desativado == true ? true : false,
-                            entregaInfo: { ...entregaData },
-                            devolucaoInfo: { ...devolucaoData }
+                            modifications: data.modifications ? data.modifications : null,
+                            entregaInfo: entregaData,
+                            devolucaoInfo: devolucaoData
                         };
                     });
 
@@ -1294,7 +1302,6 @@ const Plano = () => {
                         const data = doc.data;
                         const entregaData = entregaMap[doc.id] || {};
                         const devolucaoData = devolucaoMap[doc.id] || {};
-
                         return {
                             key: doc.id,
                             ID: data.rowNumber,
@@ -1306,15 +1313,16 @@ const Plano = () => {
                                     : 'Entrega Pendente',
                             'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                             modelo: data.MODELO,
-                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                            cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                             totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                             powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                             carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                             capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                             tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                             desativado: data.desativado == true ? true : false,
-                            entregaInfo: { ...entregaData },
-                            devolucaoInfo: { ...devolucaoData },
+                            modifications: data.modifications ? data.modifications : null,
+                            entregaInfo: entregaData,
+                            devolucaoInfo: devolucaoData
                         };
                     });
 
@@ -1474,7 +1482,6 @@ const Plano = () => {
                     const data = doc.data;
                     const entregaData = entregaMap[doc.id] || {};
                     const devolucaoData = devolucaoMap[doc.id] || {};
-
                     return {
                         key: doc.id,
                         ID: data.rowNumber,
@@ -1486,15 +1493,16 @@ const Plano = () => {
                                 : 'Entrega Pendente',
                         'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
                         modelo: data.MODELO,
-                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                        cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] ? '0' : data['CARTÃO CASHLES'] : 0,
                         totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
                         powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
                         carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
                         capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
                         tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                         desativado: data.desativado == true ? true : false,
-                        entregaInfo: { ...entregaData },
-                        devolucaoInfo: { ...devolucaoData }
+                        modifications: data.modifications ? data.modifications : null,
+                        entregaInfo: entregaData,
+                        devolucaoInfo: devolucaoData
                     };
                 });
 
@@ -1683,6 +1691,109 @@ const Plano = () => {
         }
     }
 
+    const resetStatus = async () => {
+        let status
+        if (currentRecord.Status == 'Devolvido') {
+            status = 'Entregue'
+        } else if (currentRecord.Status == 'Entregue') {
+            status = 'Entrega Pendente'
+        }
+
+        try {
+            if (status == 'Entrega Pendente') {
+                const responseEdit = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/modifyStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional`, docId: `${currentRecord.key}`, data: { aberto: false, statusModification: [{ timestamp: new Date().getTime(), user: localStorage.getItem('currentUser'), oldStatus: 'Entregue', newStatus: 'Entrega Pendente' }] } })
+                })
+            } else {
+                const responseEdit = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/modifyStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional`, docId: `${currentRecord.key}`, data: { devolvido: false, statusModification: [{ timestamp: new Date().getTime(), user: localStorage.getItem('currentUser'), oldStatus: 'Devolvido', newStatus: 'Entregue' }] } })
+                })
+            }
+
+            setConfirmStatusButtonLoading(false)
+            setModalConfirmStatusVisible(false)
+            closeDrawer()
+            openNotificationSucess()
+            setTableLoading(true)
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional` }),
+            });
+
+            const responseEntrega = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosEntrega` }),
+            });
+
+            const responseDevolucao = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosDevolucao` }),
+            });
+
+            let docs = await response.json();
+            docs = docs.docs;
+
+            let docsEntrega = await responseEntrega.json()
+            docsEntrega = docsEntrega.docs;
+
+            let docsDevolucao = await responseDevolucao.json()
+            docsDevolucao = docsDevolucao.docs;
+
+            const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
+            const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
+
+            const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
+                const data = doc.data;
+                const entregaData = entregaMap[doc.id] || {};
+                const devolucaoData = devolucaoMap[doc.id] || {};
+
+                return {
+                    key: doc.id,
+                    ID: data.rowNumber,
+                    Setor: data.SETOR || 'N/A',
+                    'Ponto de Venda': data['NOME PDV'],
+                    Categoria: data.CATEGORIA || 'N/A',
+                    Status: data.aberto && !data.devolvido ? 'Entregue'
+                        : data.aberto && data.devolvido ? 'Devolvido'
+                            : 'Entrega Pendente',
+                    'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
+                    modelo: data.MODELO,
+                    cartoes: data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? '0' : data['CARTÃO CASHLES'] : 0,
+                    totalTerminais: data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? '0' : data['TOTAL TERM'] : 0,
+                    powerbanks: data['POWER BANK'] ? data['POWER BANK'] == ' ' ? '0' : data['POWER BANK'] : '0',
+                    carregadores: data.CARREG ? data.CARREG == ' ' ? '0' : data.CARREG : '0',
+                    capas: data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? '0' : data['CAPA SUPORTE'] : '0',
+                    tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
+                    desativado: data.desativado == true ? true : false,
+                    entregaInfo: { ...entregaData },
+                    devolucaoInfo: { ...devolucaoData }
+                };
+            });
+
+            setDataPlano(formattedData)
+            setTableLoading(false)
+        } catch (error) {
+
+        }
+    }
+
     const hasSelected = selectedRowKeys.length > 0;
 
     return (
@@ -1770,7 +1881,10 @@ const Plano = () => {
                                     </Form.Item>
 
                                     {currentRecord.Status == 'Devolvido' ? '' : currentRecord.Status == 'Entregue' ? <Button type='primary' onClick={() => devolverPonto(currentRecord)}>Confirmar Devolução</Button> : <Button onClick={() => entregarPonto(currentRecord)} type='primary'>Confirmar Entrega</Button>}
-                                </Form></>}
+                                </Form>
+                            </>
+                        }
+                        {(permission == 'planner' || permission == 'admin' || permissionEvento == 'A&B Supervisores') && currentRecord.Status != 'Entrega Pendente' ? <Button style={{ marginTop: '2vh' }} onClick={setModalConfirmStatusVisible} type='primary'>Voltar status de entrega</Button> : null}
                     </>
                 )}
 
@@ -1867,6 +1981,15 @@ const Plano = () => {
                     </Form.Item>
                 </Form>
             </Drawer>
+
+            <Modal open={modalConfirmStatusVisible} title='Atenção' footer={(_, { OkBtn, CancelBtn }) => (
+                <>
+                    <Button style={{ backgroundColor: 'red', color: 'white' }} onClick={() => setModalConfirmStatusVisible(false)} >Cancelar</Button>
+                    <Button type='primary' onClick={() => { resetStatus(); setConfirmStatusButtonLoading(true) }} loading={confirmStatusButtonLoading}>Confirmar</Button>
+                </>
+            )}>
+                Deseja confirmar a alteração do status de entrega? Atenção: Esta ação não apaga o protocolo de equipamentos!
+            </Modal>
 
             <div style={{ backgroundColor: "#FFFD", width: '100%', margin: '0 auto auto auto', padding: '15px' }}>
                 <Flex gap="middle" vertical style={{ marginTop: "2vh" }}>

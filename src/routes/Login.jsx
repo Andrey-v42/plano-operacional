@@ -64,7 +64,7 @@ const Login = () => {
                 localStorage.setItem('permission', data.permission)
                 localStorage.setItem('permissionEvento', permissionEvento)
                 localStorage.setItem('isAuthenticated', JSON.stringify({ value: 'true', expirationDate: new Date().getTime() + 60 * 60 * 1000 }))
-                navigate(`/plano?pipeId=${pipeId}`);
+                navigate(`/plano-operacional/plano?pipeId=${pipeId}`);
             } else {
                 openNotificationFailure('Seu usuário não foi vinculado a este evento, por favor entre em contato com a equipe de Gestão de Equipe Técnica.')
             }

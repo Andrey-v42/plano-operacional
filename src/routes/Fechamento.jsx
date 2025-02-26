@@ -28,6 +28,9 @@ const Fechamento = () => {
     const [relatorioOcorrencias, setRelatorioOcorrencias] = useState('')
     const [fileList, setFileList] = useState([]);
 
+    const permission = localStorage.getItem('permission')
+    const permissionEvento = localStorage.getItem('permissionEvento')
+
     const loadingFechamento = (text) => {
         messageApi.open({
             type: 'loading',
@@ -397,7 +400,7 @@ const Fechamento = () => {
                     const responseFechamento = await fetch(`https://api.clickup.com/api/v2/task/${jsonEvento.taskId}/attachment`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE",
+                            'Authorization': "pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ",
                         },
                         body: formData
                     });
@@ -685,21 +688,40 @@ const Fechamento = () => {
 
             if (response.ok) {
                 let data = await response.json()
-                data = data.docs
 
-                const formattedData = data.map((doc) => {
-                    return {
-                        key: doc.id,
-                        nome: doc.data.nome,
-                        funcao: doc.data.funcao,
-                        retirada: doc.data.retirada || '-',
-                        entrada: doc.data.entrada || '-',
-                        saida: doc.data.saida || '-',
-                        devolucao: doc.data.devolucao || '-'
+                let dataPonto = data.docs.map((doc) => {
+                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin' && permissionEvento != 'ecc') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin' || permissionEvento == 'ecc') {
+                        const data = doc.data
+                        return {
+                            key: doc.id,
+                            nome: data.nome,
+                            funcao: data.funcao,
+                            retirada: !data.retirada ? '-' : data.retirada,
+                            entrada: !data.entrada ? '+' : data.entrada,
+                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
+                        }
+                    } else {
+                        return {
+                        
+                        }
                     }
                 })
+                
+                dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
 
-                setDataPonto(formattedData)
+                setDataPonto(dataPonto)
             } else {
                 openNotificationFailure('Erro ao baixar dados do controle de ponto')
             }
@@ -785,13 +807,16 @@ const Fechamento = () => {
 
                 const allAvarias = []
                 if (dataAvarias.length > 0) {
+                    console.log(dataAvarias)
                     dataAvarias.forEach(doc => {
-                        const avariasArray = doc.data.Avarias;
-                        const docId = doc.id;
-                        avariasArray.forEach(avaria => {
-                            allAvarias.push({ avaria, docId });
+                        if(doc.data.Avarias) {
+                            const avariasArray = doc.data.Avarias;
+                            const docId = doc.id;
+                            avariasArray.forEach(avaria => {
+                                allAvarias.push({ avaria, docId });
 
-                        });
+                            });
+                        }
                     });
                 }
 

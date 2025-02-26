@@ -211,7 +211,7 @@ const Ponto = () => {
                     const result = await responsePonto.json();
 
                     let dataPonto = result.docs.map((doc) => {
-                        if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                        if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin' && permissionEvento != 'ecc') {
                             const data = doc.data
                             return {
                                 key: doc.id,
@@ -222,7 +222,7 @@ const Ponto = () => {
                                 saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
                                 devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
                             }
-                        } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                        } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin' || permissionEvento == 'ecc') {
                             const data = doc.data
                             return {
                                 key: doc.id,
@@ -304,7 +304,7 @@ const Ponto = () => {
                 const result = await response.json();
 
                 let dataPonto = result.docs.map((doc) => {
-                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin' && permissionEvento != 'ecc') {
                         const data = doc.data
                         return {
                             key: doc.id,
@@ -315,7 +315,7 @@ const Ponto = () => {
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
                             devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
                         }
-                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin' || permissionEvento != 'ecc') {
                         const data = doc.data
                         return {
                             key: doc.id,
@@ -365,7 +365,7 @@ const Ponto = () => {
                 const result = await response.json();
 
                 let dataPonto = result.docs.map((doc) => {
-                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' || permissionEvento != 'controle' || permissionEvento !='get' && permission != 'admin') {
+                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin') {
                         const data = doc.data
                         return {
                             key: doc.id,
