@@ -36,7 +36,7 @@
 </head>
 <body>
     <script>
-        window.location.href = '/plano'
-    </script>
+        var pathname = window.location.pathname.replace('/plano-operacional', '');
+        window.location.replace("/plano-operacional/" + pathname);    </script>
 </body>
 </html>
