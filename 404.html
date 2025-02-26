@@ -37,7 +37,9 @@
 <body>
     <script>
         var pathname = window.location.pathname.replace('/plano-operacional', '');
-        window.location.replace("/plano-operacional/#" + pathname);
+        var search = window.location.search; // Get URL parameters
+        var hash = window.location.hash; // Preserve any existing hash
+        window.location.replace("/plano-operacional/#" + pathname + search + hash);
       </script>
 </body>
 </html>
