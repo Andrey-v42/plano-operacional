@@ -36,10 +36,10 @@
 </head>
 <body>
     <script>
-        if (!window.location.pathname.startsWith('/plano-operacional')) {
-            var newPath = '/plano-operacional' + window.location.pathname + window.location.search + window.location.hash;
-            window.location.replace(newPath);
-        }    
-        </script>
+        var pathname = window.location.pathname.replace('/plano-operacional', '');
+        var search = window.location.search;
+        var hash = window.location.hash;
+        window.location.replace("/plano-operacional/#" + pathname + search + hash);
+    </script>
 </body>
 </html>
