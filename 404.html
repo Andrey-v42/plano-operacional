@@ -41,12 +41,11 @@
         }
 
         if (!window.location.pathname.startsWith('/plano-operacional')) {
-            var newPath = '/plano-operacional' + window.location.pathname;
+            var newPath = '/plano-operacional/#' + window.location.pathname;
             var savedQuery = sessionStorage.getItem("savedQuery") || "";
             sessionStorage.removeItem("savedQuery");
 
             window.location.replace(newPath + savedQuery + window.location.hash);
-        }
-    </script>
+        }    </script>
 </body>
 </html>
