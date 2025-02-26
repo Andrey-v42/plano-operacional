@@ -36,11 +36,8 @@
 </head>
 <body>
     <script>
-        var redirect = sessionStorage.redirect;
-        delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
-        }
+        var pathname = window.location.pathname.replace('/plano-operacional', '');
+        window.location.replace("/plano-operacional/#" + pathname);
       </script>
 </body>
 </html>
