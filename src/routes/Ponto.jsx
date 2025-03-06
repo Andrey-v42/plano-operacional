@@ -17,6 +17,7 @@ const Ponto = () => {
     const [filtersFunction, setFiltersFunction] = useState([])
     const [drawerVisible, setDrawerVisible] = useState(false)
     const [pontoValues, setPontoValues] = useState({})
+    const [buttonLoading, setButtonLoading] = useState(false)
 
     const [api, contextHolder] = notification.useNotification()
     const permission = localStorage.getItem('permission')
@@ -87,14 +88,14 @@ const Ponto = () => {
     ]
 
     const optionsFuncao = [
-        { value: "tecnico", label: "Técnico" },
-        { value: "supervisor", label: "Supervisor" },
-        { value: "c-cco", label: "C-CCO" },
-        { value: "c-rh", label: "Coordenador de RH" },
-        { value: "tec-rh", label: "Técnico de RH" },
-        { value: "estoque", label: "Estoque" },
-        { value: "c-controle", label: "Coordenador de Controle" },
-        { value: "head", label: "Head" }
+        { value: "Técnico", label: "Técnico" },
+        { value: "Supervisor", label: "Supervisor" },
+        { value: "C-CCO", label: "C-CCO" },
+        { value: "Coordenador de RH", label: "Coordenador de RH" },
+        { value: "Técnico de RH", label: "Técnico de RH" },
+        { value: "Estoque", label: "Estoque" },
+        { value: "Coordenador de Controle", label: "Coordenador de Controle" },
+        { value: "Head", label: "Head" }
     ];
     
     const optionsOperacao = [
@@ -216,7 +217,7 @@ const Ponto = () => {
                             return {
                                 key: doc.id,
                                 nome: data.nome,
-                                funcao: data.funcao,
+                                funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                                 retirada: !data.retirada ? '-' : data.retirada,
                                 entrada: !data.entrada ? '+' : data.entrada,
                                 saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -227,7 +228,7 @@ const Ponto = () => {
                             return {
                                 key: doc.id,
                                 nome: data.nome,
-                                funcao: data.funcao,
+                                funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                                 retirada: !data.retirada ? '-' : data.retirada,
                                 entrada: !data.entrada ? '+' : data.entrada,
                                 saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -262,6 +263,7 @@ const Ponto = () => {
         }
 
         try {
+            setButtonLoading(true)
             const formData = {
                 nome: localStorage.getItem('currentUser'),
                 [`localizacao_${values.operacao}`]: [location.latitude, location.longitude],
@@ -309,7 +311,7 @@ const Ponto = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -320,7 +322,7 @@ const Ponto = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -335,6 +337,7 @@ const Ponto = () => {
                 
                 dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
 
+                setButtonLoading(false)
                 setDocs(dataPonto);
                 setTableLoading(false)
             }
@@ -370,7 +373,7 @@ const Ponto = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -381,7 +384,7 @@ const Ponto = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -434,7 +437,6 @@ const Ponto = () => {
         }, 1000);
     };
 
-
     return (
         <>
             {contextHolder}
@@ -450,7 +452,7 @@ const Ponto = () => {
                         <Select options={optionsOperacao}></Select>
                     </Form.Item>
                     <Form.Item>
-                        <Button type='primary' htmlType='submit'>Registrar ponto</Button>
+                        <Button type='primary' loading={buttonLoading} htmlType='submit'>Registrar ponto</Button>
                     </Form.Item>
                 </Form>
             </Drawer>

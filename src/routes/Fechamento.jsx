@@ -4,6 +4,11 @@ import { ConsoleSqlOutlined, ExclamationCircleOutlined, SmileOutlined, UploadOut
 import { Table, Button, Flex, Breadcrumb, Drawer, InputNumber, notification, Tabs, Form, Input, Descriptions, Select, DatePicker, message, Upload, ConfigProvider } from 'antd'
 import './css/Fechamento.css'
 import * as XLSX from 'xlsx'
+import locale from 'antd/locale/pt_BR'
+import dayjs from 'dayjs'
+import 'dayjs/locale/pt-BR'
+
+dayjs.locale('pt_BR')
 
 const { TextArea } = Input
 
@@ -22,11 +27,15 @@ const Fechamento = () => {
     const [dataCartao, setDataCartao] = useState([])
     const [dataDespesas, setDataDespesas] = useState([])
     const [dataReembolsos, setDataReembolsos] = useState([])
+    const [buttonDespesaLoading, setButtonDespesaLoading] = useState(false)
 
     const [valueDespesa, setValueDespesa] = useState({})
     const [valueReembolso, setValueReembolso] = useState({})
     const [relatorioOcorrencias, setRelatorioOcorrencias] = useState('')
     const [fileList, setFileList] = useState([]);
+
+    const [formDespesas] = Form.useForm()
+    const [formReembolsos] = Form.useForm()
 
     const permission = localStorage.getItem('permission')
     const permissionEvento = localStorage.getItem('permissionEvento')
@@ -100,6 +109,7 @@ const Fechamento = () => {
         }
 
         try {
+            setButtonDespesaLoading(true)
             const fileBase64 = await fileToBase64(fileList[0].originFileObj)
 
             const responseFileUpload = await fetch('https://us-central1-zops-mobile.cloudfunctions.net/uploadFile', {
@@ -120,7 +130,7 @@ const Fechamento = () => {
             const formattedData = {
                 tipo: valueDespesa.tipoDespesa,
                 valor: valueDespesa.valor,
-                data: new Date().toLocaleDateString(valueDespesa.data.$d),
+                data: new Date(valueDespesa.data.$d).toLocaleDateString(),
                 comprovante: dataFile.url
             }
 
@@ -133,6 +143,8 @@ const Fechamento = () => {
             })
 
             if (response.ok) {
+                setValueDespesa({})
+                formDespesas.resetFields()
                 openNotificationSucess('Despesa lançada com sucesso!')
                 setDrawerDespesaVisible(false)
                 const responseDespesa = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
@@ -148,8 +160,10 @@ const Fechamento = () => {
                 const data = despesas.map(doc => doc.data)
                 setDataDespesas(data)
                 setFileList([])
+                setButtonDespesaLoading(false)
             }
         } catch (error) {
+            setButtonDespesaLoading(false)
             openNotificationFailure('Erro ao lançar despesa, tente novamente ou entre em contato com o suporte.')
         }
 
@@ -162,6 +176,7 @@ const Fechamento = () => {
         }
 
         try {
+            setButtonDespesaLoading(true)
             const fileBase64 = await fileToBase64(fileList[0].originFileObj)
 
             const responseFileUpload = await fetch('https://us-central1-zops-mobile.cloudfunctions.net/uploadFile', {
@@ -182,9 +197,9 @@ const Fechamento = () => {
             const formattedData = {
                 tipo: valueReembolso.tipoDespesa,
                 valor: valueReembolso.valor,
-                data: new Date().toLocaleDateString(valueReembolso.data.$d),
+                data: new Date(valueReembolso.data.$d).toLocaleDateString(),
                 comprovante: dataFile.url,
-                recebedor: valueReembolso.recebedor
+                recebedor: localStorage.getItem('currentUser')
             }
 
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
@@ -196,6 +211,8 @@ const Fechamento = () => {
             })
 
             if (response.ok) {
+                setValueReembolso({})
+                formReembolsos.resetFields()
                 openNotificationSucess('Reembolso lançado com sucesso!')
                 setDrawerDespesaVisible(false)
                 const responseDespesa = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
@@ -208,11 +225,35 @@ const Fechamento = () => {
                 let despesas = await responseDespesa.json()
                 despesas = despesas.docs
 
-                const data = despesas.map(doc => doc.data)
+                let data = despesas.map(doc => {
+                    if(localStorage.getItem('currentUser') == doc.data.recebedor && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin') {
+                        return {
+                            comprovante: doc.data.comprovante,
+                            valor: doc.data.valor,
+                            tipo: (doc.data.tipo.charAt(0).toUpperCase() + doc.data.tipo.slice(1)).replace(/([a-z])([A-Z])/g, '$1 $2'),
+                            data: doc.data.data,
+                            recebedor: doc.data.recebedor
+                        }
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                        return {
+                            comprovante: doc.data.comprovante,
+                            valor: doc.data.valor,
+                            tipo: (doc.data.tipo.charAt(0).toUpperCase() + doc.data.tipo.slice(1)).replace(/([a-z])([A-Z])/g, '$1 $2'),
+                            data: doc.data.data,
+                            recebedor: doc.data.recebedor
+                        }
+                    } else {
+                        return {}
+                    }
+                })
+
+                data = data.filter(item => Object.keys(item).length > 0);
                 setDataReembolsos(data)
                 setFileList([])
+                setButtonDespesaLoading(false)
             }
         } catch (error) {
+            setButtonDespesaLoading(false)
             openNotificationFailure('Erro ao lançar reembolso, tente novamente ou entre em contato com o suporte.')
         }
 
@@ -583,28 +624,28 @@ const Fechamento = () => {
     ]
 
     const optionsDespesa = [
-        { value: 'transportadora', label: 'Transportadora' },
-        { value: 'locacaoVeiculo', label: 'Locação de Veículo' },
-        { value: 'uber', label: 'Uber Voucher' },
-        { value: 'loggi', label: 'Loggi' },
-        { value: 'estacionamento', label: 'Estacionamento' },
-        { value: 'onibus', label: 'Ônibus' },
-        { value: 'aereo', label: 'Aéreo' },
-        { value: 'hotel', label: 'Hotel/Pousada' },
-        { value: 'airbnb', label: 'Airbnb' }
+        { value: 'Transportadora', label: 'Transportadora' },
+        { value: 'Locação de Veículo', label: 'Locação de Veículo' },
+        { value: 'Uber Voucher', label: 'Uber Voucher' },
+        { value: 'Loggi', label: 'Loggi' },
+        { value: 'Estacionamento', label: 'Estacionamento' },
+        { value: 'Ônibus', label: 'Ônibus' },
+        { value: 'Aéreo', label: 'Aéreo' },
+        { value: 'Hotel/Pousada', label: 'Hotel/Pousada' },
+        { value: 'AirBnB', label: 'AirBnB' }
     ];
 
     const optionsReembolso = [
-        { value: 'cafeDaManha', label: 'Café da Manhã' },
-        { value: 'almoco', label: 'Almoço' },
-        { value: 'jantar', label: 'Jantar' },
-        { value: 'uber', label: 'Uber' },
+        { value: 'Café da Manhã', label: 'Café da Manhã' },
+        { value: 'Almoço', label: 'Almoço' },
+        { value: 'Jantar', label: 'Jantar' },
+        { value: 'Uber', label: 'Uber' },
         { value: '99', label: '99' },
-        { value: 'onibus', label: 'Ônibus' },
-        { value: 'combustivel', label: 'Combustível' },
-        { value: 'pedagio', label: 'Pedágio' },
-        { value: 'estacionamento', label: 'Estacionamento' },
-        { value: 'materialDeEscritorio', label: 'Material De Escritório' }
+        { value: 'Ônibus', label: 'Ônibus' },
+        { value: 'Combustível', label: 'Combustível' },
+        { value: 'Pedágio', label: 'Pedágio' },
+        { value: 'Estacionamento', label: 'Estacionamento' },
+        { value: 'Material De Escritório', label: 'Material De Escritório' }
     ];
 
     const tabResumoItems = [
@@ -695,7 +736,7 @@ const Fechamento = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -706,7 +747,7 @@ const Fechamento = () => {
                         return {
                             key: doc.id,
                             nome: data.nome,
-                            funcao: data.funcao,
+                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
                             retirada: !data.retirada ? '-' : data.retirada,
                             entrada: !data.entrada ? '+' : data.entrada,
                             saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
@@ -807,7 +848,6 @@ const Fechamento = () => {
 
                 const allAvarias = []
                 if (dataAvarias.length > 0) {
-                    console.log(dataAvarias)
                     dataAvarias.forEach(doc => {
                         if(doc.data.Avarias) {
                             const avariasArray = doc.data.Avarias;
@@ -836,8 +876,14 @@ const Fechamento = () => {
                 })
                 let despesas = await responseDespesa.json()
                 despesas = despesas.docs
-
-                const data = despesas.map(doc => doc.data)
+                const data = despesas.map(doc => {
+                    return {
+                        comprovante: doc.data.comprovante,
+                        valor: doc.data.valor,
+                        tipo: (doc.data.tipo.charAt(0).toUpperCase() + doc.data.tipo.slice(1)).replace(/([a-z])([A-Z])/g, '$1 $2'),
+                        data: doc.data.data,
+                    }
+                })
                 setDataDespesas(data)
             } catch (error) {
                 console.error(error)
@@ -856,7 +902,30 @@ const Fechamento = () => {
                 let despesas = await responseDespesa.json()
                 despesas = despesas.docs
 
-                const data = despesas.map(doc => doc.data)
+                let data = despesas.map(doc => {
+                    if(localStorage.getItem('currentUser') == doc.data.recebedor && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin') {
+                        return {
+                            comprovante: doc.data.comprovante,
+                            valor: doc.data.valor,
+                            tipo: (doc.data.tipo.charAt(0).toUpperCase() + doc.data.tipo.slice(1)).replace(/([a-z])([A-Z])/g, '$1 $2'),
+                            data: doc.data.data,
+                            recebedor: doc.data.recebedor
+                        }
+                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
+                        return {
+                            comprovante: doc.data.comprovante,
+                            valor: doc.data.valor,
+                            tipo: (doc.data.tipo.charAt(0).toUpperCase() + doc.data.tipo.slice(1)).replace(/([a-z])([A-Z])/g, '$1 $2'),
+                            data: doc.data.data,
+                            recebedor: doc.data.recebedor
+                        }
+                    } else {
+                        return {}
+                    }
+                })
+
+                data = data.filter(item => Object.keys(item).length > 0);
+
                 setDataReembolsos(data)
             } catch (error) {
                 console.error(error)
@@ -879,46 +948,43 @@ const Fechamento = () => {
 
             {/* Drawer lançamento de despesas */}
             <Drawer onClose={() => setDrawerDespesaVisible(false)} title='Lançamento de despesa' open={drawerDespesaVisible}>
-                <Form layout='vertical' onValuesChange={(allValues, changedValues) => setValueDespesa(changedValues)}>
+                <Form layout='vertical' form={formDespesas} onValuesChange={(allValues, changedValues) => setValueDespesa(changedValues)}>
                     <Form.Item name='tipoDespesa' label='Tipo da despesa'>
                         <Select options={optionsDespesa} />
                     </Form.Item>
                     <Form.Item name='valor' label='Valor'>
-                        <InputNumber addonBefore='R$' min={0} step={0.01}></InputNumber>
+                        <InputNumber decimalSeparator=',' addonBefore='R$' min={0} step={0.01}></InputNumber>
                     </Form.Item>
                     <Form.Item name='data' label='Data da despesa'>
-                        <DatePicker placeholder='Selecione a data' />
+                        <DatePicker format='DD-MM-YYYY' locale={locale} placeholder='Selecione a data' />
                     </Form.Item>
                     <Form.Item name='comprovante' label='Comprovante'>
                         <Upload fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
                             <Button icon={<UploadOutlined />}>Selecionar arquivo</Button>
                         </Upload>
                     </Form.Item>
-                    <Button type='primary' onClick={() => lancarDespesa()}>Lançar despesa</Button>
+                    <Button type='primary' loading={buttonDespesaLoading} onClick={() => lancarDespesa()}>Lançar despesa</Button>
                 </Form>
             </Drawer>
 
             {/* Drawer lançamento de reembolsos */}
             <Drawer onClose={() => setDrawerReembolsoVisible(false)} title='Lançamento de reembolso' open={drawerReembolsoVisible}>
-                <Form layout='vertical' onValuesChange={(allValues, changedValues) => setValueReembolso(changedValues)}>
+                <Form layout='vertical' form={formReembolsos} onValuesChange={(allValues, changedValues) => setValueReembolso(changedValues)}>
                     <Form.Item name='tipoDespesa' label='Tipo do reembolso'>
                         <Select options={optionsReembolso} />
                     </Form.Item>
-                    <Form.Item name='recebedor' label='Recebedor'>
-                        <Input />
-                    </Form.Item>
                     <Form.Item name='valor' label='Valor'>
-                        <InputNumber addonBefore='R$' min={0} step={0.01}></InputNumber>
+                        <InputNumber decimalSeparator=',' addonBefore='R$' min={0} step={0.01}></InputNumber>
                     </Form.Item>
                     <Form.Item name='data' label='Data do reembolso'>
-                        <DatePicker placeholder='Selecione a data' />
+                        <DatePicker format='DD-MM-YYYY' locale={locale} placeholder='Selecione a data' />
                     </Form.Item>
                     <Form.Item name='comprovante' label='Comprovante'>
                         <Upload fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
                             <Button icon={<UploadOutlined />}>Selecionar arquivo</Button>
                         </Upload>
                     </Form.Item>
-                    <Button type='primary' onClick={() => lancarReembolso()}>Lançar reembolso</Button>
+                    <Button type='primary' loading={buttonDespesaLoading} onClick={() => lancarReembolso()}>Lançar reembolso</Button>
                 </Form>
             </Drawer>
 

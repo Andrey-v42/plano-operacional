@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Checkbox, notification } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ExclamationCircleOutlined, SmileOutlined } from '@ant-design/icons';
@@ -8,6 +8,7 @@ const Login = () => {
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
 
+    const [buttonLoading, setButtonLoading] = useState(false)
     const navigate = useNavigate()
 
     const openNotificationFailure = (text) => {
@@ -25,6 +26,7 @@ const Login = () => {
     };
 
     const onFinish = async (values) => {
+        setButtonLoading(true)
         const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/employeeLogin', {
             method: 'POST',
             headers: {
@@ -64,19 +66,86 @@ const Login = () => {
                 localStorage.setItem('permission', data.permission)
                 localStorage.setItem('permissionEvento', permissionEvento)
                 localStorage.setItem('isAuthenticated', JSON.stringify({ value: 'true', expirationDate: new Date().getTime() + 60 * 60 * 1000 }))
-                navigate(`/plano-operacional/plano?pipeId=${pipeId}`);
+                setButtonLoading(false)
+                navigate(`/plano?pipeId=${pipeId}`);
             } else {
+                setButtonLoading(false)
                 openNotificationFailure('Seu usuário não foi vinculado a este evento, por favor entre em contato com a equipe de Gestão de Equipe Técnica.')
             }
         } else {
+            setButtonLoading(false)
             openNotificationFailure('Usuário e/ou senha incorreto!')
         }
+        
 
     };
 
     const onFinishFailed = (errorInfo) => {
         console.log('Failed:', errorInfo);
     };
+
+    useEffect(() => {
+        const getEquipeEscalada = async (dataEvento) => {
+            const token = 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+    
+            const relationshipFields = [
+                "Head", "C-CCO", "A&B Supervisores", "Tickets Supervisores", "Autoatendimento Supervisores",
+                "RH Supervisores", "Controle Supervisores", "A&B Técnicos", "Tickets Técnicos",
+                "Autoatendimento Técnicos", "RH Técnicos", "Controle Técnicos", "Runners", "Setup"
+            ]
+    
+            const responseTask = await fetch(`https://api.clickup.com/api/v2/task/${dataEvento.taskId}`, {
+                method: 'GET',
+                headers: {
+                    accept: 'application/json',
+                    Authorization: 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+                }
+            })
+
+            const dataTask = await responseTask.json()
+            const equipeEscalada = []
+            for (const field of relationshipFields) {
+                for (const customField of dataTask.custom_fields) {
+                    if (customField.name == field) {
+                        if (customField.value?.length > 0) {
+                            for (const value of customField.value) {
+                                equipeEscalada.push({ nome: value.name, funcao: customField.name })
+                            }
+                        }
+                    }
+                }
+            }
+    
+            const responseEquipe = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: `pipe`, docId: `pipeId_${pipeId}`, data: { equipeEscalada: equipeEscalada } })
+            })
+        }
+
+        const verifyEquipeTecnica = async () => {
+            try {
+                const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: 'pipe', docId: `pipeId_${pipeId}` })
+                })
+                const dataEvento = await responseEvento.json()
+    
+                if(!dataEvento.equipeEscalada) {
+                    getEquipeEscalada(dataEvento)
+                }
+            } catch (error) {
+                openNotificationFailure('Não foi possível sincronizar a equipe escalada com o Clickup. Por favor entre em contato com o time de automatização.')
+            }
+        }
+
+        if(pipeId) {
+            verifyEquipeTecnica()
+        }
+    }, [pipeId])
 
     return (
         <>
@@ -107,7 +176,7 @@ const Login = () => {
                     </Form.Item>
 
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+                        <Button type="primary" loading={buttonLoading} htmlType="submit" style={{ width: '100%' }}>
                             Log in
                         </Button>
                     </Form.Item>

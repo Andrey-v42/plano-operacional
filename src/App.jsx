@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Flex } from 'antd';
 const { Header, Sider, Content } = Layout;
-import { BrowserRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, useSearchParams, useNavigate } from 'react-router-dom';
 import Ponto from './routes/Ponto';
 import Plano from './routes/Plano';
 import Cartao from './routes/Cartao';
@@ -88,7 +88,7 @@ const App = () => {
                             label: 'Plano Operacional',
                             onClick: () => {
                                 setSelectedKey(['1'])
-                                navigate(`/plano-operacional/plano?pipeId=${pipeId}`);
+                                navigate(`/plano?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             }
                         },
@@ -98,7 +98,7 @@ const App = () => {
                             label: 'Controle de Ponto',
                             onClick: () => {
                                 setSelectedKey(['2'])
-                                navigate(`/plano-operacional/ponto?pipeId=${pipeId}`);
+                                navigate(`/ponto?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             }
                         },
@@ -108,7 +108,7 @@ const App = () => {
                             label: 'Protocolo de Cartões',
                             onClick: () => {
                                 setSelectedKey(['3'])
-                                navigate(`/plano-operacional/cartao?pipeId=${pipeId}`);
+                                navigate(`/cartao?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             }
                         },
@@ -118,7 +118,7 @@ const App = () => {
                             label: 'Fechamento Operacional',
                             onClick: () => {
                                 setSelectedKey(['4'])
-                                navigate(`/plano-operacional/fechamento?pipeId=${pipeId}`);
+                                navigate(`/fechamento?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             }
                         },
@@ -137,7 +137,7 @@ const App = () => {
                             label: 'Cronômetro Config',
                             onClick: () => {
                                 setSelectedKey(['6'])
-                                navigate(`/plano-operacional/cronometro?pipeId=${pipeId}`);
+                                navigate(`/cronometro?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             },
                             disabled: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin'
@@ -182,17 +182,18 @@ const App = () => {
                     }}
                 >
                     <Routes>
-                        <Route path="/plano-operacional/layout" element={<Layout />} />
-                        <Route path="/plano-operacional/ponto" element={<Ponto />} />
-                        <Route path="/plano-operacional/plano" element={<Plano />} />
-                        <Route path="/plano-operacional/cartao" element={<Cartao />} />
-                        <Route path="/plano-operacional/fechamento" element={<Fechamento />} />
-                        <Route path="/plano-operacional/chat" element={<Chat />} />
-                        <Route path="/plano-operacional/login" element={<Login />} />
-                        <Route path="/plano-operacional/cronometro" element={<Cronometro />} />
-                        <Route path="/plano-operacional/" element={<Login />} />
+                        <Route path="/layout" element={<Layout />} />
+                        <Route path="/ponto" element={<Ponto />} />
+                        <Route path="/plano" element={<Plano />} />
+                        <Route path="/cartao" element={<Cartao />} />
+                        <Route path="/fechamento" element={<Fechamento />} />
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/cronometro" element={<Cronometro />} />
+                        <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
+
                 </Content>
             </Layout>
         </Layout>

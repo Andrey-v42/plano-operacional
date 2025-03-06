@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SmileOutlined } from '@ant-design/icons';
+import { SmileOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { Table, Button, Flex, Card, InputNumber, Breadcrumb, notification, Drawer, Form, Input, Checkbox, Collapse, Select, Modal, Space } from 'antd';
 import './css/Plano.css';
 import { createStyles } from 'antd-style';
@@ -182,6 +182,20 @@ const Plano = () => {
         });
     };
 
+    const openNotificationFailure = (text) => {
+        api.open({
+            message: 'Erro',
+            description: text,
+            icon: (
+                <ExclamationCircleOutlined
+                    style={{
+                        color: '#108ee9',
+                    }}
+                />
+            ),
+        });
+    };
+
     const columns = [
         {
             title: 'Ponto de Venda',
@@ -336,6 +350,30 @@ const Plano = () => {
         },
     ];
 
+    const columnsStatusModifications = [
+        {
+            title: 'Usuário',
+            dataIndex: 'user',
+            key: 'user',
+        },
+        {
+            title: 'Horário',
+            dataIndex: 'timestamp',
+            key: 'timestamp',
+            render: (timestamp) => new Date(timestamp).toLocaleString()
+        },
+        {
+            title: 'Status Antigo',
+            dataIndex: 'oldStatus',
+            key: 'oldStatus',
+        },
+        {
+            title: 'Novo Status',
+            dataIndex: 'newStatus',
+            key: 'newStatus',
+        }
+    ]
+
     const avariasColumns = [
         {
             title: 'Equipamento',
@@ -389,6 +427,27 @@ const Plano = () => {
         },
         {
             key: '2',
+            label: 'Termo de Compartilhamento de Dados',
+            children: <>
+                <p>
+                    O presente termo tem por finalidade registrar o consentimento do cliente para o compartilhamento dos seus dados pessoais acima indicados com a finalidade exclusiva de registro e controle do recebimento de equipamento, garantindo a transparência e segurança do processo.
+                </p>
+                <p>
+                    Os dados fornecidos serão utilizados apenas para:
+                    <ul>
+                        <li>Registro do recebimento e devolução do equipamento;</li>
+                        <li>Contato para esclarecimentos e comunicações referentes ao equipamento;</li>
+                        <li>Envio de pesquisa de satisfação referente aos processos da empresa;</li>
+                        <li>Cumprimento de obrigações legais e regulatórias.</li>
+                    </ul>
+                </p>
+                <p>
+                    Os dados serão armazenados em ambiente seguro e protegidos contra acessos não autorizados, conforme as normas da Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).
+                </p>
+            </>
+        },
+        {
+            key: '3',
             label: 'Termo de Treinamento',
             children: <>
                 <p>Confirmo que recebi o treinamento operacional necessário para executar as tarefas designadas de forma
@@ -402,7 +461,7 @@ const Plano = () => {
             </>
         },
         {
-            key: '3',
+            key: '4',
             label: 'Termo de Cardápios',
             children: <>
                 <p>Declaro que conferi e estou de acordo com todos os preços inseridos
@@ -621,6 +680,7 @@ const Plano = () => {
                         tomadas: data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? '0' : data['PONTOS TOMADA'] : '0',
                         desativado: data.desativado == true ? true : false,
                         modifications: data.modifications ? data.modifications : null,
+                        statusModification: data.statusModification ? data.statusModification : null,
                         entregaInfo: entregaData,
                         devolucaoInfo: devolucaoData
                     };
@@ -653,14 +713,6 @@ const Plano = () => {
             getPlanoData();
         }
     }, [pipeId]);
-
-    const start = async () => {
-        setLoading(true);
-        setTimeout(() => {
-            setSelectedRowKeys([]);
-            setLoading(false);
-        }, 1000);
-    };
 
     const rowSelection = {
         selectedRowKeys,
@@ -958,6 +1010,7 @@ const Plano = () => {
 
             setSelectedRowKeys([])
             setSelectedRows([])
+            setFirstStatus(null)
             setDataPlano(formattedData)
             openNotificationSucessPDV('entregue')
             setDrawerMultipleVisible(false)
@@ -1084,6 +1137,7 @@ const Plano = () => {
 
             setSelectedRowKeys([])
             setSelectedRows([])
+            setFirstStatus(null)
             setDataPlano(formattedData)
             openNotificationSucessPDV('devolvido')
             setDrawerMultipleLoading(false)
@@ -1383,7 +1437,7 @@ const Plano = () => {
                 console.error(error);
             }
         } else {
-
+            openNotificationFailure('Você precisa preencher a assinatura para continuar.')
         }
     }
 
@@ -1598,6 +1652,7 @@ const Plano = () => {
 
             setDataPlano(formattedData)
             setSelectedRowKeys([])
+            setFirstStatus(null)
             setSelectedRows([])
             setTableLoading(false)
         } catch (error) {
@@ -1684,6 +1739,7 @@ const Plano = () => {
 
             setDataPlano(formattedData)
             setSelectedRowKeys([])
+            setFirstStatus(null)
             setSelectedRows([])
             setTableLoading(false)
         } catch (error) {
@@ -2215,6 +2271,14 @@ const Plano = () => {
                                     <div className='info-pdv'>
                                         <Card loading={false} key={record.key + '_modifications'} title='Histórico de Modificação' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
                                             <Table pagination={false} columns={columnsModifications} dataSource={record.modifications} scroll={{ x: "max-content" }} />
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {record.statusModification && (
+                                    <div className='info-pdv'>
+                                        <Card loading={false} key={record.key + '_statusModification'} title='Histórico de Modificação de Status de Entrega' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                            <Table pagination={false} columns={columnsStatusModifications} dataSource={record.statusModification} scroll={{ x: "max-content" }} />
                                         </Card>
                                     </div>
                                 )}
