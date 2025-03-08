@@ -27,16 +27,16 @@ const messaging = firebase.messaging();
 // });
 
 messaging.onBackgroundMessage((payload) => {
-    console.log(
-      '[firebase-messaging-sw.js] Received background message ',
-      payload
-    );
-    // Customize notification here
-    const notificationTitle = payload.notification.title;
+    console.log("Received background message:", payload);
+
+    const notificationTitle = payload.notification?.title || "Nova Notificação";
     const notificationOptions = {
-      body: payload.notification.body,
-      icon: 'logos/logo_zig_blue.png'
+        body: payload.notification?.body || "Você recebeu uma nova mensagem.",
+        icon: payload.notification?.image || "logos/logo_zig_blue.png",
+        data: payload.data || {},
+        requireInteraction: true,
     };
-  
+
+    // Show the notification
     self.registration.showNotification(notificationTitle, notificationOptions);
-  });
+});
