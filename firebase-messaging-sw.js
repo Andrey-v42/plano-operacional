@@ -12,11 +12,31 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage((payload) => {
-    console.log("Background message received:", payload);
+// messaging.onBackgroundMessage((payload) => {
+//     console.log("Background message received:", payload);
 
-    self.registration.showNotification(payload.notification.title, {
-        body: payload.notification.body,
-        icon: "logos/logo_zig_blue.png",
-    });
-});
+//     // Extract notification details
+//     const { title, body } = payload.notification;
+
+//     // Show the notification
+//     self.registration.showNotification(title, {
+//         body,
+//         icon: "logos/logo_zig_blue.png", // Update with your app's icon
+//         requireInteraction: true, // Keeps the notification open until user interacts
+//     });
+// });
+
+messaging.onBackgroundMessage((payload) => {
+    console.log(
+      '[firebase-messaging-sw.js] Received background message ',
+      payload
+    );
+    // Customize notification here
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+      body: payload.notification.body,
+      icon: 'logos/logo_zig_blue.png'
+    };
+  
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
