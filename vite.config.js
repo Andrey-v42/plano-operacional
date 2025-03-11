@@ -4,13 +4,15 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/plano-operacional/',
+  base: './',
+  build: {
+    outDir: 'dist',
+  },
   plugins: [
     react(),
     viteStaticCopy({
       targets: [
         { src: '_redirects', dest: '' },
-        { src: '.nojekyll', dest: ''}
       ]
     })
   ],

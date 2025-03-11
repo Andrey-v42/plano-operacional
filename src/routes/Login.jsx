@@ -3,6 +3,7 @@ import { Form, Input, Button, Checkbox, notification } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ExclamationCircleOutlined, SmileOutlined } from '@ant-design/icons';
 
+
 const Login = () => {
     const [api, contextHolder] = notification.useNotification()
     const [searchParams] = useSearchParams();
@@ -61,6 +62,7 @@ const Login = () => {
             }
 
             if (usuarioEscalado == true || adminPrivilege == true) {
+                localStorage.setItem('userId', data.userId)
                 localStorage.setItem('authToken', JSON.stringify({ token: data.token, expirationDate: new Date().getTime() + 60 * 60 * 1000 }))
                 localStorage.setItem('currentUser', data.user)
                 localStorage.setItem('permission', data.permission)

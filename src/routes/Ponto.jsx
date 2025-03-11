@@ -466,7 +466,6 @@ const Ponto = () => {
                         <Button loading={loading} onClick={setDrawerVisible} type="primary">
                             Abrir novo ponto
                         </Button>
-
                     </Flex>
                     <Table style={{ width: "100%" }} loading={tableLoading} columns={columns} dataSource={docs} scroll={{ x: "max-content" }} bordered />
                 </Flex>

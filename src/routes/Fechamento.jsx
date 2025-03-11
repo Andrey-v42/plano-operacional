@@ -1,3 +1,94 @@
+/**
+ * Fechamento Component
+ * 
+ * This component handles the operational closure process for an event. It includes functionalities for:
+ * - Fetching and displaying data related to control points, damages, cards, expenses, and reimbursements.
+ * - Adding new expenses and reimbursements.
+ * - Exporting data to Excel files.
+ * - Uploading files to a remote server.
+ * - Sending the closure report to ClickUp.
+ * 
+ * @component
+ * @returns {JSX.Element} The Fechamento component.
+ * 
+ * @example
+ * <Fechamento />
+ * 
+ * @function
+ * @name Fechamento
+ * 
+ * @property {string} pipeId - The ID of the pipe, retrieved from the URL search parameters.
+ * @property {Array} dataPonto - Array of control point data.
+ * @property {Array} dataAvarias - Array of damage data.
+ * @property {Array} dataCartao - Array of card data.
+ * @property {Array} dataDespesas - Array of expense data.
+ * @property {Array} dataReembolsos - Array of reimbursement data.
+ * @property {boolean} drawerDespesaVisible - State to control the visibility of the expense drawer.
+ * @property {boolean} drawerReembolsoVisible - State to control the visibility of the reimbursement drawer.
+ * @property {boolean} buttonDespesaLoading - State to control the loading state of the expense button.
+ * @property {Object} valueDespesa - Object containing the values of the expense form.
+ * @property {Object} valueReembolso - Object containing the values of the reimbursement form.
+ * @property {string} relatorioOcorrencias - The report of occurrences.
+ * @property {Array} fileList - Array of files to be uploaded.
+ * @property {Object} formDespesas - Ant Design form instance for expenses.
+ * @property {Object} formReembolsos - Ant Design form instance for reimbursements.
+ * @property {string} permission - User permission level.
+ * @property {string} permissionEvento - Event-specific user permission level.
+ * 
+ * @function loadingFechamento - Displays a loading message.
+ * @param {string} text - The text to display in the loading message.
+ * 
+ * @function fileToBase64 - Converts a file to a Base64 string.
+ * @param {File} file - The file to convert.
+ * @returns {Promise<string>} A promise that resolves to the Base64 string.
+ * 
+ * @function exportJsonToExcel - Exports JSON data to an Excel file.
+ * @param {Array} jsonData - The JSON data to export.
+ * @param {string} fileName - The name of the Excel file.
+ * @returns {File} The generated Excel file.
+ * 
+ * @function handleFileChange - Handles changes to the file upload input.
+ * @param {Object} param - The parameter containing the new file list.
+ * 
+ * @function openNotificationSucess - Displays a success notification.
+ * @param {string} text - The text to display in the notification.
+ * 
+ * @function openNotificationFailure - Displays a failure notification.
+ * @param {string} text - The text to display in the notification.
+ * 
+ * @function lancarDespesa - Submits a new expense.
+ * 
+ * @function lancarReembolso - Submits a new reimbursement.
+ * 
+ * @function enviarFechamento - Sends the closure report.
+ * 
+ * @constant {Array} columnsPonto - The columns for the control point table.
+ * @constant {Array} columnsAvarias - The columns for the damage table.
+ * @constant {Array} columnsCartao - The columns for the card table.
+ * @constant {Array} columnsDespesas - The columns for the expense table.
+ * @constant {Array} columnsReembolsos - The columns for the reimbursement table.
+ * @constant {Array} optionsDespesa - The options for the expense type select input.
+ * @constant {Array} optionsReembolso - The options for the reimbursement type select input.
+ * @constant {Array} tabResumoItems - The items for the summary tabs.
+ * @constant {Array} tabDespesasItems - The items for the expense tabs.
+ * 
+ * @function processAvariasArray - Processes the damage data array.
+ * @param {Array} allAvarias - The array of all damages.
+ * @returns {Array} The processed damage data.
+ * 
+ * @function getDataPonto - Fetches the control point data.
+ * 
+ * @function getDataCartao - Fetches the card data.
+ * 
+ * @function getDataAvarias - Fetches the damage data.
+ * 
+ * @function getDataDespesas - Fetches the expense data.
+ * 
+ * @function getDataReembolsos - Fetches the reimbursement data.
+ * 
+ * @useEffect - Fetches data when the component mounts or the pipeId changes.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConsoleSqlOutlined, ExclamationCircleOutlined, SmileOutlined, UploadOutlined } from '@ant-design/icons';
@@ -959,7 +1050,7 @@ const Fechamento = () => {
                         <DatePicker format='DD-MM-YYYY' locale={locale} placeholder='Selecione a data' />
                     </Form.Item>
                     <Form.Item name='comprovante' label='Comprovante'>
-                        <Upload fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
+                        <Upload beforeUpload={Upload.LIST_IGNORE} fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
                             <Button icon={<UploadOutlined />}>Selecionar arquivo</Button>
                         </Upload>
                     </Form.Item>
@@ -980,7 +1071,7 @@ const Fechamento = () => {
                         <DatePicker format='DD-MM-YYYY' locale={locale} placeholder='Selecione a data' />
                     </Form.Item>
                     <Form.Item name='comprovante' label='Comprovante'>
-                        <Upload fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
+                        <Upload beforeUpload={Upload.LIST_IGNORE} fileList={fileList} onChange={handleFileChange} accept="image/*,.pdf" name='file'>
                             <Button icon={<UploadOutlined />}>Selecionar arquivo</Button>
                         </Upload>
                     </Form.Item>

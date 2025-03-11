@@ -1,3 +1,94 @@
+/**
+ * Plano component handles the operational plan for a specific pipeId.
+ * It fetches and displays data related to sales points, equipment, and their statuses.
+ * It allows users to perform various operations such as viewing details, adding avarias, 
+ * confirming deliveries and returns, and creating new sales points.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered component.
+ * 
+ * @example
+ * <Plano />
+ * 
+ * @function
+ * @name Plano
+ * 
+ * @property {object[]} dataPlano - Array of sales point data.
+ * @property {function} setDataPlano - Function to update the dataPlano state.
+ * @property {string[]} selectedRowKeys - Array of selected row keys in the table.
+ * @property {function} setSelectedRowKeys - Function to update the selectedRowKeys state.
+ * @property {object[]} selectedRows - Array of selected rows in the table.
+ * @property {function} setSelectedRows - Function to update the selectedRows state.
+ * @property {boolean} loading - State to indicate if data is being loaded.
+ * @property {function} setLoading - Function to update the loading state.
+ * @property {boolean} tableLoading - State to indicate if the table data is being loaded.
+ * @property {function} setTableLoading - Function to update the tableLoading state.
+ * @property {boolean} modalConfirmStatusVisible - State to control the visibility of the status confirmation modal.
+ * @property {function} setModalConfirmStatusVisible - Function to update the modalConfirmStatusVisible state.
+ * @property {boolean} drawerLoading - State to indicate if the drawer data is being loaded.
+ * @property {function} setDrawerLoading - Function to update the drawerLoading state.
+ * @property {boolean} drawerVisible - State to control the visibility of the drawer.
+ * @property {function} setDrawerVisible - Function to update the drawerVisible state.
+ * @property {boolean} drawerMultipleVisible - State to control the visibility of the multiple drawer.
+ * @property {function} setDrawerMultipleVisible - Function to update the drawerMultipleVisible state.
+ * @property {boolean} drawerMultipleLoading - State to indicate if the multiple drawer data is being loaded.
+ * @property {function} setDrawerMultipleLoading - Function to update the drawerMultipleLoading state.
+ * @property {object|null} currentRecord - The current record being viewed or edited.
+ * @property {function} setCurrentRecord - Function to update the currentRecord state.
+ * @property {object[]} filtersSetor - Array of filter options for the "Setor" column.
+ * @property {function} setFilterSetor - Function to update the filtersSetor state.
+ * @property {object[]} filtersCategoria - Array of filter options for the "Categoria" column.
+ * @property {function} setFilterCategoria - Function to update the filtersCategoria state.
+ * @property {boolean} confirmStatusButtonLoading - State to indicate if the confirm status button is loading.
+ * @property {function} setConfirmStatusButtonLoading - Function to update the confirmStatusButtonLoading state.
+ * @property {boolean} editTerminais - State to control the edit mode for terminals.
+ * @property {function} setEditTerminais - Function to update the editTerminais state.
+ * @property {boolean} editCarregador - State to control the edit mode for chargers.
+ * @property {function} setEditCarregador - Function to update the editCarregador state.
+ * @property {boolean} editCapa - State to control the edit mode for covers.
+ * @property {function} setEditCapa - Function to update the editCapa state.
+ * @property {boolean} editCartao - State to control the edit mode for cards.
+ * @property {function} setEditCartao - Function to update the editCartao state.
+ * @property {boolean} editPowerbank - State to control the edit mode for powerbanks.
+ * @property {function} setEditPowerbank - Function to update the editPowerbank state.
+ * @property {boolean} editTomada - State to control the edit mode for sockets.
+ * @property {function} setEditTomada - Function to update the editTomada state.
+ * @property {number} valueTerminal - Value of the terminal being edited.
+ * @property {function} setValueTerminal - Function to update the valueTerminal state.
+ * @property {number} valueCarregador - Value of the charger being edited.
+ * @property {function} setValueCarregador - Function to update the valueCarregador state.
+ * @property {number} valueCapa - Value of the cover being edited.
+ * @property {function} setValueCapa - Function to update the valueCapa state.
+ * @property {number} valueCartao - Value of the card being edited.
+ * @property {function} setValueCartao - Function to update the valueCartao state.
+ * @property {number} valuePowerbank - Value of the powerbank being edited.
+ * @property {function} setValuePowerbank - Function to update the valuePowerbank state.
+ * @property {number} valueTomada - Value of the socket being edited.
+ * @property {function} setValueTomada - Function to update the valueTomada state.
+ * @property {boolean} createPonto - State to control the creation of a new sales point.
+ * @property {function} setCreatePonto - Function to update the createPonto state.
+ * @property {object} formValues - Values of the form being submitted.
+ * @property {function} setFormValues - Function to update the formValues state.
+ * @property {object} formAvarias - Values of the avarias form being submitted.
+ * @property {function} setFormAvarias - Function to update the formAvarias state.
+ * @property {object} formPDV - Values of the PDV form being submitted.
+ * @property {function} setFormPDV - Function to update the formPDV state.
+ * @property {object[]} avarias - Array of avarias data.
+ * @property {function} setAvarias - Function to update the avarias state.
+ * @property {string} signature - Base64 string of the signature.
+ * @property {function} setSignature - Function to update the signature state.
+ * @property {string|null} firstStatus - The first status of the selected rows.
+ * @property {function} setFirstStatus - Function to update the firstStatus state.
+ * @property {object} formMultipleOp - Values of the multiple operations form being submitted.
+ * @property {function} setFormMultipleOp - Function to update the formMultipleOp state.
+ * @property {object} styles - Styles object from useStyle hook.
+ * @property {object} formMultiple - Form instance for multiple operations.
+ * @property {object} api - Notification API instance.
+ * @property {object} contextHolder - Notification context holder.
+ * @property {string} permission - User permission from localStorage.
+ * @property {string} permissionEvento - Event permission from localStorage.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SmileOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -107,15 +198,17 @@ const Plano = () => {
                 body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias` })
             })
             let docs = await response.json()
+            let docsAssinatura = docs.docs?.map(doc => doc.data.assinatura)
             docs = docs.docs?.map(doc => doc.data.avarias)
 
             const result = docs.map(array => {
                 const [equipamento, tipoAvaria] = array[0].split(": ").map(str => str.trim())
-
+                console.log(docsAssinatura)
                 return {
                     equipamento,
                     tipoAvaria,
-                    quantidade: array.length
+                    quantidade: array.length,
+                    assinatura: docsAssinatura
                 }
             })
 
@@ -394,6 +487,8 @@ const Plano = () => {
             title: 'Assinatura',
             dataIndex: 'assinatura',
             key: 'assinatura',
+            render: (assinatura) => <img src={assinatura}
+                style={{ width: 150, height: 150 }} />
         }
     ]
 
@@ -1860,7 +1955,8 @@ const Plano = () => {
                 open={drawerVisible}
                 onClose={closeDrawer}
                 title="Protocolo de Equipamentos"
-                loading={drawerLoading} >
+                loading={drawerLoading}
+             >
 
                 {currentRecord && (
                     <>
