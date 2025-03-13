@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Form, Input, Button, Table, Select, Upload, notification, Descriptions, Flex, Card, Badge, Typography, Space, Divider, Statistic } from 'antd';
-import { ExclamationCircleOutlined, SmileOutlined, UploadOutlined, FileOutlined, ClockCircleOutlined, CheckCircleOutlined, CommentOutlined } from '@ant-design/icons';
+import { Tabs, Form, Input, Button, Table, Select, Upload, notification, Descriptions, Flex, Card, Badge, Typography, Space, Divider, Statistic, Checkbox } from 'antd';
+import { ExclamationCircleOutlined, SmileOutlined, UploadOutlined, FileOutlined, ClockCircleOutlined, CheckCircleOutlined, CommentOutlined, QuestionCircleOutlined, SyncOutlined } from '@ant-design/icons';
 import { Row, Col } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import ChatSuporte from './ChatSuporte';
+import TaskBoard from './TaskBoard';
+import TicketChatDrawer from './components/TicketChatDrawer';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -18,6 +20,10 @@ const Suporte = () => {
     const [activeTab, setActiveTab] = useState('1');
     const [chatTicketId, setChatTicketId] = useState(null);
     const [autoCreateChat, setAutoCreateChat] = useState(false);
+    const [closedTicketsHidden, setClosedTicketsHidden] = useState(false);
+
+    const [chatDrawerVisible, setChatDrawerVisible] = useState(false);
+    const [currentChatTicketId, setCurrentChatTicketId] = useState(null);
 
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
@@ -39,99 +45,21 @@ const Suporte = () => {
         } else if (status === 'closed') {
             return <Badge status="success" text={<Text strong style={{ color: '#52c41a' }}>Fechado</Text>} />;
         } else {
-            return <Badge status="processing" text={<Text strong style={{ color: '#1890ff' }}>Em análise</Text>} />;
+            return <Badge status="processing" text={<Text strong style={{ color: '#1890ff' }}>Andamento</Text>} />;
         }
     };
 
     const handleCreateChatForTicket = (ticketId) => {
-        setChatTicketId(ticketId);
-        setAutoCreateChat(true);
-        setActiveTab('3'); // Switch to chat tab
+        setCurrentChatTicketId(ticketId);
+        setChatDrawerVisible(true);
     };
 
     const optionsCategoria = [
         { "label": "Acesso Dashboard", "value": "Acesso Dashboard" },
-        { "label": "Acesso Backoffice", "value": "Acesso Backoffice" },
-        { "label": "Alter. de Cardápio", "value": "Alter. de Cardápio" },
-        { "label": "Alter. de funcionalidades/Admin", "value": "Alter. de funcionalidades/Admin" },
-        { "label": "Alter. de funcionalidades/Cargo", "value": "Alter. de funcionalidades/Cargo" },
-        { "label": "Alter. de funcionalidades/Dash-Extranet", "value": "Alter. de funcionalidades/Dash-Extranet" },
-        { "label": "Alter. de PDV", "value": "Alter. de PDV" },
-        { "label": "Análise Relatorial", "value": "Análise Relatorial" },
-        { "label": "Aprovação de Place", "value": "Aprovação de Place" },
-        { "label": "Associar Cardapio a operador", "value": "Associar Cardapio a operador" },
-        { "label": "Associar Device", "value": "Associar Device" },
-        { "label": "Avaria", "value": "Avaria" },
-        { "label": "Bug - Report", "value": "Bug - Report" },
-        { "label": "Cobrança duplicada", "value": "Cobrança duplicada" },
-        { "label": "Config SubAdquirente", "value": "Config SubAdquirente" },
-        { "label": "Criação de operador", "value": "Criação de operador" },
-        { "label": "Criação PDV + Cardápio", "value": "Criação PDV + Cardápio" },
-        { "label": "Duplicação de Saldo", "value": "Duplicação de Saldo" },
-        { "label": "Dúvida - Processo / Produto", "value": "Dúvida - Processo / Produto" },
-        { "label": "Entradas", "value": "Entradas" },
-        { "label": "Envio de Material", "value": "Envio de Material" },
-        { "label": "Erro ao bater ponto digital", "value": "Erro ao bater ponto digital" },
-        { "label": "Erro de Impressão", "value": "Erro de Impressão" },
-        { "label": "Erro de leitura na TAG", "value": "Erro de leitura na TAG" },
-        { "label": "Erro de Login", "value": "Erro de Login" },
-        { "label": "Erro estorno adquirência", "value": "Erro estorno adquirência" },
-        { "label": "Erro msg adquirência", "value": "Erro msg adquirência" },
-        { "label": "Erro Operacional", "value": "Erro Operacional" },
-        { "label": "Estoque Z", "value": "Estoque Z" },
-        { "label": "Falha de impressão", "value": "Falha de impressão" },
-        { "label": "Falha de Sincronia", "value": "Falha de Sincronia" },
-        { "label": "Fech. de comanda Pós Paga", "value": "Fech. de comanda Pós Paga" },
-        { "label": "Impressora", "value": "Impressora" },
-        { "label": "Inclusão de entrada", "value": "Inclusão de entrada" },
-        { "label": "Inclusão de produto", "value": "Inclusão de produto" },
-        { "label": "Limite não integrado", "value": "Limite não integrado" },
-        { "label": "Logo de Ficha", "value": "Logo de Ficha" },
-        { "label": "Mapeamento de relatório", "value": "Mapeamento de relatório" },
-        { "label": "Multiplos pagamentos", "value": "Multiplos pagamentos" },
-        { "label": "Problemas de conexão", "value": "Problemas de conexão" },
-        { "label": "Produtos de Devolução", "value": "Produtos de Devolução" },
-        { "label": "Prot. de entrega de terminais", "value": "Prot. de entrega de terminais" },
-        { "label": "Pix não funcionando", "value": "Pix não funcionando" },
-        { "label": "Queda de Adquirência", "value": "Queda de Adquirência" },
-        { "label": "Reaproveitamento de Valores", "value": "Reaproveitamento de Valores" },
-        { "label": "Recargas expiradas", "value": "Recargas expiradas" },
-        { "label": "Renomear operadores", "value": "Renomear operadores" },
-        { "label": "Transação Apartada", "value": "Transação Apartada" },
-        { "label": "Transações off", "value": "Transações off" },
-        { "label": "Venda Apartada", "value": "Venda Apartada" },
-        { "label": "Vincular bar a operador", "value": "Vincular bar a operador" },
-        { "label": "Vincular bar a vendor", "value": "Vincular bar a vendor" },
-        { "label": "Zig Tag Cheio", "value": "Zig Tag Cheio" },
-        { "label": "Alter. data de térm. vendas - Evento Ativo", "value": "Alter. data de térm. vendas - Evento Ativo" },
-        { "label": "Alter. data de término - Evento encerrado", "value": "Alter. data de término - Evento encerrado" },
-        { "label": "Alter. do nome do evento", "value": "Alter. do nome do evento" },
-        { "label": "Aplicativo de venda de ingresso - PDV", "value": "Aplicativo de venda de ingresso - PDV" },
-        { "label": "Ativação de Token", "value": "Ativação de Token" },
-        { "label": "Atraso/falha no envio do repasse", "value": "Atraso/falha no envio do repasse" },
-        { "label": "BUG - APP validação de Ingressos", "value": "BUG - APP validação de Ingressos" },
-        { "label": "BUG - APP venda de Ingresso", "value": "BUG - APP venda de Ingresso" },
-        { "label": "BUG - Marketplace (site de vendas)", "value": "BUG - Marketplace (site de vendas)" },
-        { "label": "BUG - Painel", "value": "BUG - Painel" },
-        { "label": "Cancelamento do estorno", "value": "Cancelamento do estorno" },
-        { "label": "Cancelamento do evento", "value": "Cancelamento do evento" },
-        { "label": "Cancelar ingresso", "value": "Cancelar ingresso" },
-        { "label": "Compras analisadas pelo time de Risco", "value": "Compras analisadas pelo time de Risco" },
-        { "label": "Dúvida - Códigos e promoters", "value": "Dúvida - Códigos e promoters" },
-        { "label": "Dúvida - Conferência de relatórios", "value": "Dúvida - Conferência de relatórios" },
-        { "label": "Dúvida - Config de ingressos e grupos", "value": "Dúvida - Config de ingressos e grupos" },
-        { "label": "Solicit. Troca lote ingressos", "value": "Solicit. Troca lote ingressos" },
-        { "label": "Transferência de ingresso", "value": "Transferência de ingresso" },
-        { "label": "Transferência de valor (antecipação)", "value": "Transferência de valor (antecipação)" }
+
     ];
 
     const columnsChamados = [
-        {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            width: '8%',
-        },
         {
             title: 'Solicitante',
             dataIndex: 'solicitante',
@@ -176,7 +104,7 @@ const Suporte = () => {
                 <Space>
                     {record.status === 'pending' && (
                         <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
-                            Em Análise
+                            Abrir Ticket
                         </Button>
                     )}
                     {record.status === 'analysis' && (
@@ -184,14 +112,14 @@ const Suporte = () => {
                             Responder
                         </Button>
                     )}
-                    {record.status != 'closed' && <Button
+                    <Button
                         type="default"
                         size="small"
                         icon={<CommentOutlined />}
                         onClick={() => handleCreateChatForTicket(record.id)}
                     >
                         Chat
-                    </Button>}
+                    </Button>
                 </Space>
             ),
         }
@@ -267,6 +195,20 @@ const Suporte = () => {
             body: JSON.stringify({
                 title: 'Seu chamado está em análise',
                 body: `Olá, seu ticket de ID ${ticketId} está em análise.`,
+                userId: userId,
+            }),
+        });
+    };
+
+    const sendNotificationProducao = async (userId, ticketId) => {
+        await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Seu chamado está em validação com a produção',
+                body: `Olá, seu ticket de ID ${ticketId} está em validação com a produção.`,
                 userId: userId,
             }),
         });
@@ -449,26 +391,31 @@ const Suporte = () => {
             });
             let data = await response.json();
             data = data.docs;
-            const chamados = data.map((doc) => {
-                return {
-                    key: doc.id,
-                    id: doc.id,
-                    solicitante: doc.data.solicitante,
-                    categoria: doc.data.categoria,
-                    status: doc.data.status,
-                    timestampAberto: doc.data.timestampAberto,
-                    urgencia: doc.data.urgencia,
-                    ponto: doc.data.ponto,
-                    modelo: doc.data.modelo,
-                    descricao: doc.data.descricao,
-                    resposta: doc.data.resposta || '',
-                    anexos: doc.data.anexos || [],
-                    atendente: doc.data.atendente || '',
-                    timestampResposta: doc.data.timestampResposta || '',
-                    timestampAnalise: doc.data.timestampAnalise || '',
-                    userId: doc.data.userId || '',
+            let chamados = data.map((doc) => {
+                if (closedTicketsHidden && doc.data.status === 'closed') {
+                    return null;
+                } else {
+                    return {
+                        key: doc.id,
+                        id: doc.id,
+                        solicitante: doc.data.solicitante,
+                        categoria: doc.data.categoria,
+                        status: doc.data.status,
+                        timestampAberto: doc.data.timestampAberto,
+                        urgencia: doc.data.urgencia,
+                        ponto: doc.data.ponto,
+                        modelo: doc.data.modelo,
+                        descricao: doc.data.descricao,
+                        resposta: doc.data.resposta || '',
+                        anexos: doc.data.anexos || [],
+                        atendente: doc.data.atendente || '',
+                        timestampResposta: doc.data.timestampResposta || '',
+                        timestampAnalise: doc.data.timestampAnalise || '',
+                        userId: doc.data.userId || '',
+                    }
                 }
             });
+            chamados = chamados.filter((chamado) => chamado !== null);
             setDataChamados(chamados);
         } catch (error) {
             console.log(error);
@@ -630,7 +577,7 @@ const Suporte = () => {
             ),
             key: '2',
             children: (
-                <>
+                <div style={{ minWidth: '80vw' }}>
                     <Card
                         bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', marginBottom: '16px' }}
@@ -648,6 +595,7 @@ const Suporte = () => {
                                     title={<Text strong>Chamados Abertos</Text>}
                                     value={dataChamados.filter(c => c.status === 'pending').length}
                                     valueStyle={{ color: '#ff4d4f' }}
+                                    prefix={<ClockCircleOutlined />}
                                 />
                             </Col>
                             <Col span={6}>
@@ -655,13 +603,15 @@ const Suporte = () => {
                                     title={<Text strong>Chamados Em Análise</Text>}
                                     value={dataChamados.filter(c => c.status === 'analysis').length}
                                     valueStyle={{ color: '#1890ff' }}
-                                    />
+                                    prefix={<SyncOutlined />}
+                                />
                             </Col>
                             <Col span={6}>
                                 <Statistic
                                     title={<Text strong>Chamados Resolvidos</Text>}
                                     value={dataChamados.filter(c => c.status === 'closed').length}
                                     valueStyle={{ color: '#52c41a' }}
+                                    prefix={<CheckCircleOutlined />}
                                 />
                             </Col>
                         </Row>
@@ -671,71 +621,13 @@ const Suporte = () => {
                         title={<Title level={4}>Lista de Chamados</Title>}
                         bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
-                        extra={
-                            <Button type="primary" onClick={fetchChamados}>
-                                Atualizar
-                            </Button>
-                        }
                     >
-                        <Table
-                            columns={columnsChamados}
-                            dataSource={dataChamados}
-                            rowClassName={(record) => record.urgencia === 'Urgente' ? 'urgent-row' : ''}
-                            expandable={{
-                                expandedRowRender: (record) => (
-                                    <Card bordered={false}>
-                                        <Descriptions title='Detalhes do Chamado' bordered layout='vertical' size="small">
-                                            <Descriptions.Item label="Ponto de Venda">
-                                                {record.ponto}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Modelo do Terminal">
-                                                {record.modelo}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label="Descrição" span={3}>
-                                                {record.descricao}
-                                            </Descriptions.Item>
-                                            {
-                                                record.anexos && record.anexos.length > 0 ? (
-                                                    <Descriptions.Item label="Anexos" span={3}>
-                                                        <ul>
-                                                            {record.anexos.map((anexo, index) => (
-                                                                <li key={index}>
-                                                                    <a href={anexo} target="_blank" rel="noopener noreferrer">
-                                                                        {anexo}
-                                                                    </a>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </Descriptions.Item>
-                                                ) : null
-                                            }
-                                            {
-                                                record.status === 'analysis' || record.status === 'closed' ? (
-                                                    <Descriptions.Item label="Data de Início da Análise">
-                                                        {new Date(record.timestampAnalise).toLocaleString()}
-                                                    </Descriptions.Item>
-                                                ) : null
-                                            }
-                                            {
-                                                record.resposta ? (
-                                                    <>
-                                                        <Descriptions.Item label="Atendente">
-                                                            {record.atendente}
-                                                        </Descriptions.Item>
-                                                        <Descriptions.Item label="Data da Resposta">
-                                                            {new Date(record.timestampResposta).toLocaleString()}
-                                                        </Descriptions.Item>
-                                                        <Descriptions.Item label="Resposta do Suporte" span={3}>
-                                                            {record.resposta}
-                                                        </Descriptions.Item>
-                                                    </>
-                                                ) : null
-                                            }
-                                        </Descriptions>
-                                    </Card>
-                                )
-                            }}
-                            pagination={{ pageSize: 10 }}
+                        <TaskBoard
+                            dataChamados={dataChamados}
+                            fetchChamados={fetchChamados}
+                            handleAnswerClick={handleAnswerClick}
+                            changeStatus={changeStatus}
+                            handleCreateChatForTicket={handleCreateChatForTicket}
                         />
 
                         {answerFormVisible && (
@@ -783,7 +675,7 @@ const Suporte = () => {
                             </Card>
                         )}
                     </Card>
-                </>
+                </div>
             )
         },
         {
@@ -858,6 +750,18 @@ const Suporte = () => {
             fetchChamados();
         }
     }, [pipeId]);
+
+    useEffect(() => {
+        const storedPreference = localStorage.getItem('closedTicketsHidden');
+        if (storedPreference !== null) {
+            const isHidden = storedPreference === 'true';
+            setClosedTicketsHidden(isHidden);
+
+            if (isHidden && dataChamados.length > 0) {
+                setDataChamados(dataChamados.filter(chamado => chamado.status !== 'closed'));
+            }
+        }
+    }, []);
 
     return (
         <div style={{ padding: '20px' }}>
@@ -991,6 +895,13 @@ const Suporte = () => {
                     }
                 }
             `}</style>
+
+            <TicketChatDrawer
+                visible={chatDrawerVisible}
+                ticketId={currentChatTicketId}
+                pipeId={pipeId}
+                onClose={() => setChatDrawerVisible(false)}
+            />
         </div>
     );
 };
