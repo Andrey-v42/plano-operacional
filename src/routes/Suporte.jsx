@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, Form, Input, Button, Table, Select, Upload, notification, Descriptions, Flex, Card, Badge, Typography, Space, Divider, Statistic } from 'antd';
-import { ExclamationCircleOutlined, SmileOutlined, UploadOutlined, FileOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { ExclamationCircleOutlined, SmileOutlined, UploadOutlined, FileOutlined, ClockCircleOutlined, CheckCircleOutlined, CommentOutlined } from '@ant-design/icons';
 import { Row, Col } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import Dashboard from './Dashboard';
+import ChatSuporte from './ChatSuporte';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -15,6 +16,8 @@ const Suporte = () => {
     const [answerFormVisible, setAnswerFormVisible] = useState(false);
     const [buttonAnswerLoading, setButtonAnswerLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('1');
+    const [chatTicketId, setChatTicketId] = useState(null);
+    const [autoCreateChat, setAutoCreateChat] = useState(false);
 
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
@@ -40,69 +43,11 @@ const Suporte = () => {
         }
     };
 
-    const columnsChamados = [
-        {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            width: '8%',
-        },
-        {
-            title: 'Solicitante',
-            dataIndex: 'solicitante',
-            key: 'solicitante',
-            width: '15%',
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            width: '12%',
-            render: (status) => getStatusBadge(status)
-        },
-        {
-            title: 'Data',
-            dataIndex: 'timestampAberto',
-            key: 'timestampAberto',
-            width: '15%',
-            render: (timestampAberto) => new Date(timestampAberto).toLocaleString()
-        },
-        {
-            title: 'Categoria',
-            dataIndex: 'categoria',
-            key: 'categoria',
-            width: '20%',
-        },
-        {
-            title: 'Nível de urgência',
-            dataIndex: 'urgencia',
-            key: 'urgencia',
-            width: '15%',
-            render: (urgencia) => {
-                const color = urgencia === 'Urgente' ? 'red' : 'green';
-                return <Text style={{ color }}>{urgencia}</Text>;
-            }
-        },
-        {
-            title: 'Ações',
-            key: 'action',
-            width: '15%',
-            render: (_, record) => (
-                <Space>
-                    {record.status === 'pending' && (
-                        <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
-                            Em Análise
-                        </Button>
-                    )}
-                    {record.status === 'analysis' && (
-                        <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
-                            Responder
-                        </Button>
-                    )}
-                </Space>
-            ),
-        }
-    ];
+    const handleCreateChatForTicket = (ticketId) => {
+        setChatTicketId(ticketId);
+        setAutoCreateChat(true);
+        setActiveTab('3'); // Switch to chat tab
+    };
 
     const optionsCategoria = [
         { "label": "Acesso Dashboard", "value": "Acesso Dashboard" },
@@ -180,6 +125,78 @@ const Suporte = () => {
         { "label": "Transferência de valor (antecipação)", "value": "Transferência de valor (antecipação)" }
     ];
 
+    const columnsChamados = [
+        {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            width: '8%',
+        },
+        {
+            title: 'Solicitante',
+            dataIndex: 'solicitante',
+            key: 'solicitante',
+            width: '15%',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            width: '12%',
+            render: (status) => getStatusBadge(status)
+        },
+        {
+            title: 'Data',
+            dataIndex: 'timestampAberto',
+            key: 'timestampAberto',
+            width: '15%',
+            render: (timestampAberto) => new Date(timestampAberto).toLocaleString()
+        },
+        {
+            title: 'Categoria',
+            dataIndex: 'categoria',
+            key: 'categoria',
+            width: '20%',
+        },
+        {
+            title: 'Nível de urgência',
+            dataIndex: 'urgencia',
+            key: 'urgencia',
+            width: '15%',
+            render: (urgencia) => {
+                const color = urgencia === 'Urgente' ? 'red' : 'green';
+                return <Text style={{ color }}>{urgencia}</Text>;
+            }
+        },
+        {
+            title: 'Ações',
+            key: 'action',
+            width: '15%',
+            render: (_, record) => (
+                <Space>
+                    {record.status === 'pending' && (
+                        <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
+                            Em Análise
+                        </Button>
+                    )}
+                    {record.status === 'analysis' && (
+                        <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
+                            Responder
+                        </Button>
+                    )}
+                    {record.status != 'closed' && <Button
+                        type="default"
+                        size="small"
+                        icon={<CommentOutlined />}
+                        onClick={() => handleCreateChatForTicket(record.id)}
+                    >
+                        Chat
+                    </Button>}
+                </Space>
+            ),
+        }
+    ];
+
     const optionsTerminal = [
         { label: 'N/A', value: 'N/A' },
         { label: 'Pag A930', value: 'Pag A930' },
@@ -193,6 +210,7 @@ const Suporte = () => {
         { label: 'Cielo L300', value: 'Cielo L300' },
         { label: 'Rede L400', value: 'Rede L400' },
         { label: 'PDV (Celular)', value: 'PDV (Celular)' },
+
     ];
 
     const sendNotification = async (values) => {
@@ -204,7 +222,7 @@ const Suporte = () => {
             body: JSON.stringify({ url: 'pipe', docId: `pipeId_${pipeId}` })
         });
         const dataEvento = await responseEvento.json();
-        
+
         const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
             method: 'POST',
             headers: {
@@ -358,21 +376,21 @@ const Suporte = () => {
             setButtonAnswerLoading(true);
             const id = values.recordId;
             delete values.recordId; // Remove recordId before sending to API
-            
+
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    url: `pipe`, 
-                    docId: `pipeId_${pipeId}/chamados/${id}`, 
-                    data: { 
-                        timestampResposta: new Date().getTime(), 
-                        status: 'closed', 
-                        atendente: localStorage.getItem('currentUser'), 
-                        resposta: values.resposta 
-                    } 
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${id}`,
+                    data: {
+                        timestampResposta: new Date().getTime(),
+                        status: 'closed',
+                        atendente: localStorage.getItem('currentUser'),
+                        resposta: values.resposta
+                    }
                 })
             });
 
@@ -469,38 +487,38 @@ const Suporte = () => {
             children: (
                 <Row gutter={24}>
                     <Col span={16}>
-                        <Card 
-                            title={<Title level={4}>Abrir Chamado de Suporte</Title>} 
-                            bordered={false} 
+                        <Card
+                            title={<Title level={4}>Abrir Chamado de Suporte</Title>}
+                            bordered={false}
                             className="card-with-shadow"
                             style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                         >
                             <Form onFinish={enviarChamado} form={formChamado} layout="vertical">
                                 <Row gutter={16}>
                                     <Col span={12}>
-                                        <Form.Item 
-                                            label={<Text strong>Categoria</Text>} 
+                                        <Form.Item
+                                            label={<Text strong>Categoria</Text>}
                                             name='categoria'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
-                                            <Select 
-                                                placeholder="Selecione a categoria do chamado" 
-                                                showSearch 
-                                                options={optionsCategoria} 
+                                            <Select
+                                                placeholder="Selecione a categoria do chamado"
+                                                showSearch
+                                                options={optionsCategoria}
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
                                     </Col>
                                     <Col span={12}>
-                                        <Form.Item 
-                                            label={<Text strong>Nível de Urgência</Text>} 
+                                        <Form.Item
+                                            label={<Text strong>Nível de Urgência</Text>}
                                             name='urgencia'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
-                                            <Select 
-                                                placeholder='Selecione o nível de urgência' 
+                                            <Select
+                                                placeholder='Selecione o nível de urgência'
                                                 options={[
-                                                    { value: 'Urgente', label: 'Urgente' }, 
+                                                    { value: 'Urgente', label: 'Urgente' },
                                                     { value: 'Sem Urgência', label: 'Sem Urgência' }
                                                 ]}
                                                 style={{ borderRadius: '4px' }}
@@ -508,68 +526,68 @@ const Suporte = () => {
                                         </Form.Item>
                                     </Col>
                                 </Row>
-                                
+
                                 <Row gutter={16}>
                                     <Col span={12}>
-                                        <Form.Item 
-                                            label={<Text strong>Ponto de Venda</Text>} 
+                                        <Form.Item
+                                            label={<Text strong>Ponto de Venda</Text>}
                                             name='ponto'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
-                                            <Select 
-                                                showSearch={true} 
-                                                options={optionsPontos} 
-                                                placeholder="Selecione o ponto de venda" 
+                                            <Select
+                                                showSearch={true}
+                                                options={optionsPontos}
+                                                placeholder="Selecione o ponto de venda"
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
                                     </Col>
                                     <Col span={12}>
-                                        <Form.Item 
-                                            label={<Text strong>Modelo do Terminal</Text>} 
+                                        <Form.Item
+                                            label={<Text strong>Modelo do Terminal</Text>}
                                             name='modelo'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
-                                            <Select 
-                                                options={optionsTerminal} 
-                                                placeholder='Selecione o modelo do terminal' 
+                                            <Select
+                                                options={optionsTerminal}
+                                                placeholder='Selecione o modelo do terminal'
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
                                     </Col>
                                 </Row>
-                                
-                                <Form.Item 
-                                    label={<Text strong>Descrição</Text>} 
+
+                                <Form.Item
+                                    label={<Text strong>Descrição</Text>}
                                     name='descricao'
                                     rules={[{ required: true, message: 'Campo obrigatório' }]}
                                 >
-                                    <TextArea 
-                                        placeholder="Digite a descrição do chamado" 
-                                        rows={4} 
+                                    <TextArea
+                                        placeholder="Digite a descrição do chamado"
+                                        rows={4}
                                         style={{ borderRadius: '4px' }}
                                     />
                                 </Form.Item>
-                                
+
                                 <Form.Item label={<Text strong>Anexos/Evidências (Opcional)</Text>}>
-                                    <Upload 
-                                        fileList={fileList} 
-                                        beforeUpload={Upload.LIST_IGNORE} 
-                                        onChange={handleFileChange} 
-                                        accept="image/*,.pdf" 
-                                        multiple 
+                                    <Upload
+                                        fileList={fileList}
+                                        beforeUpload={Upload.LIST_IGNORE}
+                                        onChange={handleFileChange}
+                                        accept="image/*,.pdf"
+                                        multiple
                                         name='file'
                                         style={{ borderRadius: '4px' }}
                                     >
                                         <Button icon={<UploadOutlined />}>Selecionar arquivo</Button>
                                     </Upload>
                                 </Form.Item>
-                                
+
                                 <Form.Item>
-                                    <Button 
-                                        loading={buttonChamadoLoading} 
-                                        htmlType='submit' 
-                                        type="primary" 
+                                    <Button
+                                        loading={buttonChamadoLoading}
+                                        htmlType='submit'
+                                        type="primary"
                                         size="large"
                                         style={{ borderRadius: '4px' }}
                                     >
@@ -580,8 +598,8 @@ const Suporte = () => {
                         </Card>
                     </Col>
                     <Col span={8}>
-                        <Card 
-                            title={<Title level={4}>Informações</Title>} 
+                        <Card
+                            title={<Title level={4}>Informações</Title>}
                             bordered={false}
                             style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                         >
@@ -613,27 +631,34 @@ const Suporte = () => {
             key: '2',
             children: (
                 <>
-                    <Card 
-                        bordered={false} 
+                    <Card
+                        bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', marginBottom: '16px' }}
                     >
                         <Row gutter={16}>
-                            <Col span={8}>
-                                <Statistic 
+                            <Col span={6}>
+                                <Statistic
                                     title={<Text strong>Total de Chamados</Text>}
                                     value={dataChamados.length}
                                     prefix={<FileOutlined />}
                                 />
                             </Col>
-                            <Col span={8}>
-                                <Statistic 
+                            <Col span={6}>
+                                <Statistic
                                     title={<Text strong>Chamados Abertos</Text>}
                                     value={dataChamados.filter(c => c.status === 'pending').length}
                                     valueStyle={{ color: '#ff4d4f' }}
                                 />
                             </Col>
-                            <Col span={8}>
-                                <Statistic 
+                            <Col span={6}>
+                                <Statistic
+                                    title={<Text strong>Chamados Em Análise</Text>}
+                                    value={dataChamados.filter(c => c.status === 'analysis').length}
+                                    valueStyle={{ color: '#1890ff' }}
+                                    />
+                            </Col>
+                            <Col span={6}>
+                                <Statistic
                                     title={<Text strong>Chamados Resolvidos</Text>}
                                     value={dataChamados.filter(c => c.status === 'closed').length}
                                     valueStyle={{ color: '#52c41a' }}
@@ -641,8 +666,8 @@ const Suporte = () => {
                             </Col>
                         </Row>
                     </Card>
-                    
-                    <Card 
+
+                    <Card
                         title={<Title level={4}>Lista de Chamados</Title>}
                         bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
@@ -652,9 +677,9 @@ const Suporte = () => {
                             </Button>
                         }
                     >
-                        <Table 
-                            columns={columnsChamados} 
-                            dataSource={dataChamados} 
+                        <Table
+                            columns={columnsChamados}
+                            dataSource={dataChamados}
                             rowClassName={(record) => record.urgencia === 'Urgente' ? 'urgent-row' : ''}
                             expandable={{
                                 expandedRowRender: (record) => (
@@ -712,38 +737,38 @@ const Suporte = () => {
                             }}
                             pagination={{ pageSize: 10 }}
                         />
-                        
+
                         {answerFormVisible && (
-                            <Card 
-                                title="Responder Chamado" 
+                            <Card
+                                title="Responder Chamado"
                                 style={{ marginTop: 20, borderRadius: '8px' }}
                             >
                                 <Form form={formAnswer} onFinish={answerTicket} layout='vertical'>
                                     <Form.Item name="recordId" hidden>
                                         <Input />
                                     </Form.Item>
-                                    <Form.Item 
-                                        label={<Text strong>Resposta</Text>} 
+                                    <Form.Item
+                                        label={<Text strong>Resposta</Text>}
                                         name='resposta'
                                         rules={[{ required: true, message: 'Campo obrigatório' }]}
                                     >
-                                        <TextArea 
-                                            placeholder='Digite a resposta do chamado' 
-                                            rows={4} 
+                                        <TextArea
+                                            placeholder='Digite a resposta do chamado'
+                                            rows={4}
                                             style={{ borderRadius: '4px' }}
                                         />
                                     </Form.Item>
                                     <Form.Item>
                                         <Space>
-                                            <Button 
-                                                loading={buttonAnswerLoading} 
-                                                htmlType='submit' 
+                                            <Button
+                                                loading={buttonAnswerLoading}
+                                                htmlType='submit'
                                                 type="primary"
                                                 style={{ borderRadius: '4px' }}
                                             >
                                                 Enviar Resposta
                                             </Button>
-                                            <Button 
+                                            <Button
                                                 onClick={() => {
                                                     setAnswerFormVisible(false);
                                                     formAnswer.resetFields();
@@ -764,18 +789,39 @@ const Suporte = () => {
         {
             label: (
                 <span>
-                    <CheckCircleOutlined /> Dashboard
+                    <CommentOutlined /> Chat de Suporte
                 </span>
             ),
             key: '3',
-            // children: (
-            //     <Card 
-            //         bordered={false} 
-            //         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
-            //     >
-            //         <Dashboard dataChamados={dataChamados} />
-            //     </Card>
-            // )
+            children: (
+                <Card
+                    bordered={false}
+                    style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                >
+                    <ChatSuporte
+                        pipeId={pipeId}
+                        ticketId={chatTicketId}
+                        autoCreate={autoCreateChat}
+                        onChatCreated={() => setAutoCreateChat(false)}
+                    />
+                </Card>
+            )
+        },
+        {
+            label: (
+                <span>
+                    <CheckCircleOutlined /> Dashboard
+                </span>
+            ),
+            key: '4',
+            children: (
+                <Card
+                    bordered={false}
+                    style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                >
+                    <Dashboard dataChamados={dataChamados} />
+                </Card>
+            )
         }
     ];
 
@@ -816,19 +862,20 @@ const Suporte = () => {
     return (
         <div style={{ padding: '20px' }}>
             {contextHolder}
-            <Tabs 
-                items={tabsItems} 
-                defaultActiveKey="1" 
+            <Tabs
+                items={tabsItems}
+                defaultActiveKey={activeTab}
+                activeKey={activeTab}
                 onChange={handleTabChange}
                 type="card"
-                style={{ 
-                    background: '#fff', 
-                    padding: '16px', 
+                style={{
+                    background: '#fff',
+                    padding: '16px',
                     borderRadius: '8px',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
-                }} 
+                }}
             />
-            
+
             <style jsx global>{`
                 .card-with-shadow {
                     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
