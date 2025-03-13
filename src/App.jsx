@@ -9,7 +9,8 @@ import {
     CreditCardOutlined,
     MessageOutlined,
     QuestionCircleOutlined,
-    CustomerServiceFilled
+    CustomerServiceFilled,
+    SettingOutlined
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Flex } from 'antd';
 const { Header, Sider, Content } = Layout;
@@ -22,6 +23,7 @@ import Chat from './routes/Chat';
 import Login from './routes/Login';
 import Cronometro from './routes/Cronometro';
 import Suporte from './routes/Suporte';
+import Estoque from './routes/Estoque';
 import { messaging, generateToken } from '../firebaseConfig';
 import { onMessage } from 'firebase/messaging';
 
@@ -213,6 +215,18 @@ const App = () => {
                             },
                             disabled: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin',
                             hidden: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin'
+                        }, 
+                        {
+                            key: '8',
+                            icon: <SettingOutlined />,
+                            label: 'Estoque',
+                            onClick: () => {
+                                setSelectedKey(['8'])
+                                localStorage.setItem("selectedKey", "8")
+                                navigate(`/estoque?pipeId=${pipeId}`);
+                                setCollapsed(true)
+                            },
+
                         }
                     ]}
                 />
@@ -263,6 +277,7 @@ const App = () => {
                         <Route path="/login" element={<Login />} />
                         <Route path="/cronometro" element={<Cronometro />} />
                         <Route path="/suporte" element={<Suporte />} />
+                        <Route path="/estoque" element={<Estoque />} />
                         <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
