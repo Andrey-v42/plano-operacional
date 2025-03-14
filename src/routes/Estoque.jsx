@@ -1,17 +1,129 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Input, Button, Form, Space, notification, Badge, Tabs, Modal, Timeline, Divider, Pagination } from 'antd';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { PlusOutlined, ReloadOutlined, WarningOutlined, CheckCircleOutlined, ExclamationCircleOutlined, SmileOutlined, HistoryOutlined } from '@ant-design/icons';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Statistic,
+  Row,
+  Col,
+  DatePicker,
+  Select,
+  Typography,
+  Table,
+  Tag,
+  Input,
+  Button,
+  Form,
+  Space,
+  notification,
+  Badge,
+  Tabs,
+  Modal,
+  Timeline,
+  Divider,
+  Pagination,
+  Transfer,
+  Tree,
+  theme,
+  Alert,
+} from "antd";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  PlusOutlined,
+  ReloadOutlined,
+  WarningOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  SmileOutlined,
+  HistoryOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import { useSearchParams } from "react-router-dom";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Search } = Input;
 const { TabPane } = Tabs;
+// Componente de TreeTransfer customizado
+const isChecked = (selectedKeys, eventKey) => selectedKeys.includes(eventKey);
 
+const generateTree = (treeNodes = [], checkedKeys = []) =>
+  treeNodes.map(({ children, ...props }) => ({
+    ...props,
+    disabled: checkedKeys.includes(props.key),
+    children: generateTree(children, checkedKeys),
+  }));
+
+const TreeTransfer = ({ dataSource, targetKeys = [], ...restProps }) => {
+  const { token } = theme.useToken();
+  const transferDataSource = [];
+
+  function flatten(list = []) {
+    list.forEach((item) => {
+      transferDataSource.push(item);
+      flatten(item.children);
+    });
+  }
+
+  flatten(dataSource);
+
+  return (
+    <Transfer
+      {...restProps}
+      targetKeys={targetKeys}
+      dataSource={transferDataSource}
+      className="tree-transfer"
+      render={(item) => item.title}
+      showSelectAll={false}
+      listStyle={{
+        width: "45%",
+        height: 400,
+      }}
+    >
+      {({ direction, onItemSelect, selectedKeys }) => {
+        if (direction === "left") {
+          const checkedKeys = [...selectedKeys, ...targetKeys];
+          return (
+            <div style={{ padding: token.paddingXS }}>
+              <Tree
+                blockNode
+                checkable
+                checkStrictly
+                defaultExpandAll
+                checkedKeys={checkedKeys}
+                treeData={generateTree(dataSource, targetKeys)}
+                onCheck={(_, { node: { key } }) => {
+                  onItemSelect(key, !isChecked(checkedKeys, key));
+                }}
+                onSelect={(_, { node: { key } }) => {
+                  onItemSelect(key, !isChecked(checkedKeys, key));
+                }}
+              />
+            </div>
+          );
+        }
+        // Renderizar os itens do lado direito em formato de lista
+        return null;
+      }}
+    </Transfer>
+  );
+};
 const GestaoInventario = () => {
   // Estado para as abas
-  const [activeTab, setActiveTab] = useState('1');
-  
+  const [activeTab, setActiveTab] = useState("1");
+
   // Estados para o Modal
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentAsset, setCurrentAsset] = useState(null);
@@ -22,373 +134,70 @@ const GestaoInventario = () => {
   const [assets, setAssets] = useState([]);
   const [filteredAssets, setFilteredAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
-  const [modeloFilter, setModeloFilter] = useState('all');
-  const [assetCategoryFilter, setAssetCategoryFilter] = useState('all');
-  
+  const [modeloFilter, setModeloFilter] = useState("all");
+  const [assetCategoryFilter, setAssetCategoryFilter] = useState("all");
+
+  // =================== MOVIMENTAÇÃO DE ESTOQUE ===================
+  const [searchParams] = useSearchParams();
+  const pipeId = searchParams.get("pipeId") || "sem-os";
+  const [searchValue, setSearchValue] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedAssets, setSelectedAssets] = useState([]);
+  const [targetKeys, setTargetKeys] = useState([]);
+  const [allocatedAssets, setAllocatedAssets] = useState([]);
+  const [loadingAllocated, setLoadingAllocated] = useState(false);
+
   // Compartilhado
   const [form] = Form.useForm();
   const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
     fetchAssets();
+    fetchAllocatedAssets();
   }, []);
-
   // =================== FUNÇÕES DE ATIVOS ===================
   const fetchAssets = async () => {
     setLoadingAssets(true);
     try {
       // Mock API call
-      const response = await new Promise(resolve => setTimeout(() => {
-        resolve({
-          data: [
-            { 
-              id: 1, 
-              modelo: 'Gertec MP35', 
-              categoria: 'POS', 
-              rfid: 'RF7890123',
-              serialMaquina: 'GT2023001', 
-              serialN: 'SN12345678',
-              deviceZ: 'DZ-001',
-              situacao: 'Apto',
-              detalhamento: 'Em perfeito estado',
-              alocacao: 'Arena XYZ',
-              // Histórico fictício para o modal
-              historico: [
-                { 
-                  data: '2025-02-18 11:30', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Festival de Música',
-                  os: '11111',
-                  motivo: 'Evento especial', 
-                  local: 'Estádio Municipal', 
-                  responsavel: 'Luiz Siqueira' 
-                },
-                { 
-                  data: '2025-01-05 09:45', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Manutenção Rotina',
-                  os: '22222',
-                  motivo: 'Verificação preventiva', 
-                  local: 'Centro Técnico', 
-                  responsavel: 'Técnico Ricardo' 
-                },
-                { 
-                  data: '2024-12-15 14:30', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Final de Ano',
-                  os: '12345',
-                  motivo: 'Envio antecipado para venda', 
-                  local: 'Arena XYZ', 
-                  responsavel: 'Ana Costa' 
-                },
-                { 
-                  data: '2024-10-03 09:15', 
-                  destino: 'PagSeguro', 
-                  nomeDestino: '',
-                  os: '98765',
-                  motivo: 'Manutenção na adquirência', 
-                  local: 'Centro Técnico', 
-                  responsavel: 'Técnico Roberto' 
-                },
-                { 
-                  data: '2024-07-22 16:45', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Festival de Verão',
-                  os: '45678',
-                  motivo: 'Evento', 
-                  local: 'Parque Municipal', 
-                  responsavel: 'Carlos Mendes' 
-                },
-                { 
-                  data: '2024-04-10 10:00', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Almoxarifado',
-                  os: '23456',
-                  motivo: 'Aquisição', 
-                  local: 'Almoxarifado Central', 
-                  responsavel: 'Depto. Compras' 
-                },
-                { 
-                  data: '2024-01-22 13:20', 
-                  destino: 'Redecard', 
-                  nomeDestino: '',
-                  os: '54321',
-                  motivo: 'Atualização de software', 
-                  local: 'Centro de Distribuição', 
-                  responsavel: 'Suporte Técnico' 
-                }
-              ]
-            },
-            { 
-              id: 2, 
-              modelo: 'Ingenico Move 5000', 
-              categoria: 'POS', 
-              rfid: 'RF1234567',
-              serialMaquina: 'IG2023002', 
-              serialN: 'SN87654321',
-              deviceZ: 'DZ-002',
-              situacao: 'Inapto',
-              detalhamento: 'Tela quebrada',
-              alocacao: 'Em manutenção',
-              historico: [
-                { 
-                  data: '2025-02-01 11:30', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Manutenção',
-                  os: '34567',
-                  motivo: 'Manutenção corretiva', 
-                  local: 'Loja Central', 
-                  responsavel: 'Supervisor José' 
-                },
-                { 
-                  data: '2024-11-20 08:45', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Black Friday',
-                  os: '67890',
-                  motivo: 'Evento', 
-                  local: 'Shopping Plaza', 
-                  responsavel: 'Equipe Vendas' 
-                },
-                { 
-                  data: '2024-08-15 15:20', 
-                  destino: 'Getnet', 
-                  nomeDestino: '',
-                  os: '78901',
-                  motivo: 'Manutenção na adquirência', 
-                  local: 'Assistência Técnica', 
-                  responsavel: 'Técnico Felipe' 
-                },
-                { 
-                  data: '2024-06-05 09:00', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Feira Gastronômica',
-                  os: '89012',
-                  motivo: 'Evento', 
-                  local: 'Centro de Convenções', 
-                  responsavel: 'Mariana Santos' 
-                },
-                { 
-                  data: '2024-03-22 14:15', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Almoxarifado',
-                  os: '90123',
-                  motivo: 'Aquisição', 
-                  local: 'Almoxarifado Central', 
-                  responsavel: 'Depto. Compras' 
-                }
-              ]
-            },
-            { 
-              id: 3, 
-              modelo: 'PAX A920', 
-              categoria: 'SmartPOS', 
-              rfid: 'RF2468135',
-              serialMaquina: 'PX2023003',
-              serialN: 'SN11223344',
-              deviceZ: 'DZ-003',
-              situacao: 'Inapto',
-              detalhamento: 'Bateria defeituosa',
-              alocacao: 'Em reparo',
-              historico: [
-                { 
-                  data: '2025-02-28 10:20', 
-                  destino: 'Casa', 
-                  nomeDestino: 'TI',
-                  os: '33333',
-                  motivo: 'Diagnóstico técnico', 
-                  local: 'Laboratório de TI', 
-                  responsavel: 'Eng. Sistemas Lucas' 
-                },
-                { 
-                  data: '2025-01-15 10:45', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Reparo',
-                  os: '12378',
-                  motivo: 'Manutenção corretiva', 
-                  local: 'Evento Corporativo', 
-                  responsavel: 'Coord. Paulo' 
-                },
-                { 
-                  data: '2024-12-05 14:30', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Feira de Natal',
-                  os: '23489',
-                  motivo: 'Evento', 
-                  local: 'Pavilhão Norte', 
-                  responsavel: 'Gerente Eventos' 
-                },
-                { 
-                  data: '2024-09-18 09:20', 
-                  destino: 'Casa', 
-                  nomeDestino: 'TI',
-                  os: '34590',
-                  motivo: 'Atualização de Software', 
-                  local: 'Centro de TI', 
-                  responsavel: 'Equipe Suporte' 
-                },
-                { 
-                  data: '2024-05-30 08:00', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Congresso Nacional',
-                  os: '45601',
-                  motivo: 'Evento', 
-                  local: 'Centro de Convenções', 
-                  responsavel: 'Diretor Operações' 
-                },
-                { 
-                  data: '2024-02-10 11:15', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Almoxarifado',
-                  os: '56712',
-                  motivo: 'Aquisição', 
-                  local: 'Almoxarifado Central', 
-                  responsavel: 'Depto. Compras' 
-                },
-                { 
-                  data: '2023-12-20 15:30', 
-                  destino: 'Cielo', 
-                  nomeDestino: '',
-                  os: '67823',
-                  motivo: 'Homologação', 
-                  local: 'Centro de Certificação', 
-                  responsavel: 'Equipe QA' 
-                },
-                { 
-                  data: '2023-11-05 09:00', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Estoque',
-                  os: '78934',
-                  motivo: 'Inventário', 
-                  local: 'Depósito Central', 
-                  responsavel: 'Coord. Logística' 
-                }
-              ]
-            },
-            {
-              id: 4,
-              modelo: 'Verifone V200c',
-              categoria: 'POS',
-              rfid: 'RF9876543',
-              serialMaquina: 'VF2023004',
-              serialN: 'SN55667788',
-              deviceZ: 'DZ-004',
-              situacao: 'Apto',
-              detalhamento: 'Em perfeito estado',
-              alocacao: 'Hotel Grandioso',
-              historico: [
-                { 
-                  data: '2025-02-10 16:45', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Manutenção',
-                  os: '67823',
-                  motivo: 'Verificação de Rotina', 
-                  local: 'Centro de Manutenção', 
-                  responsavel: 'Técnico Anderson' 
-                },
-                { 
-                  data: '2024-11-25 09:30', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Corporativo',
-                  os: '78934',
-                  motivo: 'Evento', 
-                  local: 'Hotel Grandioso', 
-                  responsavel: 'Coord. Eventos' 
-                },
-                { 
-                  data: '2024-08-03 14:15', 
-                  destino: 'Casa', 
-                  nomeDestino: 'TI',
-                  os: '89045',
-                  motivo: 'Atualização de Firmware', 
-                  local: 'Centro de TI', 
-                  responsavel: 'Equipe Suporte' 
-                },
-                { 
-                  data: '2024-05-12 10:00', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Almoxarifado',
-                  os: '90156',
-                  motivo: 'Aquisição', 
-                  local: 'Almoxarifado Central', 
-                  responsavel: 'Depto. Compras' 
-                }
-              ]
-            },
-            {
-              id: 5,
-              modelo: 'Gertec MP35',
-              categoria: 'POS',
-              rfid: 'RF5566778',
-              serialMaquina: 'GT2023005',
-              serialN: 'SN22334455',
-              deviceZ: 'DZ-005',
-              situacao: 'Apto',
-              detalhamento: 'Tamper violado',
-              alocacao: 'Centro de Eventos',
-              historico: [
-                { 
-                  data: '2025-03-01 08:15', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Conferência Anual',
-                  os: '44444',
-                  motivo: 'Demonstração de produto', 
-                  local: 'Centro de Convenções', 
-                  responsavel: 'Gerente Marketing' 
-                },
-                { 
-                  data: '2025-02-10 14:30', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Laboratório',
-                  os: '55555',
-                  motivo: 'Teste de integração', 
-                  local: 'Centro de Testes', 
-                  responsavel: 'Analista de QA' 
-                },
-                { 
-                  data: '2025-01-20 08:30', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Manutenção',
-                  os: '10267',
-                  motivo: 'Manutenção Preventiva', 
-                  local: 'Centro Técnico', 
-                  responsavel: 'Técnico Márcio' 
-                },
-                { 
-                  data: '2024-10-15 13:45', 
-                  destino: 'Evento', 
-                  nomeDestino: 'Congresso',
-                  os: '20378',
-                  motivo: 'Evento', 
-                  local: 'Centro de Eventos', 
-                  responsavel: 'Gerente Thiago' 
-                },
-                { 
-                  data: '2024-07-05 09:15', 
-                  destino: 'Casa', 
-                  nomeDestino: 'Almoxarifado',
-                  os: '30489',
-                  motivo: 'Aquisição', 
-                  local: 'Almoxarifado Central', 
-                  responsavel: 'Depto. Compras' 
-                },
-                { 
-                  data: '2024-04-18 11:30', 
-                  destino: 'Stone', 
-                  nomeDestino: '',
-                  os: '40590',
-                  motivo: 'Reprogramação', 
-                  local: 'Centro de Operações', 
-                  responsavel: 'Técnico Especializado' 
-                }
-              ]
-            }
-          ]
-        });
-      }, 1000));
+      const response = await new Promise((resolve) =>
+        setTimeout(() => {
+          resolve({
+            data: [
+              {
+                id: 1,
+                modelo: "Pag P2",
+                categoria: "Máquina",
+                rfid: "RF7890123",
+                serialMaquina: "GT2023001",
+                serialN: "SN12345678",
+                deviceZ: "DZ-001",
+                situacao: "Apto",
+                detalhamento: "Em perfeito estado",
+                alocacao: "Matriz",
+                // Histórico fictício para o modal
+                historico: [
+                  {
+                    data: "2025-02-18 11:30",
+                    destino: "Evento",
+                    nomeDestino: "Festival de Música",
+                    os: "11111",
+                    motivo: "Evento especial",
+                    responsavel: "Luiz Siqueira",
+                  },
+                  // ... outros itens de histórico
+                ],
+              },
+              // ... outros assets
+            ],
+          });
+        }, 1000)
+      );
       setAssets(response.data);
       setFilteredAssets(response.data);
     } catch (error) {
-      openNotificationFailure('Erro ao carregar ativos');
+      openNotificationFailure("Erro ao carregar ativos");
     }
     setLoadingAssets(false);
   };
@@ -398,7 +207,7 @@ const GestaoInventario = () => {
     setCurrentHistoryPage(1);
     setIsModalVisible(true);
   };
-  
+
   const handleModalCancel = () => {
     setIsModalVisible(false);
   };
@@ -409,62 +218,58 @@ const GestaoInventario = () => {
 
   const assetsColumns = [
     {
-      title: 'Modelo',
-      dataIndex: 'modelo',
-      key: 'modelo',
+      title: "Modelo",
+      dataIndex: "modelo",
+      key: "modelo",
     },
     {
-      title: 'Categoria',
-      dataIndex: 'categoria',
-      key: 'categoria',
+      title: "Categoria",
+      dataIndex: "categoria",
+      key: "categoria",
     },
     {
-      title: 'RFID',
-      dataIndex: 'rfid',
-      key: 'rfid',
+      title: "RFID",
+      dataIndex: "rfid",
+      key: "rfid",
     },
     {
-      title: 'Serial Máquina',
-      dataIndex: 'serialMaquina',
-      key: 'serialMaquina',
+      title: "Serial Máquina",
+      dataIndex: "serialMaquina",
+      key: "serialMaquina",
     },
     {
-      title: 'Serial N',
-      dataIndex: 'serialN',
-      key: 'serialN',
+      title: "Serial N",
+      dataIndex: "serialN",
+      key: "serialN",
     },
     {
-      title: 'Device Z',
-      dataIndex: 'deviceZ',
-      key: 'deviceZ',
+      title: "Device Z",
+      dataIndex: "deviceZ",
+      key: "deviceZ",
     },
     {
-      title: 'Situação',
-      dataIndex: 'situacao',
-      key: 'situacao',
+      title: "Situação",
+      dataIndex: "situacao",
+      key: "situacao",
       render: (situacao) => {
-        let color = 'green';
-        if (situacao !== 'Apto') {
-          color = 'red';
+        let color = "green";
+        if (situacao !== "Apto") {
+          color = "red";
         }
-        return (
-          <Tag color={color}>
-            {situacao}
-          </Tag>
-        );
-      }
+        return <Tag color={color}>{situacao}</Tag>;
+      },
     },
     {
-      title: 'Alocação',
-      dataIndex: 'alocacao',
-      key: 'alocacao',
+      title: "Alocação",
+      dataIndex: "alocacao",
+      key: "alocacao",
     },
     {
-      title: 'Histórico',
-      key: 'historico',
+      title: "Histórico",
+      key: "historico",
       render: (_, record) => (
-        <Button 
-          type="link" 
+        <Button
+          type="link"
           icon={<HistoryOutlined />}
           onClick={() => showAssetHistory(record)}
         >
@@ -473,124 +278,347 @@ const GestaoInventario = () => {
       ),
     },
   ];
-
   const calculateAssetMetrics = () => {
     const totalAssets = filteredAssets.length;
-    const inaptosAssets = filteredAssets.filter(a => a.situacao === 'Inapto').length;
-    const aptosAssets = filteredAssets.filter(a => a.situacao === 'Apto').length;
-    
+    const inaptosAssets = filteredAssets.filter(
+      (a) => a.situacao === "Inapto"
+    ).length;
+    const aptosAssets = filteredAssets.filter(
+      (a) => a.situacao === "Apto"
+    ).length;
+
     const modelosCount = {};
-    filteredAssets.forEach(asset => {
+    filteredAssets.forEach((asset) => {
       modelosCount[asset.modelo] = (modelosCount[asset.modelo] || 0) + 1;
     });
 
-    const modeloMaisComum = Object.keys(modelosCount).length > 0 ? 
-      Object.keys(modelosCount).reduce((a, b) => modelosCount[a] > modelosCount[b] ? a : b, '') : 
-      'N/A';
+    const modeloMaisComum =
+      Object.keys(modelosCount).length > 0
+        ? Object.keys(modelosCount).reduce(
+            (a, b) => (modelosCount[a] > modelosCount[b] ? a : b),
+            ""
+          )
+        : "N/A";
 
     return {
       totalAssets,
       inaptosAssets,
       aptosAssets,
-      modeloMaisComum
+      modeloMaisComum,
     };
   };
 
   const prepareAssetChartData = () => {
     const modeloData = {};
-    filteredAssets.forEach(asset => {
+    filteredAssets.forEach((asset) => {
       if (!modeloData[asset.modelo]) {
         modeloData[asset.modelo] = {
           total: 0,
-          inaptos: 0
+          inaptos: 0,
         };
       }
       modeloData[asset.modelo].total += 1;
-      if (asset.situacao === 'Inapto') {
+      if (asset.situacao === "Inapto") {
         modeloData[asset.modelo].inaptos += 1;
       }
     });
 
-    return Object.keys(modeloData).map(modelo => ({
+    return Object.keys(modeloData).map((modelo) => ({
       modelo,
       total: modeloData[modelo].total,
       inaptos: modeloData[modelo].inaptos,
-      aptos: modeloData[modelo].total - modeloData[modelo].inaptos
+      aptos: modeloData[modelo].total - modeloData[modelo].inaptos,
     }));
   };
 
   const prepareCategoryChartData = () => {
     const categoryData = {};
-    filteredAssets.forEach(asset => {
+    filteredAssets.forEach((asset) => {
       if (!categoryData[asset.categoria]) {
         categoryData[asset.categoria] = 0;
       }
       categoryData[asset.categoria] += 1;
     });
 
-    return Object.keys(categoryData).map(category => ({
+    return Object.keys(categoryData).map((category) => ({
       category,
-      value: categoryData[category]
+      value: categoryData[category],
     }));
   };
 
   const handleAssetSearch = (value) => {
-    const filtered = assets.filter(asset => 
-      asset.modelo.toLowerCase().includes(value.toLowerCase()) ||
-      asset.categoria.toLowerCase().includes(value.toLowerCase()) ||
-      asset.serialMaquina.toLowerCase().includes(value.toLowerCase()) ||
-      asset.serialN.toLowerCase().includes(value.toLowerCase()) ||
-      asset.rfid.toLowerCase().includes(value.toLowerCase()) ||
-      asset.deviceZ.toLowerCase().includes(value.toLowerCase()) ||
-      asset.alocacao.toLowerCase().includes(value.toLowerCase())
+    const filtered = assets.filter(
+      (asset) =>
+        asset.modelo.toLowerCase().includes(value.toLowerCase()) ||
+        asset.categoria.toLowerCase().includes(value.toLowerCase()) ||
+        asset.serialMaquina.toLowerCase().includes(value.toLowerCase()) ||
+        asset.serialN.toLowerCase().includes(value.toLowerCase()) ||
+        asset.rfid.toLowerCase().includes(value.toLowerCase()) ||
+        asset.deviceZ.toLowerCase().includes(value.toLowerCase()) ||
+        asset.alocacao.toLowerCase().includes(value.toLowerCase())
     );
     setFilteredAssets(filtered);
   };
 
   const handleModeloChange = (value) => {
     setModeloFilter(value);
-    if (assetCategoryFilter !== 'all') {
-      const filtered = value === 'all' 
-        ? assets.filter(asset => asset.categoria === assetCategoryFilter)
-        : assets.filter(asset => asset.modelo === value && asset.categoria === assetCategoryFilter);
+    if (assetCategoryFilter !== "all") {
+      const filtered =
+        value === "all"
+          ? assets.filter((asset) => asset.categoria === assetCategoryFilter)
+          : assets.filter(
+              (asset) =>
+                asset.modelo === value &&
+                asset.categoria === assetCategoryFilter
+            );
       setFilteredAssets(filtered);
     } else {
-      const filtered = value === 'all' 
-        ? assets 
-        : assets.filter(asset => asset.modelo === value);
+      const filtered =
+        value === "all"
+          ? assets
+          : assets.filter((asset) => asset.modelo === value);
       setFilteredAssets(filtered);
     }
   };
 
   const handleAssetCategoryChange = (value) => {
     setAssetCategoryFilter(value);
-    if (modeloFilter !== 'all') {
-      const filtered = value === 'all' 
-        ? assets.filter(asset => asset.modelo === modeloFilter)
-        : assets.filter(asset => asset.categoria === value && asset.modelo === modeloFilter);
+    if (modeloFilter !== "all") {
+      const filtered =
+        value === "all"
+          ? assets.filter((asset) => asset.modelo === modeloFilter)
+          : assets.filter(
+              (asset) =>
+                asset.categoria === value && asset.modelo === modeloFilter
+            );
       setFilteredAssets(filtered);
     } else {
-      const filtered = value === 'all' 
-        ? assets 
-        : assets.filter(asset => asset.categoria === value);
+      const filtered =
+        value === "all"
+          ? assets
+          : assets.filter((asset) => asset.categoria === value);
       setFilteredAssets(filtered);
     }
   };
+  // =================== FUNÇÕES DE MOVIMENTAÇÃO DE ESTOQUE ===================
+  const fetchAllocatedAssets = async () => {
+    setLoadingAllocated(true);
+    try {
+      // Mock API call para buscar ativos já alocados neste pipeId
+      const response = await new Promise((resolve) =>
+        setTimeout(() => {
+          // Simulando que o ativo com ID 1 está alocado para este pipeId
+          if (pipeId === "teste1234") {
+            resolve({
+              data: [
+                {
+                  id: 1,
+                  modelo: "Gertec MP35",
+                  categoria: "POS",
+                  rfid: "RF7890123",
+                  serialMaquina: "GT2023001",
+                  serialN: "SN12345678",
+                  deviceZ: "DZ-001",
+                  situacao: "Apto",
+                  detalhamento: "Em perfeito estado",
+                  alocacao: pipeId,
+                },
+              ],
+            });
+          } else {
+            resolve({ data: [] });
+          }
+        }, 1000)
+      );
 
+      setAllocatedAssets(response.data);
+
+      // Atualizar targetKeys com os IDs dos ativos já alocados
+      const allocatedKeys = response.data.map((asset) => asset.id.toString());
+      setTargetKeys(allocatedKeys);
+    } catch (error) {
+      openNotificationFailure("Erro ao carregar ativos alocados");
+    }
+    setLoadingAllocated(false);
+  };
+
+  const handleSearch = () => {
+    if (!searchValue.trim()) {
+      return;
+    }
+
+    setIsSearching(true);
+
+    // Simulação de busca
+    setTimeout(() => {
+      const results = assets.filter(
+        (asset) =>
+          asset.rfid.toLowerCase().includes(searchValue.toLowerCase()) ||
+          asset.serialMaquina
+            .toLowerCase()
+            .includes(searchValue.toLowerCase()) ||
+          asset.serialN.toLowerCase().includes(searchValue.toLowerCase()) ||
+          asset.deviceZ.toLowerCase().includes(searchValue.toLowerCase())
+      );
+
+      setSearchResults(results);
+      setIsSearching(false);
+
+      if (results.length === 0) {
+        api.info({
+          message: "Busca",
+          description: "Nenhum ativo encontrado com os parâmetros informados.",
+        });
+      }
+    }, 800);
+  };
+
+  const handleAssetSelect = (asset) => {
+    // Verificar se o ativo já está selecionado
+    if (!selectedAssets.some((item) => item.id === asset.id)) {
+      setSelectedAssets([...selectedAssets, asset]);
+    }
+  };
+
+  const handleAssetDeselect = (assetId) => {
+    setSelectedAssets(selectedAssets.filter((asset) => asset.id !== assetId));
+  };
+
+  const handleTransferChange = (nextTargetKeys) => {
+    setTargetKeys(nextTargetKeys);
+
+    // Simulação de salvamento na API
+    setTimeout(() => {
+      const movingToTarget = nextTargetKeys.filter(
+        (key) => !targetKeys.includes(key)
+      );
+      const movingFromTarget = targetKeys.filter(
+        (key) => !nextTargetKeys.includes(key)
+      );
+
+      if (movingToTarget.length > 0) {
+        openNotificationSucess(
+          `${movingToTarget.length} ativo(s) alocado(s) para a OS ${pipeId}`
+        );
+      }
+
+      if (movingFromTarget.length > 0) {
+        openNotificationSucess(
+          `${movingFromTarget.length} ativo(s) devolvido(s) ao estoque`
+        );
+      }
+
+      // Atualizar os ativos alocados
+      const updatedAllocatedAssets = assets.filter((asset) =>
+        nextTargetKeys.includes(asset.id.toString())
+      );
+      setAllocatedAssets(updatedAllocatedAssets);
+    }, 1000);
+  };
+  // Converter os ativos para o formato esperado pelo TreeTransfer
+  const convertAssetsToTreeData = () => {
+    // Agrupar por categoria
+    const categoriesMap = {};
+
+    // Considerar tanto os ativos selecionados manualmente quanto os já alocados
+    const assetsToShow = [...selectedAssets];
+
+    // Adicionar os ativos alocados apenas se não estiverem já nos selecionados
+    allocatedAssets.forEach((allocatedAsset) => {
+      if (!assetsToShow.some((asset) => asset.id === allocatedAsset.id)) {
+        assetsToShow.push(allocatedAsset);
+      }
+    });
+
+    assetsToShow.forEach((asset) => {
+      if (!categoriesMap[asset.categoria]) {
+        categoriesMap[asset.categoria] = {
+          key: `cat-${asset.categoria}`,
+          title: asset.categoria,
+          children: [],
+        };
+      }
+
+      categoriesMap[asset.categoria].children.push({
+        key: asset.id.toString(),
+        title: `${asset.modelo} - ${asset.serialMaquina} (${asset.rfid})`,
+        asset: asset,
+      });
+    });
+
+    return Object.values(categoriesMap);
+  };
+  const treeData = convertAssetsToTreeData();
+
+  // Colunas para os resultados de busca da movimentação de estoque
+  const searchResultsColumns = [
+    {
+      title: "Modelo",
+      dataIndex: "modelo",
+      key: "modelo",
+    },
+    {
+      title: "RFID",
+      dataIndex: "rfid",
+      key: "rfid",
+    },
+    {
+      title: "Serial Máquina",
+      dataIndex: "serialMaquina",
+      key: "serialMaquina",
+    },
+    {
+      title: "Serial N",
+      dataIndex: "serialN",
+      key: "serialN",
+    },
+    {
+      title: "Situação",
+      dataIndex: "situacao",
+      key: "situacao",
+      render: (situacao) => {
+        let color = "green";
+        if (situacao !== "Apto") {
+          color = "red";
+        }
+        return <Tag color={color}>{situacao}</Tag>;
+      },
+    },
+    {
+      title: "Ação",
+      key: "action",
+      render: (_, record) => (
+        <Button
+          type="primary"
+          onClick={() => handleAssetSelect(record)}
+          disabled={
+            selectedAssets.some((asset) => asset.id === record.id) ||
+            targetKeys.includes(record.id.toString())
+          }
+        >
+          {selectedAssets.some((asset) => asset.id === record.id)
+            ? "Selecionado"
+            : targetKeys.includes(record.id.toString())
+            ? "Já Alocado"
+            : "Selecionar"}
+        </Button>
+      ),
+    },
+  ];
   // =================== FUNÇÕES COMPARTILHADAS ===================
   const openNotificationSucess = (text) => {
     api.open({
-      message: 'Sucesso',
+      message: "Sucesso",
       description: text,
-      icon: <SmileOutlined style={{ color: '#52c41a' }} />,
+      icon: <SmileOutlined style={{ color: "#52c41a" }} />,
     });
   };
 
   const openNotificationFailure = (text) => {
     api.open({
-      message: 'Erro',
+      message: "Erro",
       description: text,
-      icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />,
+      icon: <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />,
     });
   };
 
@@ -598,19 +626,19 @@ const GestaoInventario = () => {
   const assetMetrics = calculateAssetMetrics();
   const assetChartData = prepareAssetChartData();
   const categoryChartData = prepareCategoryChartData();
-  
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
   // Componente do Modal de Histórico
   const HistoryModal = () => {
     if (!currentAsset) return null;
-    
+
     // Paginar o histórico
     const start = (currentHistoryPage - 1) * historyPageSize;
     const end = start + historyPageSize;
     const paginatedHistory = currentAsset.historico.slice(start, end);
     const totalHistoryItems = currentAsset.historico.length;
-    
+
     return (
       <Modal
         title={`Histórico de Ativo - ${currentAsset.serialMaquina}`}
@@ -619,7 +647,7 @@ const GestaoInventario = () => {
         footer={[
           <Button key="close" onClick={handleModalCancel}>
             Fechar
-          </Button>
+          </Button>,
         ]}
         width={700}
       >
@@ -638,8 +666,8 @@ const GestaoInventario = () => {
               <Text strong>RFID:</Text> {currentAsset.rfid}
             </Col>
             <Col span={12}>
-              <Text strong>Situação Atual: </Text> 
-              <Tag color={currentAsset.situacao === 'Apto' ? 'green' : 'red'}>
+              <Text strong>Situação Atual: </Text>
+              <Tag color={currentAsset.situacao === "Apto" ? "green" : "red"}>
                 {currentAsset.situacao}
               </Tag>
             </Col>
@@ -651,85 +679,105 @@ const GestaoInventario = () => {
             </Col>
           </Row>
         </Card>
-        
+
         <Divider orientation="left">Histórico de Alocações</Divider>
-        
+
         <Timeline
           mode="left"
-          items={paginatedHistory.map(item => ({
+          items={paginatedHistory.map((item) => ({
             label: item.data,
             children: (
-              <Card size="small" style={{ marginBottom: '10px' }}>
-                <p><strong>Destino:</strong> {item.destino} {item.nomeDestino ? `- ${item.nomeDestino}` : ''}</p>
-                <p><strong>OS:</strong> {item.os}</p>
-                <p><strong>Motivo:</strong> {item.motivo}</p>
-                <p><strong>Local:</strong> {item.local}</p>
-                <p><strong>Responsável:</strong> {item.responsavel}</p>
+              <Card size="small" style={{ marginBottom: "10px" }}>
+                <p>
+                  <strong>Destino:</strong> {item.destino}{" "}
+                  {item.nomeDestino ? `- ${item.nomeDestino}` : ""}
+                </p>
+                <p>
+                  <strong>OS:</strong> {item.os}
+                </p>
+                <p>
+                  <strong>Motivo:</strong> {item.motivo}
+                </p>
+                <p>
+                  <strong>Responsável:</strong> {item.responsavel}
+                </p>
               </Card>
-            )
+            ),
           }))}
         />
-        
+
         {totalHistoryItems > historyPageSize && (
-          <div style={{ textAlign: 'center', marginTop: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <Button 
-              type="text" 
-              icon={<span>&#8249;</span>} 
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "15px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Button
+              type="text"
+              icon={<span>&#8249;</span>}
               disabled={currentHistoryPage === 1}
               onClick={() => handleHistoryPageChange(currentHistoryPage - 1)}
-              style={{ fontSize: '18px' }}
+              style={{ fontSize: "18px" }}
             />
-            <div style={{ 
-              margin: '0 10px', 
-              border: '1px solid #d9d9d9', 
-              borderRadius: '2px', 
-              padding: '4px 15px',
-              minWidth: '32px',
-              textAlign: 'center',
-              color: '#1890ff'
-            }}>
+            <div
+              style={{
+                margin: "0 10px",
+                border: "1px solid #d9d9d9",
+                borderRadius: "2px",
+                padding: "4px 15px",
+                minWidth: "32px",
+                textAlign: "center",
+                color: "#1890ff",
+              }}
+            >
               {currentHistoryPage}
             </div>
-            <Button 
-              type="text" 
-              icon={<span>&#8250;</span>} 
-              disabled={currentHistoryPage === Math.ceil(totalHistoryItems / historyPageSize)}
+            <Button
+              type="text"
+              icon={<span>&#8250;</span>}
+              disabled={
+                currentHistoryPage ===
+                Math.ceil(totalHistoryItems / historyPageSize)
+              }
               onClick={() => handleHistoryPageChange(currentHistoryPage + 1)}
-              style={{ fontSize: '18px' }}
+              style={{ fontSize: "18px" }}
             />
           </div>
         )}
       </Modal>
     );
   };
-
   // =================== RENDERIZAÇÃO PRINCIPAL ===================
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: "20px" }}>
       {contextHolder}
-      
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+  
+      <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
         <Col span={24}>
           <Title level={4}>Sistema de Gestão de Ativos</Title>
           <Text type="secondary">Gerencie ativos em tempo real</Text>
         </Col>
       </Row>
-
-      <Tabs 
-        activeKey={activeTab} 
+  
+      <Tabs
+        activeKey={activeTab}
         onChange={setActiveTab}
         type="card"
         size="large"
-        style={{ marginBottom: '20px' }}
+        style={{ marginBottom: "20px" }}
       >
         <TabPane tab="Dashboard" key="1">
-          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
             <Col span={24}>
               <Title level={5}>Visão Geral dos Ativos</Title>
             </Col>
           </Row>
           
-          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic title="Total de Ativos" value={assetMetrics.totalAssets} />
@@ -764,7 +812,7 @@ const GestaoInventario = () => {
             </Col>
           </Row>
           
-          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
             <Col xs={24} md={12}>
               <Card title="Distribuição de Ativos por Categoria">
                 <ResponsiveContainer width="100%" height={300}>
@@ -807,25 +855,25 @@ const GestaoInventario = () => {
             </Col>
           </Row>
         </TabPane>
-        
+  
         <TabPane tab="Gestão de Ativos" key="2">
-          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
             <Col xs={24} md={8}>
               <Search
                 placeholder="Buscar ativos"
                 onSearch={handleAssetSearch}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
                 allowClear
               />
             </Col>
             <Col xs={24} md={8}>
               <Select
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
                 placeholder="Filtrar por categoria"
                 onChange={handleAssetCategoryChange}
                 defaultValue="all"
                 options={[
-                  { label: 'Todas', value: 'all' },
+                  { label: "Todas", value: "all" },
                   ...Array.from(new Set(assets.map(a => a.categoria)))
                     .map(cat => ({ label: cat, value: cat }))
                 ]}
@@ -833,20 +881,20 @@ const GestaoInventario = () => {
             </Col>
             <Col xs={24} md={8}>
               <Select
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
                 placeholder="Filtrar por modelo"
                 onChange={handleModeloChange}
                 defaultValue="all"
                 options={[
-                  { label: 'Todos', value: 'all' },
+                  { label: "Todos", value: "all" },
                   ...Array.from(new Set(assets.map(a => a.modelo)))
                     .map(modelo => ({ label: modelo, value: modelo }))
                 ]}
               />
             </Col>
           </Row>
-
-          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+  
+          <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic title="Total de Ativos" value={assetMetrics.totalAssets} />
@@ -880,8 +928,8 @@ const GestaoInventario = () => {
               </Card>
             </Col>
           </Row>
-
-          <Card title="Lista de Ativos" style={{width: '100%'}}>
+  
+          <Card title="Lista de Ativos" style={{ width: "100%" }}>
             <Table 
               columns={assetsColumns} 
               dataSource={filteredAssets}
@@ -892,9 +940,9 @@ const GestaoInventario = () => {
             />
           </Card>
         </TabPane>
-
+  
         <TabPane tab="Cadastro de Ativos" key="3">
-          <Card title="Cadastrar Novo Ativo" style={{width: '100%'}}>
+          <Card title="Cadastrar Novo Ativo" style={{ width: "100%" }}>
             <Form
               form={form}
               layout="vertical"
@@ -1014,12 +1062,148 @@ const GestaoInventario = () => {
             </Form>
           </Card>
         </TabPane>
+  
+        <TabPane tab="Movimentação de Estoque" key="4">
+          <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+            <Col span={24}>
+              <Alert
+                message={`Movimentação de Estoque - OS: ${pipeId}`}
+                description="Utilize este módulo para alocar ou devolver ativos para a OS atual. Busque os ativos pelo RFID, Serial da Máquina, Serial N ou Device Z."
+                type="info"
+                showIcon
+                style={{ marginBottom: '20px' }}
+              />
+            </Col>
+          </Row>
+          
+          <Card title="Buscar Ativos" style={{ marginBottom: '20px' }}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={16}>
+                <Input 
+                  placeholder="Digite RFID, Serial da Máquina, Serial N ou Device Z" 
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onPressEnter={handleSearch}
+                />
+              </Col>
+              <Col xs={24} md={8}>
+                <Button 
+                  type="primary" 
+                  icon={<SearchOutlined />} 
+                  onClick={handleSearch}
+                  loading={isSearching}
+                  style={{ width: '100%' }}
+                >
+                  Buscar
+                </Button>
+              </Col>
+            </Row>
+            
+            {searchResults.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <Title level={5}>Resultados da Busca</Title>
+                <Table 
+                  dataSource={searchResults}
+                  columns={searchResultsColumns}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              </div>
+            )}
+            
+            {selectedAssets.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <Row justify="space-between">
+                  <Col>
+                    <Title level={5}>Ativos Selecionados para Movimentação</Title>
+                  </Col>
+                  <Col>
+                    <Button 
+                      danger 
+                      onClick={() => setSelectedAssets([])}
+                    >
+                      Limpar Seleção
+                    </Button>
+                  </Col>
+                </Row>
+                <Table 
+                  dataSource={selectedAssets}
+                  columns={[
+                    ...searchResultsColumns.slice(0, searchResultsColumns.length - 1),
+                    {
+                      title: 'Ação',
+                      key: 'action',
+                      render: (_, record) => (
+                        <Button 
+                          danger 
+                          onClick={() => handleAssetDeselect(record.id)}
+                        >
+                          Remover
+                        </Button>
+                      ),
+                    }
+                  ]}
+                  rowKey="id"
+                  pagination={false}
+                  size="small"
+                />
+              </div>
+            )}
+          </Card>
+          
+          <Card 
+            title={`Movimentação de Ativos - OS: ${pipeId}`}
+            loading={loadingAllocated}
+          >
+            <Alert
+              message="Instruções de Uso"
+              description={
+                <div>
+                  <p>• Lado <strong>esquerdo:</strong> ativos disponíveis para alocação na OS.</p>
+                  <p>• Lado <strong>direito:</strong> ativos já alocados na OS.</p>
+      <p>• Use as setas para mover os ativos entre as listas.</p>
+                  <p>• As mudanças são salvas automaticamente.</p>
+                </div>
+              }
+              type="warning"
+              showIcon
+              style={{ marginBottom: '20px' }}
+            />
+            
+            {treeData.length > 0 ? (
+              <TreeTransfer
+                dataSource={treeData}
+                targetKeys={targetKeys}
+                onChange={handleTransferChange}
+                titles={['Ativos Disponíveis', `Ativos Alocados na OS ${pipeId}`]}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <Text type="secondary">
+                  Nenhum ativo selecionado ou já alocado nesta OS. 
+                  Utilize a busca acima para encontrar e selecionar ativos.
+                </Text>
+              </div>
+            )}
+            
+            {targetKeys.length > 0 && (
+              <div style={{ marginTop: '20px' }}>
+                <Alert
+                  message={`${targetKeys.length} ativo(s) alocado(s) na OS ${pipeId}`}
+                  type="success"
+                  showIcon
+                />
+              </div>
+            )}
+          </Card>
+        </TabPane>
       </Tabs>
-      
+  
       {/* Modal de histórico - renderizado apenas quando visível */}
       <HistoryModal />
     </div>
   );
-};
+}
 
 export default GestaoInventario;
