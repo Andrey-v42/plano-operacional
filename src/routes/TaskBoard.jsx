@@ -13,6 +13,10 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
   const analysisTickets = dataChamados.filter(ticket => ticket.status === 'analysis');
   const closedTickets = dataChamados.filter(ticket => ticket.status === 'closed');
 
+  const currentUser = localStorage.getItem('currentUser');
+  const permission = localStorage.getItem('permission');
+  const permissionEvento = localStorage.getItem('permissionEvento');
+
   const togglePanel = (key) => {
     if (openPanels.includes(key)) {
       setOpenPanels(openPanels.filter(panel => panel !== key));
@@ -78,17 +82,17 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       width: '15%',
       render: (_, record) => (
         <Space>
-          {record.status === 'pending' && (
+          {record.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc') && (
             <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
               Abrir Ticket
             </Button>
           )}
-          {record.status === 'analysis' && (
+          {record.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc') && (
             <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
               Responder
             </Button>
           )}
-          {record.status !== 'closed' && (
+          {record.status !== 'closed' && (currentUser === record.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc') && (
             <Button
               type="default"
               size="small"
@@ -175,6 +179,11 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       </Card>
     );
   };
+
+  // setInterval(async () => {
+  //   await fetchChamados();
+  //   console.log('Atualizando chamados...');
+  // }, 15000);
 
   return (
     <div>

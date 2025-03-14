@@ -24,9 +24,13 @@ const Suporte = () => {
 
     const [chatDrawerVisible, setChatDrawerVisible] = useState(false);
     const [currentChatTicketId, setCurrentChatTicketId] = useState(null);
+    const [currentRecord, setCurrentRecord] = useState(null);
 
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
+    const permission = localStorage.getItem('permission');
+    const permissionEvento = localStorage.getItem('permissionEvento');
+    const currentUser = localStorage.getItem('currentUser');
 
     const [formChamado] = Form.useForm();
     const [formAnswer] = Form.useForm();
@@ -56,7 +60,78 @@ const Suporte = () => {
 
     const optionsCategoria = [
         { "label": "Acesso Dashboard", "value": "Acesso Dashboard" },
-
+        { "label": "Acesso Backoffice", "value": "Acesso Backoffice" },
+        { "label": "Alter. de Cardápio", "value": "Alter. de Cardápio" },
+        { "label": "Alter. de funcionalidades/Admin", "value": "Alter. de funcionalidades/Admin" },
+        { "label": "Alter. de funcionalidades/Cargo", "value": "Alter. de funcionalidades/Cargo" },
+        { "label": "Alter. de funcionalidades/Dash-Extranet", "value": "Alter. de funcionalidades/Dash-Extranet" },
+        { "label": "Alter. de PDV", "value": "Alter. de PDV" },
+        { "label": "Análise Relatorial", "value": "Análise Relatorial" },
+        { "label": "Aprovação de Place", "value": "Aprovação de Place" },
+        { "label": "Associar Cardapio a operador", "value": "Associar Cardapio a operador" },
+        { "label": "Associar Device", "value": "Associar Device" },
+        { "label": "Avaria", "value": "Avaria" },
+        { "label": "Bug - Report", "value": "Bug - Report" },
+        { "label": "Cobrança duplicada", "value": "Cobrança duplicada" },
+        { "label": "Config SubAdquirente", "value": "Config SubAdquirente" },
+        { "label": "Criação de operador", "value": "Criação de operador" },
+        { "label": "Criação PDV + Cardápio", "value": "Criação PDV + Cardápio" },
+        { "label": "Duplicação de Saldo", "value": "Duplicação de Saldo" },
+        { "label": "Dúvida - Processo / Produto", "value": "Dúvida - Processo / Produto" },
+        { "label": "Entradas", "value": "Entradas" },
+        { "label": "Envio de Material", "value": "Envio de Material" },
+        { "label": "Erro ao bater ponto digital", "value": "Erro ao bater ponto digital" },
+        { "label": "Erro de Impressão", "value": "Erro de Impressão" },
+        { "label": "Erro de leitura na TAG", "value": "Erro de leitura na TAG" },
+        { "label": "Erro de Login", "value": "Erro de Login" },
+        { "label": "Erro estorno adquirência", "value": "Erro estorno adquirência" },
+        { "label": "Erro msg adquirência", "value": "Erro msg adquirência" },
+        { "label": "Erro Operacional", "value": "Erro Operacional" },
+        { "label": "Estoque Z", "value": "Estoque Z" },
+        { "label": "Falha de impressão", "value": "Falha de impressão" },
+        { "label": "Falha de Sincronia", "value": "Falha de Sincronia" },
+        { "label": "Fech. de comanda Pós Paga", "value": "Fech. de comanda Pós Paga" },
+        { "label": "Impressora", "value": "Impressora" },
+        { "label": "Inclusão de entrada", "value": "Inclusão de entrada" },
+        { "label": "Inclusão de produto", "value": "Inclusão de produto" },
+        { "label": "Limite não integrado", "value": "Limite não integrado" },
+        { "label": "Logo de Ficha", "value": "Logo de Ficha" },
+        { "label": "Mapeamento de relatório", "value": "Mapeamento de relatório" },
+        { "label": "Multiplos pagamentos", "value": "Multiplos pagamentos" },
+        { "label": "Problemas de conexão", "value": "Problemas de conexão" },
+        { "label": "Produtos de Devolução", "value": "Produtos de Devolução" },
+        { "label": "Prot. de entrega de terminais", "value": "Prot. de entrega de terminais" },
+        { "label": "Pix não funcionando", "value": "Pix não funcionando" },
+        { "label": "Queda de Adquirência", "value": "Queda de Adquirência" },
+        { "label": "Reaproveitamento de Valores", "value": "Reaproveitamento de Valores" },
+        { "label": "Recargas expiradas", "value": "Recargas expiradas" },
+        { "label": "Renomear operadores", "value": "Renomear operadores" },
+        { "label": "Transação Apartada", "value": "Transação Apartada" },
+        { "label": "Transações off", "value": "Transações off" },
+        { "label": "Venda Apartada", "value": "Venda Apartada" },
+        { "label": "Vincular bar a operador", "value": "Vincular bar a operador" },
+        { "label": "Vincular bar a vendor", "value": "Vincular bar a vendor" },
+        { "label": "Zig Tag Cheio", "value": "Zig Tag Cheio" },
+        { "label": "Alter. data de térm. vendas - Evento Ativo", "value": "Alter. data de térm. vendas - Evento Ativo" },
+        { "label": "Alter. data de término - Evento encerrado", "value": "Alter. data de término - Evento encerrado" },
+        { "label": "Alter. do nome do evento", "value": "Alter. do nome do evento" },
+        { "label": "Aplicativo de venda de ingresso - PDV", "value": "Aplicativo de venda de ingresso - PDV" },
+        { "label": "Ativação de Token", "value": "Ativação de Token" },
+        { "label": "Atraso/falha no envio do repasse", "value": "Atraso/falha no envio do repasse" },
+        { "label": "BUG - APP validação de Ingressos", "value": "BUG - APP validação de Ingressos" },
+        { "label": "BUG - APP venda de Ingresso", "value": "BUG - APP venda de Ingresso" },
+        { "label": "BUG - Marketplace (site de vendas)", "value": "BUG - Marketplace (site de vendas)" },
+        { "label": "BUG - Painel", "value": "BUG - Painel" },
+        { "label": "Cancelamento do estorno", "value": "Cancelamento do estorno" },
+        { "label": "Cancelamento do evento", "value": "Cancelamento do evento" },
+        { "label": "Cancelar ingresso", "value": "Cancelar ingresso" },
+        { "label": "Compras analisadas pelo time de Risco", "value": "Compras analisadas pelo time de Risco" },
+        { "label": "Dúvida - Códigos e promoters", "value": "Dúvida - Códigos e promoters" },
+        { "label": "Dúvida - Conferência de relatórios", "value": "Dúvida - Conferência de relatórios" },
+        { "label": "Dúvida - Config de ingressos e grupos", "value": "Dúvida - Config de ingressos e grupos" },
+        { "label": "Solicit. Troca lote ingressos", "value": "Solicit. Troca lote ingressos" },
+        { "label": "Transferência de ingresso", "value": "Transferência de ingresso" },
+        { "label": "Transferência de valor (antecipação)", "value": "Transferência de valor (antecipação)" }
     ];
 
     const columnsChamados = [
@@ -116,7 +191,10 @@ const Suporte = () => {
                         type="default"
                         size="small"
                         icon={<CommentOutlined />}
-                        onClick={() => handleCreateChatForTicket(record.id)}
+                        onClick={() => {
+                            handleCreateChatForTicket(record.id)
+                            setCurrentRecord(record);
+                        }}
                     >
                         Chat
                     </Button>
@@ -239,9 +317,10 @@ const Suporte = () => {
     };
 
     const enviarChamado = async (values) => {
-        if (values.categoria && values.urgencia && values.ponto && values.modelo && values.descricao) {
+        if (values.categoria && values.ponto && values.modelo && values.descricao) {
             setButtonChamadoLoading(true);
             try {
+                values.urgencia = 'Urgente'
                 const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
                     method: 'POST',
                     headers: {
@@ -392,7 +471,7 @@ const Suporte = () => {
             let data = await response.json();
             data = data.docs;
             let chamados = data.map((doc) => {
-                if (closedTicketsHidden && doc.data.status === 'closed') {
+                if (currentUser !== doc.data.solicitante && permission !== 'admin' && permission !== 'ecc' && permissionEvento !== 'C-CCO' && permissionEvento !== 'Head') {
                     return null;
                 } else {
                     return {
@@ -456,7 +535,7 @@ const Suporte = () => {
                                             />
                                         </Form.Item>
                                     </Col>
-                                    <Col span={12}>
+                                    {/* <Col span={12}>
                                         <Form.Item
                                             label={<Text strong>Nível de Urgência</Text>}
                                             name='urgencia'
@@ -471,7 +550,7 @@ const Suporte = () => {
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
-                                    </Col>
+                                    </Col> */}
                                 </Row>
 
                                 <Row gutter={16}>
@@ -899,6 +978,7 @@ const Suporte = () => {
             <TicketChatDrawer
                 visible={chatDrawerVisible}
                 ticketId={currentChatTicketId}
+                currentRecord={currentRecord}
                 pipeId={pipeId}
                 onClose={() => setChatDrawerVisible(false)}
             />
