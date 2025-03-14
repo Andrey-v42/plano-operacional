@@ -603,7 +603,7 @@ const Suporte = () => {
                                     title={<Text strong>Chamados Em Análise</Text>}
                                     value={dataChamados.filter(c => c.status === 'analysis').length}
                                     valueStyle={{ color: '#1890ff' }}
-                                    prefix={<SyncOutlined />}
+                                    prefix={<SyncOutlined spin={true} />}
                                 />
                             </Col>
                             <Col span={6}>

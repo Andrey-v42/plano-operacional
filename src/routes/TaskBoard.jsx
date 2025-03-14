@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Table, Typography, Badge, Button, Collapse, Space, Tag } from 'antd';
-import { DownOutlined, UpOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined } from '@ant-design/icons';
+import { DownOutlined, UpOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CommentOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -94,7 +94,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               size="small"
               onClick={() => handleCreateChatForTicket(record.id)}
             >
-              Chat
+              <CommentOutlined />Chat
             </Button>
           )}
         </Space>
