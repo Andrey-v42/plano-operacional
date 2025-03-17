@@ -4,14 +4,13 @@ import {
   Col, 
   Card, 
   Statistic, 
-  Typography,
-  PieChart, 
-  BarChart,
-  LineChart,
-  ResponsiveContainer 
+  Typography 
 } from 'antd';
 import { 
+  ResponsiveContainer,
+  PieChart, 
   Pie, 
+  BarChart, 
   Bar, 
   XAxis, 
   YAxis, 
@@ -85,7 +84,7 @@ const prepareCategoryChartData = (filteredAssets) => {
   }));
 };
 
-const Dashboard = ({ assets, filteredAssets }) => {
+const DashboardGestaoDeAtivos = ({ assets, filteredAssets }) => {
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
   const assetMetrics = calculateAssetMetrics(filteredAssets);
@@ -181,4 +180,4 @@ const Dashboard = ({ assets, filteredAssets }) => {
   );
 };
 
-export default Dashboard;
+export default DashboardGestaoDeAtivos;
