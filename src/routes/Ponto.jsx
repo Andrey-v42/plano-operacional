@@ -23,6 +23,81 @@ const Ponto = () => {
     const permission = localStorage.getItem('permission')
     const permissionEvento = localStorage.getItem('permissionEvento')
 
+    const getLatestTimestamp = (doc) => {
+        const timestamps = [];
+
+        // Extract all available timestamps
+        if (doc.devolucao && doc.devolucao !== '-' && doc.devolucao !== '+') {
+            timestamps.push(new Date(doc.devolucao.split(' ')[0].split('/').reverse().join('-') + ' ' + doc.devolucao.split(' ')[1]));
+        }
+        if (doc.saida && doc.saida !== '-' && doc.saida !== '+') {
+            timestamps.push(new Date(doc.saida.split(' ')[0].split('/').reverse().join('-') + ' ' + doc.saida.split(' ')[1]));
+        }
+        if (doc.entrada && doc.entrada !== '-' && doc.entrada !== '+') {
+            timestamps.push(new Date(doc.entrada.split(' ')[0].split('/').reverse().join('-') + ' ' + doc.entrada.split(' ')[1]));
+        }
+        if (doc.retirada && doc.retirada !== '-' && doc.retirada !== '+') {
+            timestamps.push(new Date(doc.retirada.split(' ')[0].split('/').reverse().join('-') + ' ' + doc.retirada.split(' ')[1]));
+        }
+
+        // Return the most recent timestamp or a very old date if no timestamps
+        return timestamps.length > 0 ? Math.max(...timestamps.map(d => d.getTime())) : new Date(0).getTime();
+    };
+
+    const mapAndSortPontoData = (result) => {
+        let dataPonto = result.docs.map((doc) => {
+            const data = doc.data;
+            if (
+                localStorage.getItem('currentUser') == data.nome &&
+                permissionEvento != 'planner' &&
+                permissionEvento != 'controle' &&
+                permissionEvento != 'get' &&
+                permission != 'admin' &&
+                permissionEvento != 'ecc'
+            ) {
+                return {
+                    key: doc.id,
+                    nome: data.nome,
+                    funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
+                    retirada: !data.retirada ? '-' : data.retirada,
+                    entrada: !data.entrada ? '+' : data.entrada,
+                    saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                    devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.devolucao
+                };
+            } else if (
+                permissionEvento == 'planner' ||
+                permissionEvento == 'get' ||
+                permissionEvento == 'controle' ||
+                permission == 'admin' ||
+                permissionEvento == 'ecc'
+            ) {
+                return {
+                    key: doc.id,
+                    nome: data.nome,
+                    funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
+                    retirada: !data.retirada ? '-' : data.retirada,
+                    entrada: !data.entrada ? '+' : data.entrada,
+                    saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
+                    devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.devolucao
+                };
+            } else {
+                return {};
+            }
+        });
+
+        // Filter out empty objects
+        dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
+
+        // Sort data by most recent timestamp (descending order)
+        dataPonto.sort((a, b) => {
+            const timestampA = getLatestTimestamp(a);
+            const timestampB = getLatestTimestamp(b);
+            return timestampB - timestampA; // Descending order
+        });
+
+        return dataPonto;
+    };
+
     const columns = [
         {
             title: 'Nome',
@@ -97,10 +172,10 @@ const Ponto = () => {
         { value: "Coordenador de Controle", label: "Coordenador de Controle" },
         { value: "Head", label: "Head" }
     ];
-    
+
     const optionsOperacao = [
-        { value: "retirada", label: "Retirada de Equipamentos"},
-        { value: "entrada", label: "Chegada no Evento"}
+        { value: "retirada", label: "Retirada de Equipamentos" },
+        { value: "entrada", label: "Chegada no Evento" }
     ]
 
     useEffect(() => {
@@ -211,37 +286,7 @@ const Ponto = () => {
 
                     const result = await responsePonto.json();
 
-                    let dataPonto = result.docs.map((doc) => {
-                        if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin' && permissionEvento != 'ecc') {
-                            const data = doc.data
-                            return {
-                                key: doc.id,
-                                nome: data.nome,
-                                funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                                retirada: !data.retirada ? '-' : data.retirada,
-                                entrada: !data.entrada ? '+' : data.entrada,
-                                saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                                devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                            }
-                        } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin' || permissionEvento == 'ecc') {
-                            const data = doc.data
-                            return {
-                                key: doc.id,
-                                nome: data.nome,
-                                funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                                retirada: !data.retirada ? '-' : data.retirada,
-                                entrada: !data.entrada ? '+' : data.entrada,
-                                saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                                devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                            }
-                        } else {
-                            return {
-                            
-                            }
-                        }
-                    })
-                    
-                    dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
+                    const dataPonto = mapAndSortPontoData(result)
 
                     setDocs(dataPonto)
 
@@ -257,7 +302,7 @@ const Ponto = () => {
     };
 
     const registrarPonto = async (values) => {
-        if(location === null) {
+        if (location === null) {
             openNotificationFailure('Erro ao registrar local. Por favor, ative o serviço de localização do dispositivo ou permita o acesso.')
             return
         }
@@ -274,7 +319,7 @@ const Ponto = () => {
             const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
             const currentTimeString = now.toLocaleDateString('pt-BR', options) + ' ' + now.toLocaleTimeString('pt-BR');
 
-            if(values.operacao == 'retirada') {
+            if (values.operacao == 'retirada') {
                 formData.retirada = currentTimeString
             } else {
                 formData.entrada = currentTimeString
@@ -288,7 +333,7 @@ const Ponto = () => {
                 body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/controlePonto`, formData }),
             });
 
-            if(responseRegistro.ok) {
+            if (responseRegistro.ok) {
                 openNotificationSucess('Ponto registrado com sucesso!')
                 setDrawerVisible(false)
                 setTableLoading(true)
@@ -305,37 +350,7 @@ const Ponto = () => {
 
                 const result = await response.json();
 
-                let dataPonto = result.docs.map((doc) => {
-                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin' && permissionEvento != 'ecc') {
-                        const data = doc.data
-                        return {
-                            key: doc.id,
-                            nome: data.nome,
-                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                            retirada: !data.retirada ? '-' : data.retirada,
-                            entrada: !data.entrada ? '+' : data.entrada,
-                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                        }
-                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin' || permissionEvento != 'ecc') {
-                        const data = doc.data
-                        return {
-                            key: doc.id,
-                            nome: data.nome,
-                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                            retirada: !data.retirada ? '-' : data.retirada,
-                            entrada: !data.entrada ? '+' : data.entrada,
-                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                        }
-                    } else {
-                        return {
-                        
-                        }
-                    }
-                })
-                
-                dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
+                const dataPonto = mapAndSortPontoData(result)
 
                 setButtonLoading(false)
                 setDocs(dataPonto);
@@ -367,37 +382,7 @@ const Ponto = () => {
 
                 const result = await response.json();
 
-                let dataPonto = result.docs.map((doc) => {
-                    if(localStorage.getItem('currentUser') == doc.data.nome && permissionEvento != 'planner' && permissionEvento != 'controle' && permissionEvento !='get' && permission != 'admin') {
-                        const data = doc.data
-                        return {
-                            key: doc.id,
-                            nome: data.nome,
-                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                            retirada: !data.retirada ? '-' : data.retirada,
-                            entrada: !data.entrada ? '+' : data.entrada,
-                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                        }
-                    } else if(permissionEvento == 'planner' || permissionEvento == 'get' || permissionEvento == 'controle' || permission == 'admin') {
-                        const data = doc.data
-                        return {
-                            key: doc.id,
-                            nome: data.nome,
-                            funcao: data.funcao.charAt(0).toUpperCase() + data.funcao.slice(1),
-                            retirada: !data.retirada ? '-' : data.retirada,
-                            entrada: !data.entrada ? '+' : data.entrada,
-                            saida: !data.saida && data.entrada ? '+' : !data.saida && !data.entrada ? '-' : data.saida,
-                            devolucao: !data.devolucao && data.saida ? '+' : !data.devolucao && !data.saida ? '-' : data.saida
-                        }
-                    } else {
-                        return {
-                        
-                        }
-                    }
-                })
-                
-                dataPonto = dataPonto.filter(item => Object.keys(item).length > 0);
+                const dataPonto = mapAndSortPontoData(result)
 
                 const nomes = [
                     ...new Set(result.docs.map((doc) => doc.data.nome))

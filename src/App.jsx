@@ -10,7 +10,8 @@ import {
     MessageOutlined,
     QuestionCircleOutlined,
     CustomerServiceFilled,
-    SettingOutlined
+    SettingOutlined,
+    BarChartOutlined
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Flex } from 'antd';
 const { Header, Sider, Content } = Layout;
@@ -26,6 +27,7 @@ import Suporte from './routes/Suporte';
 import Estoque from './routes/Estoque';
 import { messaging, generateToken } from '../firebaseConfig';
 import { onMessage } from 'firebase/messaging';
+import Analytics from './routes/Analytics';
 
 function NotFound() {
     return <div>Page not found</div>;
@@ -125,7 +127,7 @@ const App = () => {
                 collapsible
                 collapsed={collapsed}
                 style={{
-                    position: 'sticky',
+
                     zIndex: 9999,
                     top: 0,
                     // boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)"
@@ -135,6 +137,7 @@ const App = () => {
                 <Menu
                     theme="dark"
                     mode="vertical"
+                    style={{ position: 'sticky' }}
                     defaultSelectedKeys={selectedKey}
 
                     items={[
@@ -213,7 +216,7 @@ const App = () => {
                                 navigate(`/cronometro?pipeId=${pipeId}`);
                                 setCollapsed(true)
                             },
-                            disabled: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin',
+                            disabled: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin' && localStorage.getItem('permissionEvento') !== 'Controle Supervisores' && localStorage.getItem('permissionEvento') !== 'Controle Técnicos',
                             hidden: localStorage.getItem('permission') !== 'config' && localStorage.getItem('permission') !== 'admin'
                         }, 
                         {
@@ -227,6 +230,17 @@ const App = () => {
                                 setCollapsed(true)
                             },
 
+                        },
+                        {
+                            key: '9',
+                            icon: <BarChartOutlined />,
+                            label: 'Analytics',
+                            onClick: () => {
+                                setSelectedKey(['9'])
+                                localStorage.setItem("selectedKey", "9")
+                                navigate(`/analytics?pipeId=${pipeId}`);
+                                setCollapsed(true)
+                            }
                         }
                     ]}
                 />
@@ -278,6 +292,7 @@ const App = () => {
                         <Route path="/cronometro" element={<Cronometro />} />
                         <Route path="/suporte" element={<Suporte />} />
                         <Route path="/estoque" element={<Estoque />} />
+                        <Route path="/analytics" element={<Analytics />} />
                         <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
