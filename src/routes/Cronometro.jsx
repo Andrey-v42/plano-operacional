@@ -10,6 +10,7 @@ const { Title, Text } = Typography;
 const Cronometro = () => {
     const navigate = useNavigate();
     const permission = localStorage.getItem('permission');
+    const permissionEvento = localStorage.getItem('permissionEvento');
     const [searchParams] = useSearchParams();
     const pipeId = searchParams.get('pipeId');
     const [api, contextHolder] = notification.useNotification();
@@ -990,7 +991,7 @@ const Cronometro = () => {
 
     // Check permission and redirect if necessary
     useEffect(() => {
-        if (permission !== 'config' && permission !== 'admin') {
+        if (permission !== 'config' && permission !== 'admin' && permissionEvento !== 'Controle Supervisores' && permissionEvento !== 'Controle Técnicos') {
             navigate(`/plano?pipeId=${pipeId}`);
         }
     }, [permission, navigate, pipeId]);

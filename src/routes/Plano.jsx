@@ -175,6 +175,7 @@ const Plano = () => {
     const [signature, setSignature] = useState('');
     const [firstStatus, setFirstStatus] = useState(null);
     const [formMultipleOp, setFormMultipleOp] = useState({})
+    const [useEntregaData, setUseEntregaData] = useState(false);
 
     const { styles } = useStyle();
     const [formMultiple] = Form.useForm()
@@ -320,6 +321,32 @@ const Plano = () => {
                 { text: 'Devolvido', value: 'Devolvido' },
             ],
             onFilter: (value, record) => record.Status.includes(value),
+            render: (status) => {
+                let color = '';
+
+                // Assign colors based on status
+                if (status === 'Entrega Pendente') {
+                    color = '#ffcccb'; // Light red for pending
+                } else if (status === 'Entregue') {
+                    color = '#add8e6'; // Light green for delivered
+                } else if (status === 'Devolvido') {
+                    color = '#d4f7d4'; // Light yellow for returned
+                }
+
+                return (
+                    <span
+                        style={{
+                            backgroundColor: color,
+                            border: '1px solid #d9d9d9',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            fontSize: '14px'
+                        }}
+                    >
+                        {status}
+                    </span>
+                );
+            }
         },
         {
             title: 'Perda/Avaria',
@@ -1978,44 +2005,103 @@ const Plano = () => {
     };
 
     const lancarAvariasAvulsas = async (record) => {
-        if (avarias.length > 0 && signature != '') {
-            setDrawerLoading(true)
-            const currentTimeString = new Date().toLocaleString()
-            const avariasFormatadas = avarias.flatMap(avaria =>
-                Array.from({ length: avaria.quantidade }, () => `${avaria.equipamento}: ${avaria.tipoAvaria}`)
-            )
-            setAvarias([])
+        if (avarias.length === 0) {
+            openNotificationFailure('Adicione pelo menos uma avaria antes de continuar.');
+            return;
+        }
 
-            const formattedData = {
-                assinatura: signature,
-                avarias: avariasFormatadas,
-                dataHora: currentTimeString,
-                timestamp: new Date().getTime(),
-                tecnicoResponsavel: localStorage.getItem('currentUser'),
-            }
-            setSignature('')
+        if (signature === '') {
+            openNotificationFailure('Você precisa preencher a assinatura para continuar.');
+            return;
+        }
 
-            try {
-                const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
+        setDrawerLoading(true);
+        const currentTimeString = new Date().toLocaleString();
+        const avariasFormatadas = avarias.flatMap(avaria =>
+            Array.from({ length: avaria.quantidade }, () => `${avaria.equipamento}: ${avaria.tipoAvaria}`)
+        );
+
+        const formattedData = {
+            assinatura: signature,
+            avarias: avariasFormatadas,
+            dataHora: currentTimeString,
+            timestamp: new Date().getTime(),
+            tecnicoResponsavel: localStorage.getItem('currentUser'),
+        };
+
+        try {
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    collectionURL: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias`,
+                    formData: formattedData
+                }),
+            });
+
+            if (response.ok) {
+                // Refresh avarias data
+                const avariaResponse = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias`, formData: formattedData }),
-                })
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional/${record.key}/avarias` })
+                });
 
-                if (response.ok) {
-                    openNotificationSucessAvariasAvulsas()
-                    setDrawerLoading(false)
-                    setDrawerVisible(false)
-                }
-            } catch (error) {
-                console.error(error);
+                let avariaData = await avariaResponse.json();
+                let docsAssinatura = avariaData.docs?.map(doc => doc.data.assinatura);
+                let avariaDocs = avariaData.docs?.map(doc => doc.data.avarias);
+
+                const processedAvarias = avariaDocs.map((array, index) => {
+                    const [equipamento, tipoAvaria] = array[0].split(": ").map(str => str.trim());
+                    return {
+                        equipamento,
+                        tipoAvaria,
+                        quantidade: array.length,
+                        assinatura: docsAssinatura[index]
+                    };
+                });
+
+                setAvarias(processedAvarias);
+                openNotificationSucessAvariasAvulsas();
+                setSignature('');
+                // Reset form avarias
+                setFormAvarias({});
+            } else {
+                openNotificationFailure('Erro ao salvar avarias: ' + (await response.text()));
             }
-        } else {
-            openNotificationFailure('Você precisa preencher a assinatura para continuar.')
+        } catch (error) {
+            console.error('Error adding avarias:', error);
+            openNotificationFailure('Erro ao lançar avarias: ' + error.message);
+        } finally {
+            setDrawerLoading(false);
         }
-    }
+    };
+
+    const fetchAndPopulateEntregaData = (checked) => {
+        if (!currentRecord || currentRecord.Status !== 'Entregue') return;
+
+        setUseEntregaData(checked);
+
+        if (checked && currentRecord.entregaInfo) {
+            // Populate the form with the entrega data
+            const entregaData = {
+                Cliente: currentRecord.entregaInfo.Cliente || '',
+                Telefone: currentRecord.entregaInfo.Telefone || '',
+                Email: currentRecord.entregaInfo.Email || '',
+                CPF: currentRecord.entregaInfo.CPF || '',
+                termoDeResponsabilidade: true
+            };
+
+            setFormValues(entregaData);
+        } else {
+            // Reset the form if unchecked
+            setFormValues({});
+        }
+    };
 
     const criarPDV = async () => {
         setDrawerLoading(true)
@@ -2551,6 +2637,37 @@ const Plano = () => {
         }
     }
 
+    const parseAvariasForTable = (avarias) => {
+        if (!avarias || !Array.isArray(avarias) || avarias.length === 0) {
+            return [];
+        }
+
+        // Group avarias by equipment and type
+        const grouped = {};
+
+        avarias.forEach(avaria => {
+            const parts = avaria.split(': ');
+            if (parts.length < 2) return;
+
+            const equipamento = parts[0].trim();
+            const tipoAvaria = parts[1].trim();
+            const key = `${equipamento}-${tipoAvaria}`;
+
+            if (!grouped[key]) {
+                grouped[key] = {
+                    equipamento,
+                    tipoAvaria,
+                    quantidade: 1,
+                    key
+                };
+            } else {
+                grouped[key].quantidade += 1;
+            }
+        });
+
+        return Object.values(grouped);
+    };
+
     const hasSelected = selectedRowKeys.length > 0;
 
     return (
@@ -2581,7 +2698,28 @@ const Plano = () => {
                                 <Collapse style={{ marginBottom: '2vh' }} items={itemsCollapse} />
 
                                 <Form layout='vertical'
-                                    onValuesChange={(changedValues, allValues) => setFormValues(allValues)}>
+                                    onValuesChange={(changedValues, allValues) => {
+                                        if (!useEntregaData) {
+                                            setFormValues({ ...formValues, ...allValues });
+                                        }
+                                    }}
+                                    fields={[
+                                        { name: ['Cliente'], value: formValues.Cliente },
+                                        { name: ['Telefone'], value: formValues.Telefone },
+                                        { name: ['Email'], value: formValues.Email },
+                                        { name: ['CPF'], value: formValues.CPF },
+                                        { name: ['termoDeResponsabilidade'], value: formValues.termoDeResponsabilidade }
+                                    ]}>
+                                    {currentRecord.Status === 'Entregue' && (
+                                        <Form.Item style={{ marginBottom: '20px' }}>
+                                            <Checkbox
+                                                checked={useEntregaData}
+                                                onChange={(e) => fetchAndPopulateEntregaData(e.target.checked)}
+                                            >
+                                                Usar dados do parceiro da entrega
+                                            </Checkbox>
+                                        </Form.Item>
+                                    )}
                                     <Form.Item label='Parceiro Responsável' name='Cliente'>
                                         <Input />
                                     </Form.Item>
@@ -3059,11 +3197,32 @@ const Plano = () => {
                                             ) : (
                                                 'Não Devolvido'
                                             )}</Card.Grid>
-                                        <Card.Grid style={{ width: '100%', fontSize: 'small' }}><b>Avarias</b><br />
+                                        <Card.Grid style={{ width: '100%', padding: '12px' }}>
+                                            <div style={{ fontSize: 'small', marginBottom: '8px' }}><b>Avarias</b></div>
                                             {record.devolucaoInfo?.Avarias && record.devolucaoInfo.Avarias.length > 0 ? (
-                                                processAvariasArray(record.devolucaoInfo.Avarias).map((item, index) => (
-                                                    <div key={index}>{item}</div>
-                                                ))
+                                                <Table
+                                                    dataSource={parseAvariasForTable(record.devolucaoInfo.Avarias)}
+                                                    columns={[
+                                                        {
+                                                            title: 'Equipamento',
+                                                            dataIndex: 'equipamento',
+                                                            key: 'equipamento',
+                                                        },
+                                                        {
+                                                            title: 'Tipo da Avaria',
+                                                            dataIndex: 'tipoAvaria',
+                                                            key: 'tipoAvaria',
+                                                        },
+                                                        {
+                                                            title: 'Quantidade',
+                                                            dataIndex: 'quantidade',
+                                                            key: 'quantidade',
+                                                        }
+                                                    ]}
+                                                    pagination={false}
+                                                    size="small"
+                                                    bordered
+                                                />
                                             ) : (
                                                 'Nenhuma avaria registrada'
                                             )}

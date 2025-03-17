@@ -96,42 +96,59 @@ const Suporte = () => {
         setChatDrawerVisible(true);
     };
 
+    const handleUrgencia = (value) => {
+        switch (value) {
+            case "Alteração de funcionalidades":
+            case "Transação Apartada":
+            case "Cobrança indevida":
+            case "Estorno adquirência":
+            case "Erro mensagem adquirência":
+            case "Falha de Sincronia":
+            case "Multiplos pagamentos":
+            case "Pix não funcionando":
+            case "Recargas expiradas":
+                return "Urgente";
+            default:
+                return "Sem Urgência";
+        }
+    };
+
     const optionsCategoria = [
-        { value: "Alteração de Cardápio", label: "Alteração de Cardápio" },
-        { value: "Substituição de equipamento", label: "Substituição de equipamento" },
-        { value: "Erro de login", label: "Erro de login" },
-        { value: "Alteração de funcionalidades", label: "Alteração de funcionalidades" },
-        { value: "Acesso", label: "Acesso" },
-        { value: "Alteração quantidade de terminais", label: "Alteração quantidade de terminais" },
-        { value: "Fechamento manual de ambulante", label: "Fechamento manual de ambulante" },
-        { value: "Transação Apartada", label: "Transação Apartada" },
-        { value: "Envio de Insumos", label: "Envio de Insumos" },
-        { value: "Análise Relatorial", label: "Análise Relatorial" },
-        { value: "Problemas de conexão", label: "Problemas de conexão" },
-        { value: "Erro de Impressão", label: "Erro de Impressão" },
-        { value: "Erro de leitura na TAG", label: "Erro de leitura na TAG" },
-        { value: "Cobrança indevida", label: "Cobrança indevida" },
-        { value: "Ponto de venda", label: "Ponto de venda" },
-        { value: "Duplicação de Saldo", label: "Duplicação de Saldo" },
-        { value: "Entradas", label: "Entradas" },
-        { value: "Registro de check in", label: "Registro de check in" },
-        { value: "Estorno adquirência", label: "Estorno adquirência" },
-        { value: "Erro mensagem adquirência", label: "Erro mensagem adquirência" },
-        { value: "Estoque Z", label: "Estoque Z" },
-        { value: "Falha de Sincronia", label: "Falha de Sincronia" },
-        { value: "Fechamento de comanda Pós Paga", label: "Fechamento de comanda Pós Paga" },
-        { value: "Impressora remota", label: "Impressora remota" },
-        { value: "Limite não integrado", label: "Limite não integrado" },
-        { value: "Logo de Ficha", label: "Logo de Ficha" },
-        { value: "Multiplos pagamentos", label: "Multiplos pagamentos" },
-        { value: "Produtos de Devolução", label: "Produtos de Devolução" },
-        { value: "Protocolo de equipamentos", label: "Protocolo de equipamentos" },
-        { value: "Pix não funcionando", label: "Pix não funcionando" },
-        { value: "Transferência de saldo", label: "Transferência de saldo" },
-        { value: "Recargas expiradas", label: "Recargas expiradas" },
-        { value: "Zig Tag Cheio", label: "Zig Tag Cheio" },
-        { value: "Queima de Ficha", label: "Queima de Ficha" },
-        { value: "Dúvida de processo ou produto", label: "Dúvida de processo ou produto" }
+        { value: 'Alteração de Cardápio', label: 'Alteração de Cardápio' },
+        { value: 'Substituição de equipamento', label: 'Substituição de equipamento' },
+        { value: 'Erro de login', label: 'Erro de login' },
+        { value: 'Alteração de funcionalidades', label: 'Alteração de funcionalidades' },
+        { value: 'Acesso', label: 'Acesso' },
+        { value: 'Alteração quantidade de terminais', label: 'Alteração quantidade de terminais' },
+        { value: 'Fechamento manual de ambulante', label: 'Fechamento manual de ambulante' },
+        { value: 'Transação Apartada', label: 'Transação Apartada' },
+        { value: 'Envio de Insumos', label: 'Envio de Insumos' },
+        { value: 'Análise Relatorial', label: 'Análise Relatorial' },
+        { value: 'Problemas de conexão', label: 'Problemas de conexão' },
+        { value: 'Erro de Impressão', label: 'Erro de Impressão' },
+        { value: 'Erro de leitura na TAG', label: 'Erro de leitura na TAG' },
+        { value: 'Cobrança indevida', label: 'Cobrança indevida' },
+        { value: 'Ponto de venda', label: 'Ponto de venda' },
+        { value: 'Duplicação de Saldo', label: 'Duplicação de Saldo' },
+        { value: 'Entradas', label: 'Entradas' },
+        { value: 'Registro de check in', label: 'Registro de check in' },
+        { value: 'Estorno adquirência', label: 'Estorno adquirência' },
+        { value: 'Erro mensagem adquirência', label: 'Erro mensagem adquirência' },
+        { value: 'Estoque Z', label: 'Estoque Z' },
+        { value: 'Falha de Sincronia', label: 'Falha de Sincronia' },
+        { value: 'Fechamento de comanda Pós Paga', label: 'Fechamento de comanda Pós Paga' },
+        { value: 'Impressora remota', label: 'Impressora remota' },
+        { value: 'Limite não integrado', label: 'Limite não integrado' },
+        { value: 'Logo de Ficha', label: 'Logo de Ficha' },
+        { value: 'Multiplos pagamentos', label: 'Multiplos pagamentos' },
+        { value: 'Produtos de Devolução', label: 'Produtos de Devolução' },
+        { value: 'Protocolo de equipamentos', label: 'Protocolo de equipamentos' },
+        { value: 'Pix não funcionando', label: 'Pix não funcionando' },
+        { value: 'Transferência de saldo', label: 'Transferência de saldo' },
+        { value: 'Recargas expiradas', label: 'Recargas expiradas' },
+        { value: 'Zig Tag Cheio', label: 'Zig Tag Cheio' },
+        { value: 'Queima de Ficha', label: 'Queima de Ficha' },
+        { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' }
     ];
 
     const columnsChamados = [
@@ -347,7 +364,7 @@ const Suporte = () => {
         if (values.categoria && values.ponto && values.modelo && values.descricao) {
             setButtonChamadoLoading(true);
             try {
-                values.urgencia = 'Urgente'
+                values.urgencia = handleUrgencia(values.categoria)
                 const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
                     method: 'POST',
                     headers: {
@@ -539,12 +556,12 @@ const Suporte = () => {
             key: '1',
             children: (
                 <Row gutter={24}>
-                    <Col span={16}>
+                    <Col span={24}>
                         <Card
                             title={<Title level={4}>Abrir Chamado de Suporte</Title>}
                             bordered={false}
                             className="card-with-shadow"
-                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', width: '85vw' }}
                         >
                             <Form onFinish={enviarChamado} form={formChamado} layout="vertical">
                                 <Row gutter={16}>
@@ -651,13 +668,13 @@ const Suporte = () => {
                         </Card>
                     </Col>
                     <Col span={8}>
-                        <Card
+                        {/* <Card
                             // title={<Title level={4}>Informações</Title>}
                             bordered={false}
                             style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', height: '100%' }}
                         >
                             <Space direction="vertical" style={{ width: '100%' }}>
-                                {/* <Card type="inner" title="Níveis de Urgência">
+                                <Card type="inner" title="Níveis de Urgência">
                                     <p><strong>Urgente:</strong> Problemas que afetam criticamente a operação.</p>
                                     <p><strong>Sem Urgência:</strong> Problemas que não impactam diretamente a operação.</p>
                                 </Card>
@@ -668,9 +685,9 @@ const Suporte = () => {
                                 <Card type="inner" title="Dicas">
                                     <p>Descreva o problema detalhadamente para agilizar a resolução.</p>
                                     <p>Anexe prints ou evidências sempre que possível.</p>
-                                </Card> */}
+                                </Card>
                             </Space>
-                        </Card>
+                        </Card> */}
                     </Col>
                 </Row>
             )
@@ -787,31 +804,10 @@ const Suporte = () => {
         {
             label: (
                 <span>
-                    <CommentOutlined /> Chat de Suporte
-                </span>
-            ),
-            key: '3',
-            children: (
-                <Card
-                    bordered={false}
-                    style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
-                >
-                    <ChatSuporte
-                        pipeId={pipeId}
-                        ticketId={chatTicketId}
-                        autoCreate={autoCreateChat}
-                        onChatCreated={() => setAutoCreateChat(false)}
-                    />
-                </Card>
-            )
-        },
-        {
-            label: (
-                <span>
                     <CheckCircleOutlined /> Dashboard
                 </span>
             ),
-            key: '4',
+            key: '3',
             children: (
                 <Card
                     bordered={false}
