@@ -5,8 +5,8 @@ import { SendOutlined, UserOutlined, CustomerServiceOutlined } from '@ant-design
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 
-const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose }) => {
-  const [messages, setMessages] = useState([]);
+const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, onClose }) => {
+  // const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -17,16 +17,16 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
   const permissionEvento = localStorage.getItem('permissionEvento');
 
   // Fetch messages when drawer opens or ticketId changes
-  useEffect(() => {
-    if (visible && ticketId && pipeId) {
-      fetchMessages();
-    }
+  // useEffect(() => {
+  //   if (visible && ticketId && pipeId) {
+  //     fetchMessages();
+  //   }
 
-    // Cleanup on unmount
-    return () => {
-      setMessages([]);
-    };
-  }, [visible, ticketId, pipeId]);
+  //   // Cleanup on unmount
+  //   return () => {
+  //     setMessages([]);
+  //   };
+  // }, [visible, ticketId, pipeId]);
 
   useEffect(() => {
     // Declare the interval variable
@@ -34,7 +34,7 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
 
     if (visible === true) {
       chatFetchInterval = setInterval(() => {
-        fetchMessages();
+        fetchMessages(ticketId);
         console.log('Fetching messages...');
       }, 5000);
     }
@@ -48,53 +48,54 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
   }, [visible]);
 
   // Scroll to bottom whenever messages change
+  
   useEffect(() => {
     if (messageListRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messages]);
 
-  const fetchMessages = async () => {
-    if (!ticketId || !pipeId) return;
+  // const fetchMessages = async () => {
+  //   if (!ticketId || !pipeId) return;
 
-    setLoading(true);
-    setError(null);
+  //   setLoading(true);
+  //   setError(null);
 
-    try {
-      const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
-        })
-      });
+  //   try {
+  //     const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
+  //       })
+  //     });
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data && data.docs) {
-        const sortedMessages = data.docs
-          .map(doc => ({
-            id: doc.id,
-            text: doc.data.text,
-            sender: doc.data.sender,
-            timestamp: doc.data.timestamp,
-            isCurrentUser: doc.data.sender === currentUser
-          }))
-          .sort((a, b) => a.timestamp - b.timestamp);
+  //     if (data && data.docs) {
+  //       const sortedMessages = data.docs
+  //         .map(doc => ({
+  //           id: doc.id,
+  //           text: doc.data.text,
+  //           sender: doc.data.sender,
+  //           timestamp: doc.data.timestamp,
+  //           isCurrentUser: doc.data.sender === currentUser
+  //         }))
+  //         .sort((a, b) => a.timestamp - b.timestamp);
 
-        setMessages(sortedMessages);
-      } else {
-        setMessages([]);
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      setError('Não foi possível carregar mensagens. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //       setMessages(sortedMessages);
+  //     } else {
+  //       setMessages([]);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching messages:', error);
+  //     setError('Não foi possível carregar mensagens. Tente novamente.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const sendNotificationSupport = async (message) => {
     const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
@@ -153,13 +154,12 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
     });
     const dataUsers = await responseUsers.json();
     let dataUsersArray = dataUsers.docs.map((doc) => {
-      if(currentUser === doc.data.username) {
+      if (currentUser === doc.data.username) {
         return { id: doc.id }
       }
     })
     const user = dataUsersArray.find(user => user !== undefined);
-    console.log(user)
-    if (user[0]) {
+    if (user) {
       try {
         const response = await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
           method: 'POST',
@@ -169,10 +169,10 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
           body: JSON.stringify({
             title: 'Mensagem no chat de suporte recebida',
             body: `${currentUser}: ${message}`,
-            userId: user[0].id,
+            userId: user.id,
           }),
         });
-        if(response.ok) {
+        if (response.ok) {
           console.log('Notification sent successfully');
         }
       } catch (error) {
@@ -208,8 +208,9 @@ const TicketChatDrawer = ({ visible, ticketId, currentRecord, pipeId, onClose })
 
       if (response.ok) {
         setNewMessage('');
-        fetchMessages();
-        if(permissionEvento !== 'C-CCO' && permissionEvento !== 'Head' && permission !== 'admin') {
+        // setNewMessageSent(true)
+        fetchMessages(ticketId);
+        if (permissionEvento !== 'C-CCO' && permissionEvento !== 'Head' && permission !== 'admin') {
           await sendNotificationSupport(newMessage)
           console.log('Notificação enviada para o suporte')
         } else {

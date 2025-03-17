@@ -1,22 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider } from 'antd';
+import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge } from 'antd';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const Dashboard = ({ dataChamados }) => {
+const Dashboard = ({ dataChamados, pipeId }) => {
   const [dateRange, setDateRange] = useState([null, null]);
   const [filteredData, setFilteredData] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
+  const [ticketsWithChats, setTicketsWithChats] = useState(new Set());
+  const [chatMetrics, setChatMetrics] = useState({
+    totalChats: 0,
+    activeChats: 0,
+    avgMessagesPerChat: 0,
+    responseRatePercent: 0
+  });
+  const [chatData, setChatData] = useState([]);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
 
   useEffect(() => {
     // Initialize with all data
     if (dataChamados) {
       filterData(dataChamados, dateRange, categoryFilter, urgencyFilter);
+      fetchChatData();
     }
   }, [dataChamados]);
+
+  const fetchChatData = async () => {
+    try {
+      setIsLoadingChat(true);
+
+      // For each ticket with chat, fetch chat messages
+      const ticketsWithChat = dataChamados.filter(ticket => ticket.id);
+      let allChatMessages = [];
+      let activeChatCount = 0;
+      let ticketsWithChatMessages = 0;
+
+      for (const ticket of ticketsWithChat) {
+        try {
+          const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: `pipe/pipeId_${pipeId}/chamados/${ticket.id}/chat`
+            })
+          });
+
+          const data = await response.json();
+          if (data && data.docs && data.docs.length > 0) {
+            const ticketChatMessages = data.docs.map(doc => ({
+              ticketId: ticket.id,
+              messageId: doc.id,
+              text: doc.data.text,
+              sender: doc.data.sender,
+              timestamp: doc.data.timestamp,
+              ticketStatus: ticket.status
+            }));
+
+            allChatMessages = [...allChatMessages, ...ticketChatMessages];
+            ticketsWithChatMessages++;
+
+            // Check if chat is active (has messages in last 24 hours)
+            const lastMessageTime = Math.max(...ticketChatMessages.map(msg => msg.timestamp));
+            const isActive = (Date.now() - lastMessageTime) < (24 * 60 * 60 * 1000);
+            if (isActive) activeChatCount++;
+          }
+        } catch (error) {
+          console.error(`Error fetching chat for ticket ${ticket.id}:`, error);
+        }
+      }
+
+      // Calculate chat metrics
+      const avgMessages = ticketsWithChatMessages > 0 ?
+        (allChatMessages.length / ticketsWithChatMessages).toFixed(1) : 0;
+
+      // Track which user messages received responses
+      const userMsgIds = new Set();
+      const respondedMsgIds = new Set();
+
+      const currentUser = localStorage.getItem('currentUser');
+      const permission = localStorage.getItem('permission');
+      const permissionEvento = localStorage.getItem('permissionEvento');
+      const isAgent = permission === 'admin' || permission === 'ecc' ||
+        permissionEvento === 'C-CCO' || permissionEvento === 'Head';
+
+      const conversations = {};
+      allChatMessages.forEach(msg => {
+        if (!conversations[msg.ticketId]) conversations[msg.ticketId] = [];
+        conversations[msg.ticketId].push(msg);
+      });
+
+      // For each conversation, track which user messages got responses
+      Object.values(conversations).forEach(convo => {
+        const sortedMsgs = convo.sort((a, b) => a.timestamp - b.timestamp);
+
+        sortedMsgs.forEach((msg, i) => {
+          const isUserMsg = dataChamados.find(t => t.id === msg.ticketId && t.solicitante === msg.sender);
+
+          if (isUserMsg) {
+            const msgId = `${msg.ticketId}-${msg.timestamp}`;
+            userMsgIds.add(msgId);
+
+            // Check if any subsequent message is an agent response
+            for (let j = i + 1; j < sortedMsgs.length; j++) {
+              const isAgentResponse = dataChamados.find(t =>
+                t.id === sortedMsgs[j].ticketId && t.solicitante !== sortedMsgs[j].sender);
+
+              if (isAgentResponse) {
+                respondedMsgIds.add(msgId);
+                break;
+              }
+            }
+          }
+        });
+      });
+
+      const ticketIdsWithChat = new Set(Object.keys(conversations))
+      setTicketsWithChats(ticketIdsWithChat);
+
+      const responseRate = userMsgIds.size > 0 ?
+        ((respondedMsgIds.size / userMsgIds.size) * 100).toFixed(0) : 0;
+
+      // Prepare chat data for charts
+      const chatsByDate = {};
+      allChatMessages.forEach(msg => {
+        const date = new Date(msg.timestamp).toLocaleDateString();
+        chatsByDate[date] = (chatsByDate[date] || 0) + 1;
+      });
+
+      const chatVolumeData = Object.keys(chatsByDate).map(date => ({
+        date,
+        messages: chatsByDate[date]
+      })).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      setChatData(chatVolumeData);
+      setChatMetrics({
+        totalChats: ticketsWithChatMessages,
+        activeChats: activeChatCount,
+        avgMessagesPerChat: avgMessages,
+        responseRatePercent: responseRate
+      });
+    } catch (error) {
+      console.error('Error fetching chat data:', error);
+    } finally {
+      setIsLoadingChat(false);
+    }
+  };
 
   const filterData = (data, dates, category, urgency) => {
     let filtered = [...data];
@@ -25,7 +157,7 @@ const Dashboard = ({ dataChamados }) => {
     if (dates && dates[0] && dates[1]) {
       const startDate = dates[0].valueOf();
       const endDate = dates[1].valueOf();
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.timestampAberto >= startDate && item.timestampAberto <= endDate
       );
     }
@@ -94,7 +226,7 @@ const Dashboard = ({ dataChamados }) => {
   const prepareTrendData = () => {
     // Create a map of dates to ticket counts
     const dateCounts = {};
-    
+
     filteredData.forEach(item => {
       const date = new Date(item.timestampAberto).toLocaleDateString();
       dateCounts[date] = (dateCounts[date] || 0) + 1;
@@ -110,22 +242,22 @@ const Dashboard = ({ dataChamados }) => {
     // Calculate average resolution time per day
     const dateResolutionTimes = {};
     const dateCounts = {};
-    
+
     filteredData.forEach(item => {
       if (item.status === 'closed' && item.timestampAberto && item.timestampResposta) {
         const date = new Date(item.timestampAberto).toLocaleDateString();
         const resolutionTime = (item.timestampResposta - item.timestampAberto) / (1000 * 60 * 60); // hours
-        
+
         if (!dateResolutionTimes[date]) {
           dateResolutionTimes[date] = 0;
           dateCounts[date] = 0;
         }
-        
+
         dateResolutionTimes[date] += resolutionTime;
         dateCounts[date]++;
       }
     });
-    
+
     // Calculate averages
     return Object.keys(dateResolutionTimes)
       .map(date => ({
@@ -137,11 +269,11 @@ const Dashboard = ({ dataChamados }) => {
 
   const prepareCategoryData = () => {
     const categoryCounts = {};
-    
+
     filteredData.forEach(item => {
       categoryCounts[item.categoria] = (categoryCounts[item.categoria] || 0) + 1;
     });
-    
+
     // Convert to array, sort by count, and take top 5
     return Object.keys(categoryCounts)
       .map(category => ({ category, count: categoryCounts[category] }))
@@ -151,7 +283,7 @@ const Dashboard = ({ dataChamados }) => {
 
   const prepareResponsivenessByUrgency = () => {
     const urgencyResponseTimes = { 'Urgente': [], 'Sem Urgência': [] };
-    
+
     filteredData.forEach(item => {
       if (item.timestampAberto && item.timestampAnalise) {
         const responseTime = (item.timestampAnalise - item.timestampAberto) / (1000 * 60); // minutes
@@ -160,10 +292,10 @@ const Dashboard = ({ dataChamados }) => {
         }
       }
     });
-    
+
     // Calculate averages
     const result = [];
-    
+
     for (const urgency in urgencyResponseTimes) {
       const times = urgencyResponseTimes[urgency];
       if (times.length > 0) {
@@ -174,7 +306,7 @@ const Dashboard = ({ dataChamados }) => {
         });
       }
     }
-    
+
     return result;
   };
 
@@ -184,56 +316,54 @@ const Dashboard = ({ dataChamados }) => {
     let openTickets = filteredData.filter(item => item.status === 'pending').length;
     let inProgressTickets = filteredData.filter(item => item.status === 'analysis').length;
     let resolvedTickets = filteredData.filter(item => item.status === 'closed').length;
-    
+
     let responseTimes = 0;
-    let analysisTimeSum = 0; // New: Sum of time spent in analysis
+    let analysisTimeSum = 0;
     let resolutionTimes = 0;
     let count = 0;
-    let analysisCount = 0; // New: Count of tickets with analysis data
+    let analysisCount = 0;
     let resolutionCount = 0;
-    
+
     filteredData.forEach(item => {
       if (item.timestampAberto && item.timestampAnalise) {
         responseTimes += (item.timestampAnalise - item.timestampAberto);
         count++;
       }
-      
-      // New: Calculate analysis time (time from analysis to resolution)
+
       if (item.timestampAnalise && item.timestampResposta) {
         analysisTimeSum += (item.timestampResposta - item.timestampAnalise);
         analysisCount++;
       }
-      
+
       if (item.timestampAberto && item.timestampResposta) {
         resolutionTimes += (item.timestampResposta - item.timestampAberto);
         resolutionCount++;
       }
     });
-    
+
     let avgResponseTime = 0;
-    let avgAnalysisTime = 0; // New
+    let avgAnalysisTime = 0;
     let avgResolutionTime = 0;
-    
+
     if (count > 0) {
       avgResponseTime = responseTimes / count / (1000 * 60); // minutes
     }
-    
-    // New: Calculate average analysis time
+
     if (analysisCount > 0) {
       avgAnalysisTime = analysisTimeSum / analysisCount / (1000 * 60); // minutes
     }
-    
+
     if (resolutionCount > 0) {
       avgResolutionTime = resolutionTimes / resolutionCount / (1000 * 60); // minutes
     }
-    
+
     return {
       totalTickets,
       openTickets,
       inProgressTickets,
       resolvedTickets,
       avgResponseTime: avgResponseTime.toFixed(1),
-      avgAnalysisTime: avgAnalysisTime.toFixed(1), // New
+      avgAnalysisTime: avgAnalysisTime.toFixed(1),
       avgResolutionTime: avgResolutionTime.toFixed(1)
     };
   };
@@ -247,10 +377,10 @@ const Dashboard = ({ dataChamados }) => {
   const responsivenessData = prepareResponsivenessByUrgency();
 
   // Prepare categories for filter
-  const categoryOptions = dataChamados ? 
-    [{ label: 'Todas', value: 'all' }, 
-     ...Array.from(new Set(dataChamados.map(item => item.categoria)))
-      .map(cat => ({ label: cat, value: cat }))] : 
+  const categoryOptions = dataChamados ?
+    [{ label: 'Todas', value: 'all' },
+    ...Array.from(new Set(dataChamados.map(item => item.categoria)))
+      .map(cat => ({ label: cat, value: cat }))] :
     [{ label: 'Todas', value: 'all' }];
 
   // Get recent tickets for the table
@@ -283,7 +413,7 @@ const Dashboard = ({ dataChamados }) => {
       render: (status) => {
         let color = 'green';
         let text = 'Fechado';
-        
+
         if (status === 'pending') {
           color = 'red';
           text = 'Aberto';
@@ -291,7 +421,7 @@ const Dashboard = ({ dataChamados }) => {
           color = 'blue';
           text = 'Em análise';
         }
-        
+
         return <Tag color={color}>{text}</Tag>;
       },
     },
@@ -303,6 +433,15 @@ const Dashboard = ({ dataChamados }) => {
         const color = urgencia === 'Urgente' ? 'red' : 'green';
         return <Tag color={color}>{urgencia}</Tag>;
       },
+    },
+    {
+      title: 'Chat',
+      dataIndex: 'id',
+      key: 'chat',
+      render: (id) => {
+        const hasChat = ticketsWithChats.has(id)
+        return hasChat ? <Badge status="processing" text="Ativo" /> : <Badge status="default" text="Inativo" />;
+      }
     },
     {
       title: 'Data',
@@ -322,7 +461,7 @@ const Dashboard = ({ dataChamados }) => {
           <Text type="secondary">Visualize estatísticas e tendências dos chamados de suporte</Text>
         </Col>
       </Row>
-      
+
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={8}>
           <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
@@ -350,7 +489,7 @@ const Dashboard = ({ dataChamados }) => {
           />
         </Col>
       </Row>
-      
+
       {/* Summary Statistics */}
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} sm={12} md={6}>
@@ -374,41 +513,92 @@ const Dashboard = ({ dataChamados }) => {
           </Card>
         </Col>
       </Row>
-      
+
+      {/* Chat Metrics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+        <Col span={24}>
+          <Title level={5}>Métricas de Chat</Title>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total de Chats"
+              value={chatMetrics.totalChats}
+              prefix={<CommentOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Chats Ativos"
+              value={chatMetrics.activeChats}
+              prefix={<MessageOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Mensagens por Chat"
+              value={chatMetrics.avgMessagesPerChat}
+              prefix={<UserOutlined />}
+              precision={1}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Taxa de Resposta"
+              value={chatMetrics.responseRatePercent}
+              suffix="%"
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{
+                color: parseInt(chatMetrics.responseRatePercent) > 80 ? '#52c41a' :
+                  parseInt(chatMetrics.responseRatePercent) > 50 ? '#faad14' : '#ff4d4f'
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic 
-              title="Tempo Médio de Resposta" 
-              value={metrics.avgResponseTime} 
-              suffix="min" 
-              precision={1} 
+            <Statistic
+              title="Tempo Médio de Resposta"
+              value={metrics.avgResponseTime}
+              suffix="min"
+              precision={1}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic 
-              title="Tempo Médio em Análise" 
-              value={metrics.avgAnalysisTime} 
-              suffix="min" 
-              precision={1} 
+            <Statistic
+              title="Tempo Médio em Análise"
+              value={metrics.avgAnalysisTime}
+              suffix="min"
+              precision={1}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card>
-            <Statistic 
-              title="Tempo Médio de Resolução" 
-              value={metrics.avgResolutionTime} 
-              suffix="min" 
-              precision={1} 
+            <Statistic
+              title="Tempo Médio de Resolução"
+              value={metrics.avgResolutionTime}
+              suffix="min"
+              precision={1}
             />
           </Card>
         </Col>
       </Row>
-      
+
       {/* Charts Section */}
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={12}>
@@ -420,7 +610,7 @@ const Dashboard = ({ dataChamados }) => {
                   cx="50%"
                   cy="50%"
                   labelLine={true}
-                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
@@ -443,7 +633,7 @@ const Dashboard = ({ dataChamados }) => {
                   cx="50%"
                   cy="50%"
                   labelLine={true}
-                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
@@ -458,7 +648,7 @@ const Dashboard = ({ dataChamados }) => {
           </Card>
         </Col>
       </Row>
-      
+
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col span={24}>
           <Card title="Tendência de Chamados">
@@ -469,19 +659,19 @@ const Dashboard = ({ dataChamados }) => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke="#1890ff" 
-                  name="Número de Chamados" 
-                  activeDot={{ r: 8 }} 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#1890ff"
+                  name="Número de Chamados"
+                  activeDot={{ r: 8 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </Card>
         </Col>
       </Row>
-      
+
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={12}>
           <Card title="Top 5 Categorias">
@@ -514,8 +704,8 @@ const Dashboard = ({ dataChamados }) => {
           </Card>
         </Col>
       </Row>
-      
-      <Row gutter={[16, 16]}>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={12}>
           <Card title="Tempo de Resposta por Urgência">
             <ResponsiveContainer width="100%" height={300}>
@@ -534,9 +724,32 @@ const Dashboard = ({ dataChamados }) => {
           </Card>
         </Col>
         <Col xs={24} md={12}>
+          <Card title="Volume de Mensagens de Chat">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chatData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="messages"
+                  stroke="#8884d8"
+                  name="Mensagens"
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col span={24}>
           <Card title="Chamados Recentes">
-            <Table 
-              columns={recentColumns} 
+            <Table
+              columns={recentColumns}
               dataSource={recentTickets}
               pagination={false}
               size="small"
@@ -546,36 +759,6 @@ const Dashboard = ({ dataChamados }) => {
       </Row>
     </div>
   );
-};
-
-// Create an implementation of the previously referenced function
-const prepareResponsivesByUrgency = () => {
-  const urgencyResponseTimes = { 'Urgente': [], 'Sem Urgência': [] };
-  
-  filteredData.forEach(item => {
-    if (item.timestampAberto && item.timestampAnalise) {
-      const responseTime = (item.timestampAnalise - item.timestampAberto) / (1000 * 60); // minutes
-      if (urgencyResponseTimes[item.urgencia]) {
-        urgencyResponseTimes[item.urgencia].push(responseTime);
-      }
-    }
-  });
-  
-  // Calculate averages
-  const result = [];
-  
-  for (const urgency in urgencyResponseTimes) {
-    const times = urgencyResponseTimes[urgency];
-    if (times.length > 0) {
-      const avgTime = times.reduce((sum, time) => sum + time, 0) / times.length;
-      result.push({
-        urgency,
-        minutes: avgTime
-      });
-    }
-  }
-  
-  return result;
 };
 
 export default Dashboard;

@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Badge, Button, Collapse, Space, Tag, Form, Input } from 'antd';
+import { Card, Table, Typography, Badge, Button, Collapse, Space, Tag } from 'antd';
 import { DownOutlined, UpOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CommentOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
-const { TextArea } = Input;
 
 const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatus, handleCreateChatForTicket }) => {
   const [openPanels, setOpenPanels] = useState(['pending', 'analysis']); // Default open panels
-  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
-  const [answerForms, setAnswerForms] = useState({});
-  const [buttonAnswerLoading, setButtonAnswerLoading] = useState({});
 
   // Group data by status
   const pendingTickets = dataChamados.filter(ticket => ticket.status === 'pending');
@@ -45,41 +41,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
         {urgencia}
       </Tag>
     );
-  };
-
-  const toggleAnswerForm = (recordId) => {
-    setAnswerForms({
-      ...answerForms,
-      [recordId]: !answerForms[recordId]
-    });
-    
-    // Make sure the row is expanded
-    if (!expandedRowKeys.includes(recordId)) {
-      setExpandedRowKeys([...expandedRowKeys, recordId]);
-    }
-  };
-
-  const handleSubmitAnswer = (recordId, values) => {
-    setButtonAnswerLoading({
-      ...buttonAnswerLoading,
-      [recordId]: true
-    });
-    
-    // Call the original handleAnswerClick with the necessary data
-    handleAnswerClick(recordId, values.resposta);
-    
-    // Reset the form state after submission is complete
-    setTimeout(() => {
-      setAnswerForms({
-        ...answerForms,
-        [recordId]: false
-      });
-      
-      setButtonAnswerLoading({
-        ...buttonAnswerLoading,
-        [recordId]: false
-      });
-    }, 1000);
   };
 
   const columns = [
@@ -127,11 +88,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
             </Button>
           )}
           {record.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc') && (
-            <Button 
-              type="primary" 
-              size="small" 
-              onClick={() => toggleAnswerForm(record.id)}
-            >
+            <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
               Responder
             </Button>
           )}
@@ -183,49 +140,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
             </div>
           </>
         )}
-        
-        {/* Answer form inside expanded row */}
-        {record.status === 'analysis' && answerForms[record.id] && (
-          <Card
-            title="Responder Chamado"
-            style={{ marginTop: 20, borderRadius: '8px' }}
-          >
-            <Form 
-              layout='vertical'
-              onFinish={(values) => handleSubmitAnswer(record.id, values)}
-            >
-              <Form.Item
-                label={<Text strong>Resposta</Text>}
-                name='resposta'
-                rules={[{ required: true, message: 'Campo obrigatório' }]}
-              >
-                <TextArea
-                  placeholder='Digite a resposta do chamado'
-                  rows={4}
-                  style={{ borderRadius: '4px' }}
-                />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button
-                    loading={buttonAnswerLoading[record.id]}
-                    htmlType='submit'
-                    type="primary"
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Enviar Resposta
-                  </Button>
-                  <Button
-                    onClick={() => toggleAnswerForm(record.id)}
-                    style={{ borderRadius: '4px' }}
-                  >
-                    Cancelar
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Card>
-        )}
       </Space>
     </Card>
   );
@@ -258,14 +172,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
           pagination={{ pageSize: 5 }}
           expandable={{
             expandedRowRender: expandedRowRender,
-            expandedRowKeys: expandedRowKeys,
-            onExpand: (expanded, record) => {
-              if (expanded) {
-                setExpandedRowKeys([...expandedRowKeys, record.id]);
-              } else {
-                setExpandedRowKeys(expandedRowKeys.filter(key => key !== record.id));
-              }
-            }
           }}
           size="middle"
           rowClassName={(record) => record.urgencia === 'Urgente' ? 'urgent-row' : ''}
@@ -273,6 +179,11 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       </Card>
     );
   };
+
+  // setInterval(async () => {
+  //   await fetchChamados();
+  //   console.log('Atualizando chamados...');
+  // }, 15000);
 
   return (
     <div>
