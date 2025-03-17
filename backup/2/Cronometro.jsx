@@ -111,19 +111,19 @@ const Cronometro = () => {
 
         switch (action) {
             case 'start':
-                content = `Etapa ${etapa} iniciada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} iniciada às ${formatTime(now)}`;
                 color = 'blue';
                 break;
             case 'interrupt':
-                content = `Etapa ${etapa} interrompida às ${formatDateTime(now)}\nJustificativa: ${justificativa}`;
+                content = `Etapa ${etapa} interrompida às ${formatTime(now)}\nJustificativa: ${justificativa}`;
                 color = 'red';
                 break;
             case 'resume':
-                content = `Etapa ${etapa} retomada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} retomada às ${formatTime(now)}`;
                 color = 'blue';
                 break;
             case 'finish':
-                content = `Etapa ${etapa} finalizada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} finalizada às ${formatTime(now)}`;
                 color = 'green';
                 break;
             default:
@@ -139,19 +139,19 @@ const Cronometro = () => {
 
         switch (action) {
             case 'start':
-                content = `Etapa ${etapa} iniciada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} iniciada às ${formatTime(now)}`;
                 color = 'blue';
                 break;
             case 'interrupt':
-                content = `Etapa ${etapa} interrompida às ${formatDateTime(now)}\nJustificativa: ${justificativa}`;
+                content = `Etapa ${etapa} interrompida às ${formatTime(now)}\nJustificativa: ${justificativa}`;
                 color = 'red';
                 break;
             case 'resume':
-                content = `Etapa ${etapa} retomada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} retomada às ${formatTime(now)}`;
                 color = 'blue';
                 break;
             case 'finish':
-                content = `Etapa ${etapa} finalizada às ${formatDateTime(now)}`;
+                content = `Etapa ${etapa} finalizada às ${formatTime(now)}`;
                 color = 'green';
                 break;
             default:
@@ -577,8 +577,6 @@ const Cronometro = () => {
     const fetchTimelineData = useCallback(async () => {
         try {
             setLoading(true);
-            console.log("Fetching timeline data for pipeId:", pipeId);
-            
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
                 method: 'POST',
                 headers: { "Content-Type": "application/json" },
@@ -586,338 +584,201 @@ const Cronometro = () => {
             });
             
             const data = await response.json();
-            console.log("Received data:", data);
-            
-            // Reset all states first to avoid any stale state issues
-            // Setup states
-            setPrimeiraEtapaRunning(false);
-            setSegundaEtapaRunning(false);
-            setTerceiraEtapaRunning(false);
-            setQuartaEtapaRunning(false);
-            setFirstTimeRunningPrimeira(true);
-            setFirstTimeRunningSegunda(true);
-            setFirstTimeRunningTerceira(true);
-            setFirstTimeRunningQuarta(true);
-            setPrimeiraEtapaFinalizada(false);
-            setSegundaEtapaFinalizada(false);
-            setTerceiraEtapaFinalizada(false);
-            setQuartaEtapaFinalizada(false);
-            
-            // Aditivo states
-            setPrimeiraEtapaRunningAditivo(false);
-            setSegundaEtapaRunningAditivo(false);
-            setTerceiraEtapaRunningAditivo(false);
-            setQuartaEtapaRunningAditivo(false);
-            setFirstTimeRunningPrimeiraAditivo(true);
-            setFirstTimeRunningSegundaAditivo(true);
-            setFirstTimeRunningTerceiraAditivo(true);
-            setFirstTimeRunningQuartaAditivo(true);
-            setPrimeiraEtapaFinalizadaAditivo(false);
-            setSegundaEtapaFinalizadaAditivo(false);
-            setTerceiraEtapaFinalizadaAditivo(false);
-            setQuartaEtapaFinalizadaAditivo(false);
             
             // Update setup timeline
             if (data.timelineSetup && data.timelineSetup.length > 0) {
-                console.log("Setting timeline items:", data.timelineSetup);
                 setTimelineItems(data.timelineSetup);
             }
             
             // Update aditivo timeline
             if (data.timelineSetupAditivo && data.timelineSetupAditivo.length > 0) {
-                console.log("Setting aditivo timeline items:", data.timelineSetupAditivo);
                 setTimelineItemsAditivo(data.timelineSetupAditivo);
             }
             
             // Update etapa states for setup
             if (data.setup) {
-                console.log("Processing setup data:", data.setup);
-                
                 // First Etapa
                 if (data.setup.primeira_etapa) {
-                    console.log("Processing primeira_etapa:", data.setup.primeira_etapa);
-                    setFirstTimeRunningPrimeira(false); // If the etapa exists, it's not the first time
-                    
-                    if (data.setup.primeira_etapa.horaFim) {
-                        // Finished state
-                        console.log("Primeira etapa is finished");
-                        setPrimeiraEtapaFinalizada(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!data.setup.primeira_etapa.horaFim) {
+                        setFirstTimeRunningPrimeira(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (data.setup.primeira_etapa.interruptions && 
-                            data.setup.primeira_etapa.interruptions.length > 0) {
-                            
-                            const lastInterruption = data.setup.primeira_etapa.interruptions[data.setup.primeira_etapa.interruptions.length - 1];
-                            console.log("Last interruption for primeira etapa:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Primeira etapa is interrupted");
-                                setPrimeiraEtapaRunning(false);
-                            } else {
-                                // Running state
-                                console.log("Primeira etapa is running");
-                                setPrimeiraEtapaRunning(true);
-                            }
+                            data.setup.primeira_etapa.interruptions.length > 0 && 
+                            !data.setup.primeira_etapa.interruptions[data.setup.primeira_etapa.interruptions.length - 1].horaFim) {
+                            // Interrupted state
+                            setPrimeiraEtapaRunning(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Primeira etapa has no interruptions, is running");
+                            // Running state
                             setPrimeiraEtapaRunning(true);
                         }
+                    } else {
+                        // Finished state
+                        setPrimeiraEtapaFinalizada(true);
                     }
                 }
                 
                 // Second Etapa
                 if (data.setup.segunda_etapa) {
-                    console.log("Processing segunda_etapa:", data.setup.segunda_etapa);
-                    setFirstTimeRunningSegunda(false); // If the etapa exists, it's not the first time
-                    
-                    if (data.setup.segunda_etapa.horaFim) {
-                        // Finished state
-                        console.log("Segunda etapa is finished");
-                        setSegundaEtapaFinalizada(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!data.setup.segunda_etapa.horaFim) {
+                        setFirstTimeRunningSegunda(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (data.setup.segunda_etapa.interruptions && 
-                            data.setup.segunda_etapa.interruptions.length > 0) {
-                            
-                            const lastInterruption = data.setup.segunda_etapa.interruptions[data.setup.segunda_etapa.interruptions.length - 1];
-                            console.log("Last interruption for segunda etapa:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Segunda etapa is interrupted");
-                                setSegundaEtapaRunning(false);
-                            } else {
-                                // Running state
-                                console.log("Segunda etapa is running");
-                                setSegundaEtapaRunning(true);
-                            }
+                            data.setup.segunda_etapa.interruptions.length > 0 && 
+                            !data.setup.segunda_etapa.interruptions[data.setup.segunda_etapa.interruptions.length - 1].horaFim) {
+                            // Interrupted state
+                            setSegundaEtapaRunning(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Segunda etapa has no interruptions, is running");
+                            // Running state
                             setSegundaEtapaRunning(true);
                         }
+                    } else {
+                        // Finished state
+                        setSegundaEtapaFinalizada(true);
                     }
                 }
                 
                 // Third Etapa
                 if (data.setup.terceira_etapa) {
-                    console.log("Processing terceira_etapa:", data.setup.terceira_etapa);
-                    setFirstTimeRunningTerceira(false); // If the etapa exists, it's not the first time
-                    
-                    if (data.setup.terceira_etapa.horaFim) {
-                        // Finished state
-                        console.log("Terceira etapa is finished");
-                        setTerceiraEtapaFinalizada(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!data.setup.terceira_etapa.horaFim) {
+                        setFirstTimeRunningTerceira(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (data.setup.terceira_etapa.interruptions && 
-                            data.setup.terceira_etapa.interruptions.length > 0) {
-                            
-                            const lastInterruption = data.setup.terceira_etapa.interruptions[data.setup.terceira_etapa.interruptions.length - 1];
-                            console.log("Last interruption for terceira etapa:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Terceira etapa is interrupted");
-                                setTerceiraEtapaRunning(false);
-                            } else {
-                                // Running state
-                                console.log("Terceira etapa is running");
-                                setTerceiraEtapaRunning(true);
-                            }
+                            data.setup.terceira_etapa.interruptions.length > 0 && 
+                            !data.setup.terceira_etapa.interruptions[data.setup.terceira_etapa.interruptions.length - 1].horaFim) {
+                            // Interrupted state
+                            setTerceiraEtapaRunning(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Terceira etapa has no interruptions, is running");
+                            // Running state
                             setTerceiraEtapaRunning(true);
                         }
+                    } else {
+                        // Finished state
+                        setTerceiraEtapaFinalizada(true);
                     }
                 }
                 
                 // Fourth Etapa
                 if (data.setup.quarta_etapa) {
-                    console.log("Processing quarta_etapa:", data.setup.quarta_etapa);
-                    setFirstTimeRunningQuarta(false); // If the etapa exists, it's not the first time
-                    
-                    if (data.setup.quarta_etapa.horaFim) {
-                        // Finished state
-                        console.log("Quarta etapa is finished");
-                        setQuartaEtapaFinalizada(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!data.setup.quarta_etapa.horaFim) {
+                        setFirstTimeRunningQuarta(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (data.setup.quarta_etapa.interruptions && 
-                            data.setup.quarta_etapa.interruptions.length > 0) {
-                            
-                            const lastInterruption = data.setup.quarta_etapa.interruptions[data.setup.quarta_etapa.interruptions.length - 1];
-                            console.log("Last interruption for quarta etapa:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Quarta etapa is interrupted");
-                                setQuartaEtapaRunning(false);
-                            } else {
-                                // Running state
-                                console.log("Quarta etapa is running");
-                                setQuartaEtapaRunning(true);
-                            }
+                            data.setup.quarta_etapa.interruptions.length > 0 && 
+                            !data.setup.quarta_etapa.interruptions[data.setup.quarta_etapa.interruptions.length - 1].horaFim) {
+                            // Interrupted state
+                            setQuartaEtapaRunning(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Quarta etapa has no interruptions, is running");
+                            // Running state
                             setQuartaEtapaRunning(true);
                         }
+                    } else {
+                        // Finished state
+                        setQuartaEtapaFinalizada(true);
                     }
                 }
             }
             
             // Update etapa states for aditivo
             if (data.setupAditivo && data.setupAditivo.length > 0) {
-                console.log("Processing setupAditivo data:", data.setupAditivo);
                 const lastAditivo = data.setupAditivo[data.setupAditivo.length - 1];
-                console.log("Using last aditivo:", lastAditivo);
                 
                 // First Etapa
                 if (lastAditivo.primeira_etapa) {
-                    console.log("Processing primeira_etapa aditivo:", lastAditivo.primeira_etapa);
-                    setFirstTimeRunningPrimeiraAditivo(false); // If the etapa exists, it's not the first time
-                    
-                    if (lastAditivo.primeira_etapa.horaFim) {
-                        // Finished state
-                        console.log("Primeira etapa aditivo is finished");
-                        setPrimeiraEtapaFinalizadaAditivo(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!lastAditivo.primeira_etapa.horaFim) {
+                        setFirstTimeRunningPrimeiraAditivo(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
+                        // Note the property name difference: 'interrupcoes' vs 'interruptions'
                         if (lastAditivo.primeira_etapa.interrupcoes && 
-                            lastAditivo.primeira_etapa.interrupcoes.length > 0) {
-                            
-                            const lastInterruption = lastAditivo.primeira_etapa.interrupcoes[lastAditivo.primeira_etapa.interrupcoes.length - 1];
-                            console.log("Last interruption for primeira etapa aditivo:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Primeira etapa aditivo is interrupted");
-                                setPrimeiraEtapaRunningAditivo(false);
-                            } else {
-                                // Running state
-                                console.log("Primeira etapa aditivo is running");
-                                setPrimeiraEtapaRunningAditivo(true);
-                            }
+                            lastAditivo.primeira_etapa.interrupcoes.length > 0 && 
+                            !lastAditivo.primeira_etapa.interrupcoes[lastAditivo.primeira_etapa.interrupcoes.length - 1].horaFim) {
+                            // Interrupted state
+                            setPrimeiraEtapaRunningAditivo(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Primeira etapa aditivo has no interruptions, is running");
+                            // Running state
                             setPrimeiraEtapaRunningAditivo(true);
                         }
+                    } else {
+                        // Finished state
+                        setFirstTimeRunningPrimeiraAditivo(false);
+                        setPrimeiraEtapaFinalizadaAditivo(true);
                     }
                 }
                 
                 // Second Etapa
                 if (lastAditivo.segunda_etapa) {
-                    console.log("Processing segunda_etapa aditivo:", lastAditivo.segunda_etapa);
-                    setFirstTimeRunningSegundaAditivo(false); // If the etapa exists, it's not the first time
-                    
-                    if (lastAditivo.segunda_etapa.horaFim) {
-                        // Finished state
-                        console.log("Segunda etapa aditivo is finished");
-                        setSegundaEtapaFinalizadaAditivo(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!lastAditivo.segunda_etapa.horaFim) {
+                        setFirstTimeRunningSegundaAditivo(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (lastAditivo.segunda_etapa.interrupcoes && 
-                            lastAditivo.segunda_etapa.interrupcoes.length > 0) {
-                            
-                            const lastInterruption = lastAditivo.segunda_etapa.interrupcoes[lastAditivo.segunda_etapa.interrupcoes.length - 1];
-                            console.log("Last interruption for segunda etapa aditivo:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Segunda etapa aditivo is interrupted");
-                                setSegundaEtapaRunningAditivo(false);
-                            } else {
-                                // Running state
-                                console.log("Segunda etapa aditivo is running");
-                                setSegundaEtapaRunningAditivo(true);
-                            }
+                            lastAditivo.segunda_etapa.interrupcoes.length > 0 && 
+                            !lastAditivo.segunda_etapa.interrupcoes[lastAditivo.segunda_etapa.interrupcoes.length - 1].horaFim) {
+                            // Interrupted state
+                            setSegundaEtapaRunningAditivo(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Segunda etapa aditivo has no interruptions, is running");
+                            // Running state
                             setSegundaEtapaRunningAditivo(true);
                         }
+                    } else {
+                        // Finished state
+                        setFirstTimeRunningSegundaAditivo(false);
+                        setSegundaEtapaFinalizadaAditivo(true);
                     }
                 }
                 
                 // Third Etapa
                 if (lastAditivo.terceira_etapa) {
-                    console.log("Processing terceira_etapa aditivo:", lastAditivo.terceira_etapa);
-                    setFirstTimeRunningTerceiraAditivo(false); // If the etapa exists, it's not the first time
-                    
-                    if (lastAditivo.terceira_etapa.horaFim) {
-                        // Finished state
-                        console.log("Terceira etapa aditivo is finished");
-                        setTerceiraEtapaFinalizadaAditivo(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!lastAditivo.terceira_etapa.horaFim) {
+                        setFirstTimeRunningTerceiraAditivo(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (lastAditivo.terceira_etapa.interrupcoes && 
-                            lastAditivo.terceira_etapa.interrupcoes.length > 0) {
-                            
-                            const lastInterruption = lastAditivo.terceira_etapa.interrupcoes[lastAditivo.terceira_etapa.interrupcoes.length - 1];
-                            console.log("Last interruption for terceira etapa aditivo:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Terceira etapa aditivo is interrupted");
-                                setTerceiraEtapaRunningAditivo(false);
-                            } else {
-                                // Running state
-                                console.log("Terceira etapa aditivo is running");
-                                setTerceiraEtapaRunningAditivo(true);
-                            }
+                            lastAditivo.terceira_etapa.interrupcoes.length > 0 && 
+                            !lastAditivo.terceira_etapa.interrupcoes[lastAditivo.terceira_etapa.interrupcoes.length - 1].horaFim) {
+                            // Interrupted state
+                            setTerceiraEtapaRunningAditivo(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Terceira etapa aditivo has no interruptions, is running");
+                            // Running state
                             setTerceiraEtapaRunningAditivo(true);
                         }
+                    } else {
+                        // Finished state
+                        setFirstTimeRunningTerceiraAditivo(false);
+                        setTerceiraEtapaFinalizadaAditivo(true);
                     }
                 }
                 
                 // Fourth Etapa
                 if (lastAditivo.quarta_etapa) {
-                    console.log("Processing quarta_etapa aditivo:", lastAditivo.quarta_etapa);
-                    setFirstTimeRunningQuartaAditivo(false); // If the etapa exists, it's not the first time
-                    
-                    if (lastAditivo.quarta_etapa.horaFim) {
-                        // Finished state
-                        console.log("Quarta etapa aditivo is finished");
-                        setQuartaEtapaFinalizadaAditivo(true);
-                    } else {
-                        // Not finished, check if interrupted
+                    if (!lastAditivo.quarta_etapa.horaFim) {
+                        setFirstTimeRunningQuartaAditivo(false);
+                        
+                        // Check if there are interruptions and if the last one is not finished
                         if (lastAditivo.quarta_etapa.interrupcoes && 
-                            lastAditivo.quarta_etapa.interrupcoes.length > 0) {
-                            
-                            const lastInterruption = lastAditivo.quarta_etapa.interrupcoes[lastAditivo.quarta_etapa.interrupcoes.length - 1];
-                            console.log("Last interruption for quarta etapa aditivo:", lastInterruption);
-                            
-                            if (!lastInterruption.horaFim) {
-                                // Interrupted state
-                                console.log("Quarta etapa aditivo is interrupted");
-                                setQuartaEtapaRunningAditivo(false);
-                            } else {
-                                // Running state
-                                console.log("Quarta etapa aditivo is running");
-                                setQuartaEtapaRunningAditivo(true);
-                            }
+                            lastAditivo.quarta_etapa.interrupcoes.length > 0 && 
+                            !lastAditivo.quarta_etapa.interrupcoes[lastAditivo.quarta_etapa.interrupcoes.length - 1].horaFim) {
+                            // Interrupted state
+                            setQuartaEtapaRunningAditivo(false);
                         } else {
-                            // No interruptions, running state
-                            console.log("Quarta etapa aditivo has no interruptions, is running");
+                            // Running state
                             setQuartaEtapaRunningAditivo(true);
                         }
+                    } else {
+                        // Finished state
+                        setFirstTimeRunningQuartaAditivo(false);
+                        setQuartaEtapaFinalizadaAditivo(true);
                     }
                 }
             }
             
             setLastUpdated(new Date());
-            console.log("Timeline data processing complete");
         } catch (error) {
             console.error("Erro ao buscar dados:", error);
-            openNotificationFailure(`Erro ao carregar dados: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -965,27 +826,18 @@ const Cronometro = () => {
 
     // Fetch data initially and setup auto-refresh
     useEffect(() => {
-        if (!pipeId) {
-            console.log("No pipeId available, skipping data fetch");
-            return;
-        }
-        
-        console.log("Initial data fetch for pipeId:", pipeId);
+        if (!pipeId) return;
         
         // Initial data fetch
         fetchTimelineData();
         
         // Set up an interval to fetch data every 15 seconds
         const intervalId = setInterval(() => {
-            console.log("Periodic data refresh");
             fetchTimelineData();
         }, 15000);
         
         // Cleanup function to clear the interval when the component unmounts
-        return () => {
-            console.log("Cleaning up interval");
-            clearInterval(intervalId);
-        };
+        return () => clearInterval(intervalId);
     }, [pipeId, fetchTimelineData]);
 
     // Check permission and redirect if necessary
@@ -1094,7 +946,7 @@ const Cronometro = () => {
             key: '1',
             children: (
                 <div style={{ padding: '20px' }}>
-                    <Card
+                    <Card 
                         title={
                             <Flex justify="space-between" align="center">
                                 <Title level={4} style={{ margin: 0 }}>Controle de Etapas - Setup</Title>
@@ -1110,7 +962,6 @@ const Cronometro = () => {
                                         type="primary"
                                         icon={<SyncOutlined spin={syncing} />}
                                         onClick={fetchTimelineData}
-                                        style={{ marginRight: '10px' }}
                                         loading={loading && !syncing}
                                     >
                                         Atualizar Dados
@@ -1132,8 +983,7 @@ const Cronometro = () => {
                         style={{ 
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                            marginBottom: '20px',
-                            width: '75vw'
+                            marginBottom: '20px'
                         }}
                     >
                         <Flex justify="space-between" wrap="nowrap" gap="middle">
@@ -1193,7 +1043,7 @@ const Cronometro = () => {
                             style={{ 
                                 width: '100%', 
                                 borderRadius: '8px',
-                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
                             }}
                             bodyStyle={{ 
                                 maxHeight: '60vh', 
@@ -1243,7 +1093,6 @@ const Cronometro = () => {
                                         type="primary"
                                         icon={<SyncOutlined spin={syncing} />}
                                         onClick={fetchTimelineData}
-                                        style={{ marginRight: '10px' }}
                                         loading={loading && !syncing}
                                     >
                                         Atualizar Dados
@@ -1275,8 +1124,7 @@ const Cronometro = () => {
                         style={{ 
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                            marginBottom: '20px',
-                            width: '75vw'
+                            marginBottom: '20px'
                         }}
                     >
                         <Flex justify="space-between" wrap="nowrap" gap="middle">

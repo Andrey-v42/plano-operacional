@@ -21,6 +21,7 @@ const Suporte = () => {
     const [chatTicketId, setChatTicketId] = useState(null);
     const [autoCreateChat, setAutoCreateChat] = useState(false);
     const [closedTicketsHidden, setClosedTicketsHidden] = useState(false);
+    const [messages, setMessages] = useState([]);
 
     const [chatDrawerVisible, setChatDrawerVisible] = useState(false);
     const [currentChatTicketId, setCurrentChatTicketId] = useState(null);
@@ -53,85 +54,84 @@ const Suporte = () => {
         }
     };
 
-    const handleCreateChatForTicket = (ticketId) => {
+    const fetchMessages = async (ticketId) => {
+        if (!ticketId || !pipeId) return;
+    
+        try {
+          const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
+            })
+          });
+    
+          const data = await response.json();
+    
+          if (data && data.docs) {
+            const sortedMessages = data.docs
+              .map(doc => ({
+                id: doc.id,
+                text: doc.data.text,
+                sender: doc.data.sender,
+                timestamp: doc.data.timestamp,
+                isCurrentUser: doc.data.sender === currentUser
+              }))
+              .sort((a, b) => a.timestamp - b.timestamp);
+    
+            setMessages(sortedMessages);
+          } else {
+            setMessages([]);
+          }
+        } catch (error) {
+          console.error('Error fetching messages:', error);
+        }
+    };
+
+    const handleCreateChatForTicket = async (ticketId) => {
         setCurrentChatTicketId(ticketId);
+        await fetchMessages(ticketId);
         setChatDrawerVisible(true);
     };
 
     const optionsCategoria = [
-        { "label": "Acesso Dashboard", "value": "Acesso Dashboard" },
-        { "label": "Acesso Backoffice", "value": "Acesso Backoffice" },
-        { "label": "Alter. de Cardápio", "value": "Alter. de Cardápio" },
-        { "label": "Alter. de funcionalidades/Admin", "value": "Alter. de funcionalidades/Admin" },
-        { "label": "Alter. de funcionalidades/Cargo", "value": "Alter. de funcionalidades/Cargo" },
-        { "label": "Alter. de funcionalidades/Dash-Extranet", "value": "Alter. de funcionalidades/Dash-Extranet" },
-        { "label": "Alter. de PDV", "value": "Alter. de PDV" },
-        { "label": "Análise Relatorial", "value": "Análise Relatorial" },
-        { "label": "Aprovação de Place", "value": "Aprovação de Place" },
-        { "label": "Associar Cardapio a operador", "value": "Associar Cardapio a operador" },
-        { "label": "Associar Device", "value": "Associar Device" },
-        { "label": "Avaria", "value": "Avaria" },
-        { "label": "Bug - Report", "value": "Bug - Report" },
-        { "label": "Cobrança duplicada", "value": "Cobrança duplicada" },
-        { "label": "Config SubAdquirente", "value": "Config SubAdquirente" },
-        { "label": "Criação de operador", "value": "Criação de operador" },
-        { "label": "Criação PDV + Cardápio", "value": "Criação PDV + Cardápio" },
-        { "label": "Duplicação de Saldo", "value": "Duplicação de Saldo" },
-        { "label": "Dúvida - Processo / Produto", "value": "Dúvida - Processo / Produto" },
-        { "label": "Entradas", "value": "Entradas" },
-        { "label": "Envio de Material", "value": "Envio de Material" },
-        { "label": "Erro ao bater ponto digital", "value": "Erro ao bater ponto digital" },
-        { "label": "Erro de Impressão", "value": "Erro de Impressão" },
-        { "label": "Erro de leitura na TAG", "value": "Erro de leitura na TAG" },
-        { "label": "Erro de Login", "value": "Erro de Login" },
-        { "label": "Erro estorno adquirência", "value": "Erro estorno adquirência" },
-        { "label": "Erro msg adquirência", "value": "Erro msg adquirência" },
-        { "label": "Erro Operacional", "value": "Erro Operacional" },
-        { "label": "Estoque Z", "value": "Estoque Z" },
-        { "label": "Falha de impressão", "value": "Falha de impressão" },
-        { "label": "Falha de Sincronia", "value": "Falha de Sincronia" },
-        { "label": "Fech. de comanda Pós Paga", "value": "Fech. de comanda Pós Paga" },
-        { "label": "Impressora", "value": "Impressora" },
-        { "label": "Inclusão de entrada", "value": "Inclusão de entrada" },
-        { "label": "Inclusão de produto", "value": "Inclusão de produto" },
-        { "label": "Limite não integrado", "value": "Limite não integrado" },
-        { "label": "Logo de Ficha", "value": "Logo de Ficha" },
-        { "label": "Mapeamento de relatório", "value": "Mapeamento de relatório" },
-        { "label": "Multiplos pagamentos", "value": "Multiplos pagamentos" },
-        { "label": "Problemas de conexão", "value": "Problemas de conexão" },
-        { "label": "Produtos de Devolução", "value": "Produtos de Devolução" },
-        { "label": "Prot. de entrega de terminais", "value": "Prot. de entrega de terminais" },
-        { "label": "Pix não funcionando", "value": "Pix não funcionando" },
-        { "label": "Queda de Adquirência", "value": "Queda de Adquirência" },
-        { "label": "Reaproveitamento de Valores", "value": "Reaproveitamento de Valores" },
-        { "label": "Recargas expiradas", "value": "Recargas expiradas" },
-        { "label": "Renomear operadores", "value": "Renomear operadores" },
-        { "label": "Transação Apartada", "value": "Transação Apartada" },
-        { "label": "Transações off", "value": "Transações off" },
-        { "label": "Venda Apartada", "value": "Venda Apartada" },
-        { "label": "Vincular bar a operador", "value": "Vincular bar a operador" },
-        { "label": "Vincular bar a vendor", "value": "Vincular bar a vendor" },
-        { "label": "Zig Tag Cheio", "value": "Zig Tag Cheio" },
-        { "label": "Alter. data de térm. vendas - Evento Ativo", "value": "Alter. data de térm. vendas - Evento Ativo" },
-        { "label": "Alter. data de término - Evento encerrado", "value": "Alter. data de término - Evento encerrado" },
-        { "label": "Alter. do nome do evento", "value": "Alter. do nome do evento" },
-        { "label": "Aplicativo de venda de ingresso - PDV", "value": "Aplicativo de venda de ingresso - PDV" },
-        { "label": "Ativação de Token", "value": "Ativação de Token" },
-        { "label": "Atraso/falha no envio do repasse", "value": "Atraso/falha no envio do repasse" },
-        { "label": "BUG - APP validação de Ingressos", "value": "BUG - APP validação de Ingressos" },
-        { "label": "BUG - APP venda de Ingresso", "value": "BUG - APP venda de Ingresso" },
-        { "label": "BUG - Marketplace (site de vendas)", "value": "BUG - Marketplace (site de vendas)" },
-        { "label": "BUG - Painel", "value": "BUG - Painel" },
-        { "label": "Cancelamento do estorno", "value": "Cancelamento do estorno" },
-        { "label": "Cancelamento do evento", "value": "Cancelamento do evento" },
-        { "label": "Cancelar ingresso", "value": "Cancelar ingresso" },
-        { "label": "Compras analisadas pelo time de Risco", "value": "Compras analisadas pelo time de Risco" },
-        { "label": "Dúvida - Códigos e promoters", "value": "Dúvida - Códigos e promoters" },
-        { "label": "Dúvida - Conferência de relatórios", "value": "Dúvida - Conferência de relatórios" },
-        { "label": "Dúvida - Config de ingressos e grupos", "value": "Dúvida - Config de ingressos e grupos" },
-        { "label": "Solicit. Troca lote ingressos", "value": "Solicit. Troca lote ingressos" },
-        { "label": "Transferência de ingresso", "value": "Transferência de ingresso" },
-        { "label": "Transferência de valor (antecipação)", "value": "Transferência de valor (antecipação)" }
+        { value: "Alteração de Cardápio", label: "Alteração de Cardápio" },
+        { value: "Substituição de equipamento", label: "Substituição de equipamento" },
+        { value: "Erro de login", label: "Erro de login" },
+        { value: "Alteração de funcionalidades", label: "Alteração de funcionalidades" },
+        { value: "Acesso", label: "Acesso" },
+        { value: "Alteração quantidade de terminais", label: "Alteração quantidade de terminais" },
+        { value: "Fechamento manual de ambulante", label: "Fechamento manual de ambulante" },
+        { value: "Transação Apartada", label: "Transação Apartada" },
+        { value: "Envio de Insumos", label: "Envio de Insumos" },
+        { value: "Análise Relatorial", label: "Análise Relatorial" },
+        { value: "Problemas de conexão", label: "Problemas de conexão" },
+        { value: "Erro de Impressão", label: "Erro de Impressão" },
+        { value: "Erro de leitura na TAG", label: "Erro de leitura na TAG" },
+        { value: "Cobrança indevida", label: "Cobrança indevida" },
+        { value: "Ponto de venda", label: "Ponto de venda" },
+        { value: "Duplicação de Saldo", label: "Duplicação de Saldo" },
+        { value: "Entradas", label: "Entradas" },
+        { value: "Registro de check in", label: "Registro de check in" },
+        { value: "Estorno adquirência", label: "Estorno adquirência" },
+        { value: "Erro mensagem adquirência", label: "Erro mensagem adquirência" },
+        { value: "Estoque Z", label: "Estoque Z" },
+        { value: "Falha de Sincronia", label: "Falha de Sincronia" },
+        { value: "Fechamento de comanda Pós Paga", label: "Fechamento de comanda Pós Paga" },
+        { value: "Impressora remota", label: "Impressora remota" },
+        { value: "Limite não integrado", label: "Limite não integrado" },
+        { value: "Logo de Ficha", label: "Logo de Ficha" },
+        { value: "Multiplos pagamentos", label: "Multiplos pagamentos" },
+        { value: "Produtos de Devolução", label: "Produtos de Devolução" },
+        { value: "Protocolo de equipamentos", label: "Protocolo de equipamentos" },
+        { value: "Pix não funcionando", label: "Pix não funcionando" },
+        { value: "Transferência de saldo", label: "Transferência de saldo" },
+        { value: "Recargas expiradas", label: "Recargas expiradas" },
+        { value: "Zig Tag Cheio", label: "Zig Tag Cheio" },
+        { value: "Queima de Ficha", label: "Queima de Ficha" },
+        { value: "Dúvida de processo ou produto", label: "Dúvida de processo ou produto" }
     ];
 
     const columnsChamados = [
@@ -310,10 +310,37 @@ const Suporte = () => {
         setFileList(newFileList);
     };
 
-    const handleAnswerClick = (recordId) => {
-        setAnswerFormVisible(true);
-        // Store the current record ID for submission
-        formAnswer.setFieldsValue({ recordId });
+    const handleAnswerClick = async (recordId, resposta) => {
+        try {
+            setButtonAnswerLoading(true);
+    
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${recordId}`,
+                    data: {
+                        timestampResposta: new Date().getTime(),
+                        status: 'closed',
+                        atendente: localStorage.getItem('currentUser'),
+                        resposta: resposta
+                    }
+                })
+            });
+    
+            await fetchChamados();
+            const currentTicket = dataChamados.find((chamado) => chamado.id === recordId);
+            await sendNotificationClosed(currentTicket.userId, recordId);
+            setButtonAnswerLoading(false);
+            openNotificationSucess('Chamado respondido com sucesso!');
+        } catch (error) {
+            console.error('Error:', error);
+            setButtonAnswerLoading(false);
+            openNotificationFailure('Erro ao responder chamado. Tente novamente.');
+        }
     };
 
     const enviarChamado = async (values) => {
@@ -625,12 +652,12 @@ const Suporte = () => {
                     </Col>
                     <Col span={8}>
                         <Card
-                            title={<Title level={4}>Informações</Title>}
+                            // title={<Title level={4}>Informações</Title>}
                             bordered={false}
-                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', height: '100%' }}
                         >
                             <Space direction="vertical" style={{ width: '100%' }}>
-                                <Card type="inner" title="Níveis de Urgência">
+                                {/* <Card type="inner" title="Níveis de Urgência">
                                     <p><strong>Urgente:</strong> Problemas que afetam criticamente a operação.</p>
                                     <p><strong>Sem Urgência:</strong> Problemas que não impactam diretamente a operação.</p>
                                 </Card>
@@ -641,7 +668,7 @@ const Suporte = () => {
                                 <Card type="inner" title="Dicas">
                                     <p>Descreva o problema detalhadamente para agilizar a resolução.</p>
                                     <p>Anexe prints ou evidências sempre que possível.</p>
-                                </Card>
+                                </Card> */}
                             </Space>
                         </Card>
                     </Col>
@@ -790,7 +817,7 @@ const Suporte = () => {
                     bordered={false}
                     style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                 >
-                    <Dashboard dataChamados={dataChamados} />
+                    <Dashboard dataChamados={dataChamados} pipeId={pipeId} />
                 </Card>
             )
         }
@@ -978,6 +1005,8 @@ const Suporte = () => {
             <TicketChatDrawer
                 visible={chatDrawerVisible}
                 ticketId={currentChatTicketId}
+                messages={messages}
+                fetchMessages={fetchMessages}
                 currentRecord={currentRecord}
                 pipeId={pipeId}
                 onClose={() => setChatDrawerVisible(false)}
