@@ -12,6 +12,7 @@ const { Title, Text } = Typography;
 
 const Suporte = () => {
     const [optionsPontos, setOptionsPontos] = useState(null);
+    const [optionsSetores, setOptionsSetores] = useState(null);
     const [fileList, setFileList] = useState([]);
     const [buttonChamadoLoading, setButtonChamadoLoading] = useState(false);
     const [dataChamados, setDataChamados] = useState([]);
@@ -21,6 +22,7 @@ const Suporte = () => {
     const [chatTicketId, setChatTicketId] = useState(null);
     const [autoCreateChat, setAutoCreateChat] = useState(false);
     const [closedTicketsHidden, setClosedTicketsHidden] = useState(false);
+    const [messages, setMessages] = useState([]);
 
     const [chatDrawerVisible, setChatDrawerVisible] = useState(false);
     const [currentChatTicketId, setCurrentChatTicketId] = useState(null);
@@ -48,159 +50,108 @@ const Suporte = () => {
             return <Badge status="error" text={<Text strong style={{ color: '#ff4d4f' }}>Aberto</Text>} />;
         } else if (status === 'closed') {
             return <Badge status="success" text={<Text strong style={{ color: '#52c41a' }}>Fechado</Text>} />;
+        } else if (status === 'validation') {
+            return <Badge status="warning" text={<Text strong style={{ color: '#faad14' }}>Validação</Text>} />;
         } else {
             return <Badge status="processing" text={<Text strong style={{ color: '#1890ff' }}>Andamento</Text>} />;
         }
     };
 
-    const handleCreateChatForTicket = (ticketId) => {
+    const fetchMessages = async (ticketId) => {
+        if (!ticketId || !pipeId) return;
+
+        try {
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
+                })
+            });
+
+            const data = await response.json();
+
+            if (data && data.docs) {
+                const sortedMessages = data.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        text: doc.data.text,
+                        sender: doc.data.sender,
+                        timestamp: doc.data.timestamp,
+                        isCurrentUser: doc.data.sender === currentUser
+                    }))
+                    .sort((a, b) => a.timestamp - b.timestamp);
+
+                setMessages(sortedMessages);
+            } else {
+                setMessages([]);
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        }
+    };
+
+    const handleCreateChatForTicket = async (ticketId) => {
         setCurrentChatTicketId(ticketId);
+        await fetchMessages(ticketId);
         setChatDrawerVisible(true);
     };
 
-    const optionsCategoria = [
-        { "label": "Acesso Dashboard", "value": "Acesso Dashboard" },
-        { "label": "Acesso Backoffice", "value": "Acesso Backoffice" },
-        { "label": "Alter. de Cardápio", "value": "Alter. de Cardápio" },
-        { "label": "Alter. de funcionalidades/Admin", "value": "Alter. de funcionalidades/Admin" },
-        { "label": "Alter. de funcionalidades/Cargo", "value": "Alter. de funcionalidades/Cargo" },
-        { "label": "Alter. de funcionalidades/Dash-Extranet", "value": "Alter. de funcionalidades/Dash-Extranet" },
-        { "label": "Alter. de PDV", "value": "Alter. de PDV" },
-        { "label": "Análise Relatorial", "value": "Análise Relatorial" },
-        { "label": "Aprovação de Place", "value": "Aprovação de Place" },
-        { "label": "Associar Cardapio a operador", "value": "Associar Cardapio a operador" },
-        { "label": "Associar Device", "value": "Associar Device" },
-        { "label": "Avaria", "value": "Avaria" },
-        { "label": "Bug - Report", "value": "Bug - Report" },
-        { "label": "Cobrança duplicada", "value": "Cobrança duplicada" },
-        { "label": "Config SubAdquirente", "value": "Config SubAdquirente" },
-        { "label": "Criação de operador", "value": "Criação de operador" },
-        { "label": "Criação PDV + Cardápio", "value": "Criação PDV + Cardápio" },
-        { "label": "Duplicação de Saldo", "value": "Duplicação de Saldo" },
-        { "label": "Dúvida - Processo / Produto", "value": "Dúvida - Processo / Produto" },
-        { "label": "Entradas", "value": "Entradas" },
-        { "label": "Envio de Material", "value": "Envio de Material" },
-        { "label": "Erro ao bater ponto digital", "value": "Erro ao bater ponto digital" },
-        { "label": "Erro de Impressão", "value": "Erro de Impressão" },
-        { "label": "Erro de leitura na TAG", "value": "Erro de leitura na TAG" },
-        { "label": "Erro de Login", "value": "Erro de Login" },
-        { "label": "Erro estorno adquirência", "value": "Erro estorno adquirência" },
-        { "label": "Erro msg adquirência", "value": "Erro msg adquirência" },
-        { "label": "Erro Operacional", "value": "Erro Operacional" },
-        { "label": "Estoque Z", "value": "Estoque Z" },
-        { "label": "Falha de impressão", "value": "Falha de impressão" },
-        { "label": "Falha de Sincronia", "value": "Falha de Sincronia" },
-        { "label": "Fech. de comanda Pós Paga", "value": "Fech. de comanda Pós Paga" },
-        { "label": "Impressora", "value": "Impressora" },
-        { "label": "Inclusão de entrada", "value": "Inclusão de entrada" },
-        { "label": "Inclusão de produto", "value": "Inclusão de produto" },
-        { "label": "Limite não integrado", "value": "Limite não integrado" },
-        { "label": "Logo de Ficha", "value": "Logo de Ficha" },
-        { "label": "Mapeamento de relatório", "value": "Mapeamento de relatório" },
-        { "label": "Multiplos pagamentos", "value": "Multiplos pagamentos" },
-        { "label": "Problemas de conexão", "value": "Problemas de conexão" },
-        { "label": "Produtos de Devolução", "value": "Produtos de Devolução" },
-        { "label": "Prot. de entrega de terminais", "value": "Prot. de entrega de terminais" },
-        { "label": "Pix não funcionando", "value": "Pix não funcionando" },
-        { "label": "Queda de Adquirência", "value": "Queda de Adquirência" },
-        { "label": "Reaproveitamento de Valores", "value": "Reaproveitamento de Valores" },
-        { "label": "Recargas expiradas", "value": "Recargas expiradas" },
-        { "label": "Renomear operadores", "value": "Renomear operadores" },
-        { "label": "Transação Apartada", "value": "Transação Apartada" },
-        { "label": "Transações off", "value": "Transações off" },
-        { "label": "Venda Apartada", "value": "Venda Apartada" },
-        { "label": "Vincular bar a operador", "value": "Vincular bar a operador" },
-        { "label": "Vincular bar a vendor", "value": "Vincular bar a vendor" },
-        { "label": "Zig Tag Cheio", "value": "Zig Tag Cheio" },
-        { "label": "Alter. data de térm. vendas - Evento Ativo", "value": "Alter. data de térm. vendas - Evento Ativo" },
-        { "label": "Alter. data de término - Evento encerrado", "value": "Alter. data de término - Evento encerrado" },
-        { "label": "Alter. do nome do evento", "value": "Alter. do nome do evento" },
-        { "label": "Aplicativo de venda de ingresso - PDV", "value": "Aplicativo de venda de ingresso - PDV" },
-        { "label": "Ativação de Token", "value": "Ativação de Token" },
-        { "label": "Atraso/falha no envio do repasse", "value": "Atraso/falha no envio do repasse" },
-        { "label": "BUG - APP validação de Ingressos", "value": "BUG - APP validação de Ingressos" },
-        { "label": "BUG - APP venda de Ingresso", "value": "BUG - APP venda de Ingresso" },
-        { "label": "BUG - Marketplace (site de vendas)", "value": "BUG - Marketplace (site de vendas)" },
-        { "label": "BUG - Painel", "value": "BUG - Painel" },
-        { "label": "Cancelamento do estorno", "value": "Cancelamento do estorno" },
-        { "label": "Cancelamento do evento", "value": "Cancelamento do evento" },
-        { "label": "Cancelar ingresso", "value": "Cancelar ingresso" },
-        { "label": "Compras analisadas pelo time de Risco", "value": "Compras analisadas pelo time de Risco" },
-        { "label": "Dúvida - Códigos e promoters", "value": "Dúvida - Códigos e promoters" },
-        { "label": "Dúvida - Conferência de relatórios", "value": "Dúvida - Conferência de relatórios" },
-        { "label": "Dúvida - Config de ingressos e grupos", "value": "Dúvida - Config de ingressos e grupos" },
-        { "label": "Solicit. Troca lote ingressos", "value": "Solicit. Troca lote ingressos" },
-        { "label": "Transferência de ingresso", "value": "Transferência de ingresso" },
-        { "label": "Transferência de valor (antecipação)", "value": "Transferência de valor (antecipação)" }
-    ];
-
-    const columnsChamados = [
-        {
-            title: 'Solicitante',
-            dataIndex: 'solicitante',
-            key: 'solicitante',
-            width: '15%',
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            width: '12%',
-            render: (status) => getStatusBadge(status)
-        },
-        {
-            title: 'Data',
-            dataIndex: 'timestampAberto',
-            key: 'timestampAberto',
-            width: '15%',
-            render: (timestampAberto) => new Date(timestampAberto).toLocaleString()
-        },
-        {
-            title: 'Categoria',
-            dataIndex: 'categoria',
-            key: 'categoria',
-            width: '20%',
-        },
-        {
-            title: 'Nível de urgência',
-            dataIndex: 'urgencia',
-            key: 'urgencia',
-            width: '15%',
-            render: (urgencia) => {
-                const color = urgencia === 'Urgente' ? 'red' : 'green';
-                return <Text style={{ color }}>{urgencia}</Text>;
-            }
-        },
-        {
-            title: 'Ações',
-            key: 'action',
-            width: '15%',
-            render: (_, record) => (
-                <Space>
-                    {record.status === 'pending' && (
-                        <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
-                            Abrir Ticket
-                        </Button>
-                    )}
-                    {record.status === 'analysis' && (
-                        <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
-                            Responder
-                        </Button>
-                    )}
-                    <Button
-                        type="default"
-                        size="small"
-                        icon={<CommentOutlined />}
-                        onClick={() => {
-                            handleCreateChatForTicket(record.id)
-                            setCurrentRecord(record);
-                        }}
-                    >
-                        Chat
-                    </Button>
-                </Space>
-            ),
+    const handleUrgencia = (value) => {
+        switch (value) {
+            case "Alteração de funcionalidades":
+            case "Transação Apartada":
+            case "Cobrança indevida":
+            case "Estorno adquirência":
+            case "Erro mensagem adquirência":
+            case "Falha de Sincronia":
+            case "Multiplos pagamentos":
+            case "Pix não funcionando":
+            case "Recargas expiradas":
+                return "Urgente";
+            default:
+                return "Sem Urgência";
         }
+    };
+
+    const optionsCategoria = [
+        { value: 'Alteração de Cardápio', label: 'Alteração de Cardápio' },
+        { value: 'Substituição de equipamento', label: 'Substituição de equipamento' },
+        { value: 'Erro de login', label: 'Erro de login' },
+        { value: 'Alteração de funcionalidades', label: 'Alteração de funcionalidades' },
+        { value: 'Acesso', label: 'Acesso' },
+        { value: 'Alteração quantidade de terminais', label: 'Alteração quantidade de terminais' },
+        { value: 'Fechamento manual de ambulante', label: 'Fechamento manual de ambulante' },
+        { value: 'Transação Apartada', label: 'Transação Apartada' },
+        { value: 'Envio de Insumos', label: 'Envio de Insumos' },
+        { value: 'Análise Relatorial', label: 'Análise Relatorial' },
+        { value: 'Problemas de conexão', label: 'Problemas de conexão' },
+        { value: 'Erro de Impressão', label: 'Erro de Impressão' },
+        { value: 'Erro de leitura na TAG', label: 'Erro de leitura na TAG' },
+        { value: 'Cobrança indevida', label: 'Cobrança indevida' },
+        { value: 'Ponto de venda', label: 'Ponto de venda' },
+        { value: 'Duplicação de Saldo', label: 'Duplicação de Saldo' },
+        { value: 'Entradas', label: 'Entradas' },
+        { value: 'Registro de check in', label: 'Registro de check in' },
+        { value: 'Estorno adquirência', label: 'Estorno adquirência' },
+        { value: 'Erro mensagem adquirência', label: 'Erro mensagem adquirência' },
+        { value: 'Estoque Z', label: 'Estoque Z' },
+        { value: 'Falha de Sincronia', label: 'Falha de Sincronia' },
+        { value: 'Fechamento de comanda Pós Paga', label: 'Fechamento de comanda Pós Paga' },
+        { value: 'Impressora remota', label: 'Impressora remota' },
+        { value: 'Limite não integrado', label: 'Limite não integrado' },
+        { value: 'Logo de Ficha', label: 'Logo de Ficha' },
+        { value: 'Multiplos pagamentos', label: 'Multiplos pagamentos' },
+        { value: 'Produtos de Devolução', label: 'Produtos de Devolução' },
+        { value: 'Protocolo de equipamentos', label: 'Protocolo de equipamentos' },
+        { value: 'Pix não funcionando', label: 'Pix não funcionando' },
+        { value: 'Transferência de saldo', label: 'Transferência de saldo' },
+        { value: 'Recargas expiradas', label: 'Recargas expiradas' },
+        { value: 'Zig Tag Cheio', label: 'Zig Tag Cheio' },
+        { value: 'Queima de Ficha', label: 'Queima de Ficha' },
+        { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' }
     ];
 
     const optionsTerminal = [
@@ -278,15 +229,15 @@ const Suporte = () => {
         });
     };
 
-    const sendNotificationProducao = async (userId, ticketId) => {
+    const sendNotificationValidation = async (userId, ticketId) => {
         await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                title: 'Seu chamado está em validação com a produção',
-                body: `Olá, seu ticket de ID ${ticketId} está em validação com a produção.`,
+                title: 'Seu chamado está em validação',
+                body: `Olá, seu ticket de ID ${ticketId} está em processo de validação pela produção do evento.`,
                 userId: userId,
             }),
         });
@@ -310,17 +261,44 @@ const Suporte = () => {
         setFileList(newFileList);
     };
 
-    const handleAnswerClick = (recordId) => {
-        setAnswerFormVisible(true);
-        // Store the current record ID for submission
-        formAnswer.setFieldsValue({ recordId });
+    const handleAnswerClick = async (recordId, resposta, classificacao) => {
+        try {
+            setButtonAnswerLoading(true);
+
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${recordId}`,
+                    data: {
+                        timestampResposta: new Date().getTime(),
+                        status: 'closed',
+                        resposta: resposta,
+                        classificacao: classificacao,
+                    }
+                })
+            });
+
+            await fetchChamados();
+            const currentTicket = dataChamados.find((chamado) => chamado.id === recordId);
+            await sendNotificationClosed(currentTicket.userId, recordId);
+            setButtonAnswerLoading(false);
+            openNotificationSucess('Chamado respondido com sucesso!');
+        } catch (error) {
+            console.error('Error:', error);
+            setButtonAnswerLoading(false);
+            openNotificationFailure('Erro ao responder chamado. Tente novamente.');
+        }
     };
 
     const enviarChamado = async (values) => {
-        if (values.categoria && values.ponto && values.modelo && values.descricao) {
+        if (values.categoria && values.ponto && values.modelo && values.descricao && values.setor) {
             setButtonChamadoLoading(true);
             try {
-                values.urgencia = 'Urgente'
+                values.urgencia = handleUrgencia(values.categoria)
                 const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
                     method: 'POST',
                     headers: {
@@ -373,19 +351,40 @@ const Suporte = () => {
         }
     };
 
-    const changeStatus = async (id) => {
+    const changeStatus = async (id, targetStatus = 'analysis') => {
         try {
+            const updateData = {
+                status: targetStatus
+            };
+
+            // Add appropriate timestamp based on the target status
+            if (targetStatus === 'analysis') {
+                updateData.timestampAnalise = new Date().getTime();
+                updateData.atendente = localStorage.getItem('currentUser');
+            } else if (targetStatus === 'validation') {
+                updateData.timestampValidacao = new Date().getTime();
+            }
+
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ url: `pipe`, docId: `pipeId_${pipeId}/chamados/${id}`, data: { timestampAnalise: new Date().getTime(), status: 'analysis' } })
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${id}`,
+                    data: updateData
+                })
             });
 
             await fetchChamados();
             const currentTicket = dataChamados.find((chamado) => chamado.id === id);
-            sendNotificationAnalysis(currentTicket.userId, id);
+
+            if (targetStatus === 'analysis') {
+                sendNotificationAnalysis(currentTicket.userId, id);
+            } else if (targetStatus === 'validation') {
+                sendNotificationValidation(currentTicket.userId, id);
+            }
         } catch (error) {
             console.error('Error:', error);
             openNotificationFailure('Erro ao atualizar status. Tente novamente.');
@@ -409,8 +408,8 @@ const Suporte = () => {
                     data: {
                         timestampResposta: new Date().getTime(),
                         status: 'closed',
-                        atendente: localStorage.getItem('currentUser'),
-                        resposta: values.resposta
+                        resposta: values.resposta,
+                        classificacao: values.classification
                     }
                 })
             });
@@ -487,10 +486,11 @@ const Suporte = () => {
                         descricao: doc.data.descricao,
                         resposta: doc.data.resposta || '',
                         anexos: doc.data.anexos || [],
-                        atendente: doc.data.atendente || '',
                         timestampResposta: doc.data.timestampResposta || '',
                         timestampAnalise: doc.data.timestampAnalise || '',
                         userId: doc.data.userId || '',
+                        setor: doc.data.setor || '',
+                        atendente: doc.data.atendente || null,
                     }
                 }
             });
@@ -512,12 +512,12 @@ const Suporte = () => {
             key: '1',
             children: (
                 <Row gutter={24}>
-                    <Col span={16}>
+                    <Col span={24}>
                         <Card
                             title={<Title level={4}>Abrir Chamado de Suporte</Title>}
                             bordered={false}
                             className="card-with-shadow"
-                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', width: '85vw' }}
                         >
                             <Form onFinish={enviarChamado} form={formChamado} layout="vertical">
                                 <Row gutter={16}>
@@ -535,22 +535,19 @@ const Suporte = () => {
                                             />
                                         </Form.Item>
                                     </Col>
-                                    {/* <Col span={12}>
+                                    <Col span={12}>
                                         <Form.Item
-                                            label={<Text strong>Nível de Urgência</Text>}
-                                            name='urgencia'
+                                            label={<Text strong>Setor</Text>}
+                                            name='setor'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
                                             <Select
-                                                placeholder='Selecione o nível de urgência'
-                                                options={[
-                                                    { value: 'Urgente', label: 'Urgente' },
-                                                    { value: 'Sem Urgência', label: 'Sem Urgência' }
-                                                ]}
+                                                placeholder='Selecione o setor'
+                                                options={optionsSetores}
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
-                                    </Col> */}
+                                    </Col>
                                 </Row>
 
                                 <Row gutter={16}>
@@ -624,10 +621,10 @@ const Suporte = () => {
                         </Card>
                     </Col>
                     <Col span={8}>
-                        <Card
-                            title={<Title level={4}>Informações</Title>}
+                        {/* <Card
+                            // title={<Title level={4}>Informações</Title>}
                             bordered={false}
-                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
+                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', height: '100%' }}
                         >
                             <Space direction="vertical" style={{ width: '100%' }}>
                                 <Card type="inner" title="Níveis de Urgência">
@@ -643,7 +640,7 @@ const Suporte = () => {
                                     <p>Anexe prints ou evidências sempre que possível.</p>
                                 </Card>
                             </Space>
-                        </Card>
+                        </Card> */}
                     </Col>
                 </Row>
             )
@@ -669,7 +666,7 @@ const Suporte = () => {
                                     prefix={<FileOutlined />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={5}>
                                 <Statistic
                                     title={<Text strong>Chamados Abertos</Text>}
                                     value={dataChamados.filter(c => c.status === 'pending').length}
@@ -677,17 +674,25 @@ const Suporte = () => {
                                     prefix={<ClockCircleOutlined />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={5}>
                                 <Statistic
-                                    title={<Text strong>Chamados Em Análise</Text>}
+                                    title={<Text strong>Em Análise</Text>}
                                     value={dataChamados.filter(c => c.status === 'analysis').length}
                                     valueStyle={{ color: '#1890ff' }}
                                     prefix={<SyncOutlined spin={true} />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={4}>
                                 <Statistic
-                                    title={<Text strong>Chamados Resolvidos</Text>}
+                                    title={<Text strong>Em Validação</Text>}
+                                    value={dataChamados.filter(c => c.status === 'validation').length}
+                                    valueStyle={{ color: '#faad14' }}
+                                    prefix={<QuestionCircleOutlined />}
+                                />
+                            </Col>
+                            <Col span={4}>
+                                <Statistic
+                                    title={<Text strong>Resolvidos</Text>}
                                     value={dataChamados.filter(c => c.status === 'closed').length}
                                     valueStyle={{ color: '#52c41a' }}
                                     prefix={<CheckCircleOutlined />}
@@ -760,7 +765,7 @@ const Suporte = () => {
         {
             label: (
                 <span>
-                    <CommentOutlined /> Chat de Suporte
+                    <CheckCircleOutlined /> Dashboard
                 </span>
             ),
             key: '3',
@@ -769,28 +774,7 @@ const Suporte = () => {
                     bordered={false}
                     style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                 >
-                    <ChatSuporte
-                        pipeId={pipeId}
-                        ticketId={chatTicketId}
-                        autoCreate={autoCreateChat}
-                        onChatCreated={() => setAutoCreateChat(false)}
-                    />
-                </Card>
-            )
-        },
-        {
-            label: (
-                <span>
-                    <CheckCircleOutlined /> Dashboard
-                </span>
-            ),
-            key: '4',
-            children: (
-                <Card
-                    bordered={false}
-                    style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
-                >
-                    <Dashboard dataChamados={dataChamados} />
+                    <Dashboard dataChamados={dataChamados} pipeId={pipeId} />
                 </Card>
             )
         }
@@ -817,7 +801,19 @@ const Suporte = () => {
                         value: doc.id
                     }
                 });
+
+                let setores = data.map((doc) => {
+                    return {
+                        label: doc.data.SETOR,
+                        value: doc.data.SETOR
+                    }
+                });
+                setores = setores.filter((item, index, self) =>
+                    index === self.findIndex(obj => JSON.stringify(obj) === JSON.stringify(item))
+                );
+
                 setOptionsPontos([{ label: 'N/A', value: 'N/A' }, ...pontos]);
+                setOptionsSetores([{ label: 'N/A', value: 'N/A' }, ...setores]);
             } catch (error) {
                 console.log(error);
                 openNotificationFailure('Erro ao carregar pontos de venda.');
@@ -978,6 +974,8 @@ const Suporte = () => {
             <TicketChatDrawer
                 visible={chatDrawerVisible}
                 ticketId={currentChatTicketId}
+                messages={messages}
+                fetchMessages={fetchMessages}
                 currentRecord={currentRecord}
                 pipeId={pipeId}
                 onClose={() => setChatDrawerVisible(false)}

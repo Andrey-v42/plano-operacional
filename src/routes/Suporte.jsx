@@ -50,6 +50,10 @@ const Suporte = () => {
             return <Badge status="error" text={<Text strong style={{ color: '#ff4d4f' }}>Aberto</Text>} />;
         } else if (status === 'closed') {
             return <Badge status="success" text={<Text strong style={{ color: '#52c41a' }}>Fechado</Text>} />;
+        } else if (status === 'validation') {
+            return <Badge status="warning" text={<Text strong style={{ color: '#faad14' }}>Validação</Text>} />;
+        } else if (status === 'reopened') {
+            return <Badge status="processing" text={<Text strong style={{ color: '#722ed1' }}>Reaberto</Text>} />;
         } else {
             return <Badge status="processing" text={<Text strong style={{ color: '#1890ff' }}>Andamento</Text>} />;
         }
@@ -152,75 +156,6 @@ const Suporte = () => {
         { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' }
     ];
 
-    const columnsChamados = [
-        {
-            title: 'Solicitante',
-            dataIndex: 'solicitante',
-            key: 'solicitante',
-            width: '15%',
-        },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            width: '12%',
-            render: (status) => getStatusBadge(status)
-        },
-        {
-            title: 'Data',
-            dataIndex: 'timestampAberto',
-            key: 'timestampAberto',
-            width: '15%',
-            render: (timestampAberto) => new Date(timestampAberto).toLocaleString()
-        },
-        {
-            title: 'Categoria',
-            dataIndex: 'categoria',
-            key: 'categoria',
-            width: '20%',
-        },
-        {
-            title: 'Nível de urgência',
-            dataIndex: 'urgencia',
-            key: 'urgencia',
-            width: '15%',
-            render: (urgencia) => {
-                const color = urgencia === 'Urgente' ? 'red' : 'green';
-                return <Text style={{ color }}>{urgencia}</Text>;
-            }
-        },
-        {
-            title: 'Ações',
-            key: 'action',
-            width: '15%',
-            render: (_, record) => (
-                <Space>
-                    {record.status === 'pending' && (
-                        <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
-                            Abrir Ticket
-                        </Button>
-                    )}
-                    {record.status === 'analysis' && (
-                        <Button type="primary" size="small" onClick={() => handleAnswerClick(record.id)}>
-                            Responder
-                        </Button>
-                    )}
-                    <Button
-                        type="default"
-                        size="small"
-                        icon={<CommentOutlined />}
-                        onClick={() => {
-                            handleCreateChatForTicket(record.id)
-                            setCurrentRecord(record);
-                        }}
-                    >
-                        Chat
-                    </Button>
-                </Space>
-            ),
-        }
-    ];
-
     const optionsTerminal = [
         { label: 'N/A', value: 'N/A' },
         { label: 'Pag A930', value: 'Pag A930' },
@@ -296,15 +231,15 @@ const Suporte = () => {
         });
     };
 
-    const sendNotificationProducao = async (userId, ticketId) => {
+    const sendNotificationValidation = async (userId, ticketId) => {
         await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                title: 'Seu chamado está em validação com a produção',
-                body: `Olá, seu ticket de ID ${ticketId} está em validação com a produção.`,
+                title: 'Seu chamado está em validação',
+                body: `Olá, seu ticket de ID ${ticketId} está em processo de validação pela produção do evento.`,
                 userId: userId,
             }),
         });
@@ -324,11 +259,70 @@ const Suporte = () => {
         });
     };
 
+    const sendNotificationReopened = async (userId, ticketId, motivo) => {
+        const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                url: 'users',
+            })
+        });
+        let dataUsers = await responseUsers.json();
+        const dataUsersArray = dataUsers.docs.map(doc => ({ id: doc.id, permission: doc.data.permission, name: doc.data.username, tokens: doc.data.tokens || [] }));
+
+        // First, notify the requester
+        await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Chamado reaberto',
+                body: `Seu ticket de ID ${ticketId} foi reaberto e aguarda nova análise.`,
+                userId: userId,
+            }),
+        });
+
+        // Then notify admins and support staff
+        const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: 'pipe', docId: `pipeId_${pipeId}` })
+        });
+        const dataEvento = await responseEvento.json();
+
+        for (const user of dataUsersArray) {
+            if (dataEvento.equipeEscalada.some(item => (item.funcao == 'Head' && item.nome === user.name) || (item.funcao == 'C-CCO' && item.nome === user.name) || (user.permission === 'admin'))) {
+                if (user.tokens.length > 0) {
+                    try {
+                        await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                title: 'Chamado reaberto',
+                                body: `O ticket de ID ${ticketId} foi reaberto por ${localStorage.getItem('currentUser')}.${motivo ? ` Motivo: ${motivo}` : ''}`,
+                                userId: user.id,
+                            }),
+                        });
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                }
+            }
+        }
+    };
+
     const handleFileChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
     };
 
-    const handleAnswerClick = async (recordId, resposta) => {
+    const handleAnswerClick = async (recordId, resposta, classificacao) => {
         try {
             setButtonAnswerLoading(true);
 
@@ -343,8 +337,8 @@ const Suporte = () => {
                     data: {
                         timestampResposta: new Date().getTime(),
                         status: 'closed',
-                        atendente: localStorage.getItem('currentUser'),
-                        resposta: resposta
+                        resposta: resposta,
+                        classificacao: classificacao,
                     }
                 })
             });
@@ -418,22 +412,74 @@ const Suporte = () => {
         }
     };
 
-    const changeStatus = async (id) => {
+    const changeStatus = async (id, targetStatus = 'analysis') => {
+        try {
+            const updateData = {
+                status: targetStatus
+            };
+
+            // Add appropriate timestamp based on the target status
+            if (targetStatus === 'analysis') {
+                updateData.timestampAnalise = new Date().getTime();
+                updateData.atendente = localStorage.getItem('currentUser');
+            } else if (targetStatus === 'validation') {
+                updateData.timestampValidacao = new Date().getTime();
+            }
+
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${id}`,
+                    data: updateData
+                })
+            });
+
+            await fetchChamados();
+            const currentTicket = dataChamados.find((chamado) => chamado.id === id);
+
+            if (targetStatus === 'analysis') {
+                sendNotificationAnalysis(currentTicket.userId, id);
+            } else if (targetStatus === 'validation') {
+                sendNotificationValidation(currentTicket.userId, id);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            openNotificationFailure('Erro ao atualizar status. Tente novamente.');
+        }
+    };
+
+    const reopenTicket = async (id, motivoReabertura = '') => {
         try {
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ url: `pipe`, docId: `pipeId_${pipeId}/chamados/${id}`, data: { timestampAnalise: new Date().getTime(), status: 'analysis' } })
+                body: JSON.stringify({
+                    url: `pipe`,
+                    docId: `pipeId_${pipeId}/chamados/${id}`,
+                    data: {
+                        timestampReaberto: new Date().getTime(),
+                        status: 'reopened',
+                        motivoReabertura: motivoReabertura,
+                        atendente: null // Reset atendente when reopened
+                    }
+                })
             });
 
             await fetchChamados();
             const currentTicket = dataChamados.find((chamado) => chamado.id === id);
-            sendNotificationAnalysis(currentTicket.userId, id);
+
+            // Notify support staff about reopened ticket
+            await sendNotificationReopened(currentTicket.userId, id, motivoReabertura);
+            openNotificationSucess('Chamado reaberto com sucesso!');
         } catch (error) {
             console.error('Error:', error);
-            openNotificationFailure('Erro ao atualizar status. Tente novamente.');
+            openNotificationFailure('Erro ao reabrir chamado. Tente novamente.');
         }
     };
 
@@ -454,8 +500,8 @@ const Suporte = () => {
                     data: {
                         timestampResposta: new Date().getTime(),
                         status: 'closed',
-                        atendente: localStorage.getItem('currentUser'),
-                        resposta: values.resposta
+                        resposta: values.resposta,
+                        classificacao: values.classification
                     }
                 })
             });
@@ -532,7 +578,6 @@ const Suporte = () => {
                         descricao: doc.data.descricao,
                         resposta: doc.data.resposta || '',
                         anexos: doc.data.anexos || [],
-                        atendente: doc.data.atendente || '',
                         timestampResposta: doc.data.timestampResposta || '',
                         timestampAnalise: doc.data.timestampAnalise || '',
                         userId: doc.data.userId || '',
@@ -706,14 +751,14 @@ const Suporte = () => {
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', marginBottom: '16px' }}
                     >
                         <Row gutter={16}>
-                            <Col span={6}>
+                            <Col span={5}>
                                 <Statistic
                                     title={<Text strong>Total de Chamados</Text>}
                                     value={dataChamados.length}
                                     prefix={<FileOutlined />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={4}>
                                 <Statistic
                                     title={<Text strong>Chamados Abertos</Text>}
                                     value={dataChamados.filter(c => c.status === 'pending').length}
@@ -721,17 +766,33 @@ const Suporte = () => {
                                     prefix={<ClockCircleOutlined />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={4}>
                                 <Statistic
-                                    title={<Text strong>Chamados Em Análise</Text>}
+                                    title={<Text strong>Em Análise</Text>}
                                     value={dataChamados.filter(c => c.status === 'analysis').length}
                                     valueStyle={{ color: '#1890ff' }}
                                     prefix={<SyncOutlined spin={true} />}
                                 />
                             </Col>
-                            <Col span={6}>
+                            <Col span={4}>
                                 <Statistic
-                                    title={<Text strong>Chamados Resolvidos</Text>}
+                                    title={<Text strong>Em Validação</Text>}
+                                    value={dataChamados.filter(c => c.status === 'validation').length}
+                                    valueStyle={{ color: '#faad14' }}
+                                    prefix={<QuestionCircleOutlined />}
+                                />
+                            </Col>
+                            <Col span={4}>
+                                <Statistic
+                                    title={<Text strong>Reabertos</Text>}
+                                    value={dataChamados.filter(c => c.status === 'reopened').length}
+                                    valueStyle={{ color: '#722ed1' }}
+                                    prefix={<SyncOutlined />}
+                                />
+                            </Col>
+                            <Col span={3}>
+                                <Statistic
+                                    title={<Text strong>Resolvidos</Text>}
                                     value={dataChamados.filter(c => c.status === 'closed').length}
                                     valueStyle={{ color: '#52c41a' }}
                                     prefix={<CheckCircleOutlined />}
@@ -750,8 +811,10 @@ const Suporte = () => {
                             fetchChamados={fetchChamados}
                             handleAnswerClick={handleAnswerClick}
                             changeStatus={changeStatus}
+                            reopenTicket={reopenTicket}  // Add this line
                             handleCreateChatForTicket={handleCreateChatForTicket}
                         />
+
 
                         {answerFormVisible && (
                             <Card

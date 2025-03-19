@@ -1634,6 +1634,7 @@ const Plano = () => {
     const entregarPonto = async (record) => {
         setDrawerLoading(true)
         const currentTimeString = new Date().toLocaleString()
+        console.log(formValues)
         try {
             const completeData = {
                 ...formValues,
@@ -3014,6 +3015,8 @@ const Plano = () => {
                                     onValuesChange={(changedValues, allValues) => {
                                         if (!useEntregaData) {
                                             setFormValues({ ...formValues, ...allValues });
+                                        } else {
+                                            setFormValues({ ...allValues });
                                         }
                                     }}
                                     fields={[
@@ -3633,7 +3636,7 @@ const Plano = () => {
                             );
                         },
                     }} onRow={(record) => ({
-                        onClick: () => handleRowClick(record),
+                        // onClick: () => handleRowClick(record),
                     })}
                         bordered />
                 </Flex>
