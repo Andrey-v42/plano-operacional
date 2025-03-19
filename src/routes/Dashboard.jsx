@@ -307,6 +307,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       'pending': 0,
       'analysis': 0,
       'validation': 0,
+      'reopened': 0, // Add reopened status
       'closed': 0
     };
 
@@ -318,6 +319,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       { name: 'Aberto', value: statusCounts.pending, color: '#ff4d4f' },
       { name: 'Em análise', value: statusCounts.analysis, color: '#1890ff' },
       { name: 'Em validação', value: statusCounts.validation, color: '#faad14' },
+      { name: 'Reaberto', value: statusCounts.reopened, color: '#722ed1' }, // Add reopened with purple color
       { name: 'Fechado', value: statusCounts.closed, color: '#52c41a' }
     ];
   };
@@ -428,16 +430,19 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     let totalTickets = filteredData.length;
     let openTickets = filteredData.filter(item => item.status === 'pending').length;
     let inProgressTickets = filteredData.filter(item => item.status === 'analysis').length;
-    let validationTickets = filteredData.filter(item => item.status === 'validation').length; // Add validation count
+    let validationTickets = filteredData.filter(item => item.status === 'validation').length;
+    let reopenedTickets = filteredData.filter(item => item.status === 'reopened').length; // Add reopened count
     let resolvedTickets = filteredData.filter(item => item.status === 'closed').length;
 
     let responseTimes = 0;
     let analysisTimeSum = 0;
-    let validationTimeSum = 0; // Add validation time tracking
+    let validationTimeSum = 0;
+    let reopeningTimeSum = 0; // Add reopening time tracking
     let resolutionTimes = 0;
     let count = 0;
     let analysisCount = 0;
-    let validationCount = 0; // Add validation count
+    let validationCount = 0;
+    let reopeningCount = 0; // Add reopening count
     let resolutionCount = 0;
 
     filteredData.forEach(item => {
@@ -456,6 +461,17 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         validationCount++;
       }
 
+      // Track time from reopening to next action (either analysis or response)
+      if (item.timestampReaberto) {
+        if (item.timestampAnalise && item.timestampAnalise > item.timestampReaberto) {
+          reopeningTimeSum += (item.timestampAnalise - item.timestampReaberto);
+          reopeningCount++;
+        } else if (item.timestampResposta && item.timestampResposta > item.timestampReaberto) {
+          reopeningTimeSum += (item.timestampResposta - item.timestampReaberto);
+          reopeningCount++;
+        }
+      }
+
       if (item.timestampAberto && item.timestampResposta) {
         resolutionTimes += (item.timestampResposta - item.timestampAberto);
         resolutionCount++;
@@ -464,7 +480,8 @@ const Dashboard = ({ dataChamados, pipeId }) => {
 
     let avgResponseTime = 0;
     let avgAnalysisTime = 0;
-    let avgValidationTime = 0; // Add validation time average
+    let avgValidationTime = 0;
+    let avgReopeningResponseTime = 0; // Add reopening response time
     let avgResolutionTime = 0;
 
     if (count > 0) {
@@ -479,6 +496,10 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       avgValidationTime = validationTimeSum / validationCount / (1000 * 60); // minutes
     }
 
+    if (reopeningCount > 0) {
+      avgReopeningResponseTime = reopeningTimeSum / reopeningCount / (1000 * 60); // minutes
+    }
+
     if (resolutionCount > 0) {
       avgResolutionTime = resolutionTimes / resolutionCount / (1000 * 60); // minutes
     }
@@ -487,11 +508,13 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       totalTickets,
       openTickets,
       inProgressTickets,
-      validationTickets, // Add validation tickets count
+      validationTickets,
+      reopenedTickets, // Add reopened tickets count
       resolvedTickets,
       avgResponseTime: avgResponseTime.toFixed(1),
       avgAnalysisTime: avgAnalysisTime.toFixed(1),
-      avgValidationTime: avgValidationTime.toFixed(1), // Add validation time average
+      avgValidationTime: avgValidationTime.toFixed(1),
+      avgReopeningResponseTime: avgReopeningResponseTime.toFixed(1), // Add reopening response time
       avgResolutionTime: avgResolutionTime.toFixed(1)
     };
   };
@@ -550,8 +573,11 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           color = 'blue';
           text = 'Em análise';
         } else if (status === 'validation') {
-          color = 'orange'; // Use orange/yellow for validation
+          color = 'orange';
           text = 'Em validação';
+        } else if (status === 'reopened') {
+          color = 'purple'; // Use purple for reopened tickets
+          text = 'Reaberto';
         }
 
         return <Tag color={color}>{text}</Tag>;
@@ -709,12 +735,12 @@ const Dashboard = ({ dataChamados, pipeId }) => {
 
       {/* Summary Statistics */}
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} sm={12} md={5}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic title="Total de Chamados" value={metrics.totalTickets} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic title="Chamados Abertos" value={metrics.openTickets} valueStyle={{ color: '#ff4d4f' }} />
           </Card>
@@ -729,7 +755,12 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             <Statistic title="Em Validação" value={metrics.validationTickets} valueStyle={{ color: '#faad14' }} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={5}>
+        <Col xs={24} sm={12} md={4}>
+          <Card>
+            <Statistic title="Reabertos" value={metrics.reopenedTickets} valueStyle={{ color: '#722ed1' }} />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic title="Chamados Resolvidos" value={metrics.resolvedTickets} valueStyle={{ color: '#52c41a' }} />
           </Card>
@@ -801,7 +832,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={5}>
           <Card>
             <Statistic
               title="Tempo Médio de Resposta"
@@ -811,7 +842,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={5}>
           <Card>
             <Statistic
               title="Tempo Médio em Análise"
@@ -822,7 +853,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={5}>
           <Card>
             <Statistic
               title="Tempo Médio em Validação"
@@ -833,7 +864,18 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={5}>
+          <Card>
+            <Statistic
+              title="Resposta após Reabertura"
+              value={metrics.avgReopeningResponseTime}
+              suffix="min"
+              precision={1}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic
               title="Tempo Médio de Resolução"
