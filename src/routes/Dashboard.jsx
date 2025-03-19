@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge } from 'antd';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined } from '@ant-design/icons';
+import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge, Avatar, Tooltip as TooltipAntd } from 'antd';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -16,18 +16,99 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     totalChats: 0,
     activeChats: 0,
     avgMessagesPerChat: 0,
-    responseRatePercent: 0
+    responseRatePercent: 0,
+    avgFirstResponseTime: 0 // New metric for first response time
   });
   const [chatData, setChatData] = useState([]);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [topSupportUsers, setTopSupportUsers] = useState([]); // New state for top support users
+  const [topTicketCreators, setTopTicketCreators] = useState([]); // New state for top ticket creators
+  const [topPDVsWithOpenTickets, setTopPDVsWithOpenTickets] = useState([]); // New state for top PDVs
+  const [topSetoresWithOpenTickets, setTopSetoresWithOpenTickets] = useState([]); // New state for top PDVs
 
   useEffect(() => {
     // Initialize with all data
     if (dataChamados) {
       filterData(dataChamados, dateRange, categoryFilter, urgencyFilter);
       fetchChatData();
+      calculateTopUsers(dataChamados);
+      calculateTopPDVs(dataChamados);
     }
   }, [dataChamados]);
+
+  // New function to calculate top users and ticket creators
+  const calculateTopUsers = (data) => {
+    // Calculate top support users (who answered most tickets)
+    const supportUserCounts = {};
+    const ticketCreatorCounts = {};
+
+    data.forEach(ticket => {
+      // Count ticket creators
+      if (ticket.solicitante) {
+        ticketCreatorCounts[ticket.solicitante] = (ticketCreatorCounts[ticket.solicitante] || 0) + 1;
+      }
+
+      // Count support users who have responded to tickets
+      if (ticket.atendente && ticket.status !== 'pending') {
+        supportUserCounts[ticket.atendente] = (supportUserCounts[ticket.atendente] || 0) + 1;
+      }
+    });
+
+    // Convert to arrays and sort
+    const supportUsers = Object.keys(supportUserCounts)
+      .map(user => ({ user, count: supportUserCounts[user] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5
+
+    const ticketCreators = Object.keys(ticketCreatorCounts)
+      .map(user => ({ user, count: ticketCreatorCounts[user] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5
+
+    setTopSupportUsers(supportUsers);
+    setTopTicketCreators(ticketCreators);
+  };
+
+  // New function to calculate top PDVs with open tickets
+  const calculateTopPDVs = (data) => {
+    const pdvCounts = {};
+
+    // Count open tickets per PDV
+    data.forEach(ticket => {
+      if (ticket.ponto) {
+        pdvCounts[ticket.ponto] = (pdvCounts[ticket.ponto] || 0) + 1;
+      }
+    });
+
+    // Convert to array and sort
+    const topPDVs = Object.keys(pdvCounts)
+      .map(pdv => ({ pdv, count: pdvCounts[pdv] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5
+
+    setTopPDVsWithOpenTickets(topPDVs);
+  };
+
+  const calculateTopSetores = (data) => {
+    const setorCounts = {};
+    console.log(data)
+    // Count pending tickets per setor
+    data.forEach(ticket => {
+      // Only count tickets with "pending" status
+      if (ticket.status === "pending" && ticket.setor) {
+        setorCounts[ticket.setor] = (setorCounts[ticket.setor] || 0) + 1;
+      }
+    });
+
+    // Convert to array and sort
+    const topSetores = Object.keys(setorCounts)
+      .map(setor => ({ setor, count: setorCounts[setor] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5
+
+    console.log(topSetores);
+    setTopSetoresWithOpenTickets(topSetores);
+  };
 
   const fetchChatData = async () => {
     try {
@@ -38,6 +119,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       let allChatMessages = [];
       let activeChatCount = 0;
       let ticketsWithChatMessages = 0;
+      let firstResponseTimes = []; // New array to track first response times
 
       for (const ticket of ticketsWithChat) {
         try {
@@ -67,6 +149,25 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             const lastMessageTime = Math.max(...ticketChatMessages.map(msg => msg.timestamp));
             const isActive = (Date.now() - lastMessageTime) < (24 * 60 * 60 * 1000);
             if (isActive) activeChatCount++;
+
+            // Calculate first response time for the ticket
+            const sortedMessages = ticketChatMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+            if (sortedMessages.length >= 2) {
+              const firstUserMessage = sortedMessages.find(msg => msg.sender === ticket.solicitante);
+
+              if (firstUserMessage) {
+                // Find first agent response that came after the user's message
+                const firstAgentResponse = sortedMessages.find(msg =>
+                  msg.sender !== ticket.solicitante && msg.timestamp > firstUserMessage.timestamp
+                );
+
+                if (firstAgentResponse) {
+                  const responseTime = (firstAgentResponse.timestamp - firstUserMessage.timestamp) / (1000 * 60); // minutes
+                  firstResponseTimes.push(responseTime);
+                }
+              }
+            }
           }
         } catch (error) {
           console.error(`Error fetching chat for ticket ${ticket.id}:`, error);
@@ -76,6 +177,10 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       // Calculate chat metrics
       const avgMessages = ticketsWithChatMessages > 0 ?
         (allChatMessages.length / ticketsWithChatMessages).toFixed(1) : 0;
+
+      // Calculate average first response time
+      const avgFirstResponseTime = firstResponseTimes.length > 0 ?
+        (firstResponseTimes.reduce((sum, time) => sum + time, 0) / firstResponseTimes.length).toFixed(1) : 0;
 
       // Track which user messages received responses
       const userMsgIds = new Set();
@@ -141,7 +246,8 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         totalChats: ticketsWithChatMessages,
         activeChats: activeChatCount,
         avgMessagesPerChat: avgMessages,
-        responseRatePercent: responseRate
+        responseRatePercent: responseRate,
+        avgFirstResponseTime: avgFirstResponseTime // Add new metric
       });
     } catch (error) {
       console.error('Error fetching chat data:', error);
@@ -173,6 +279,11 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     }
 
     setFilteredData(filtered);
+
+    // Recalculate top users and PDVs when filters change
+    calculateTopUsers(filtered);
+    calculateTopPDVs(filtered);
+    calculateTopSetores(filtered);
   };
 
   const handleDateChange = (dates) => {
@@ -388,6 +499,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     .sort((a, b) => b.timestampAberto - a.timestampAberto)
     .slice(0, 5);
 
+  // Columns for tables
   const recentColumns = [
     {
       title: 'ID',
@@ -451,10 +563,95 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     },
   ];
 
+  // Columns for top support users table
+  const topSupportColumns = [
+    {
+      title: 'Atendente',
+      dataIndex: 'user',
+      key: 'user',
+      render: (user) => (
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '120px', textWrap: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <TooltipAntd title={user} >{user}</TooltipAntd>
+        </div>
+      ),
+    },
+    {
+      title: 'Chamados Atendidos',
+      dataIndex: 'count',
+      key: 'count',
+      render: (count) => <Tag color="blue">{count}</Tag>,
+    }
+  ];
+
+  // Columns for top ticket creators table
+  const topCreatorsColumns = [
+    {
+      title: 'Usuário',
+      dataIndex: 'user',
+      key: 'user',
+      render: (user) => (
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '120px', textWrap: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <TooltipAntd title={user} >{user}</TooltipAntd>
+        </div>
+      ),
+    },
+    {
+      title: 'Chamados Criados',
+      dataIndex: 'count',
+      key: 'count',
+      render: (count) => <Tag color="orange">{count}</Tag>,
+    }
+  ];
+
+  // Columns for top PDVs table
+  const topPDVsColumns = [
+    {
+      title: 'PDV',
+      dataIndex: 'pdv',
+      key: 'pdv',
+      render: (pdv) => (
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '120px', textWrap: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <TooltipAntd title={pdv}>
+            <ShopOutlined style={{ marginRight: 8 }} />
+            {pdv}
+          </TooltipAntd>
+        </div>
+      ),
+    },
+    {
+      title: 'Chamados',
+      dataIndex: 'count',
+      key: 'count',
+      render: (count) => <Tag color="red">{count}</Tag>,
+    }
+  ];
+
+  const topSetoresColumns = [
+    {
+      title: 'Setor',
+      dataIndex: 'setor',
+      key: 'setor',
+      render: (setor) => (
+        <div style={{ display: 'flex', alignItems: 'center', maxWidth: '120px', textWrap: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+          <TooltipAntd title={setor} >
+            <ShopOutlined style={{ marginRight: 8 }} />
+            {setor}
+          </TooltipAntd>
+        </div>
+      ),
+    },
+    {
+      title: 'Chamados',
+      dataIndex: 'count',
+      key: 'count',
+      render: (count) => <Tag color="red">{count}</Tag>,
+    }
+  ];
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{ padding: '1rem', backgroundColor: '#f8f8f8' }}>
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col span={24}>
           <Title level={4}>Painel de Gerenciamento de Chamados</Title>
@@ -519,7 +716,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         <Col span={24}>
           <Title level={5}>Métricas de Chat</Title>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic
               title="Total de Chats"
@@ -529,7 +726,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic
               title="Chats Ativos"
@@ -539,7 +736,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic
               title="Mensagens por Chat"
@@ -549,7 +746,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={6}>
+        <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic
               title="Taxa de Resposta"
@@ -563,10 +760,23 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
+        {/* New metric */}
+        <Col xs={24} sm={12} md={8}>
+          <Card>
+            <Statistic
+              title="Tempo Médio de 1ª Resposta"
+              value={chatMetrics.avgFirstResponseTime}
+              suffix="min"
+              prefix={<ClockCircleOutlined />}
+              precision={1}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="Tempo Médio de Resposta"
@@ -576,7 +786,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="Tempo Médio em Análise"
@@ -587,13 +797,60 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
+        <Col xs={24} sm={8} md={8}>
           <Card>
             <Statistic
               title="Tempo Médio de Resolução"
               value={metrics.avgResolutionTime}
               suffix="min"
               precision={1}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* New section for top support users and ticket creators */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+        <Col span={24}>
+          <Title level={5}>Análise de Usuários</Title>
+        </Col>
+        <Col xs={24} md={6}>
+          <Card title="Top 5 Atendentes" extra={<TeamOutlined />}>
+            <Table
+              dataSource={topSupportUsers}
+              columns={topSupportColumns}
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={6}>
+          <Card title="Top 5 Solicitantes" extra={<UserOutlined />}>
+            <Table
+              dataSource={topTicketCreators}
+              columns={topCreatorsColumns}
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={6}>
+          <Card title="Top 5 Setores com Chamados" extra={<ShopOutlined />}>
+            <Table
+              dataSource={topSetoresWithOpenTickets}
+              columns={topSetoresColumns}
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={6}>
+          <Card title="Top 5 PDVs com Chamados" extra={<ShopOutlined />}>
+            <Table
+              dataSource={topPDVsWithOpenTickets}
+              columns={topPDVsColumns}
+              pagination={false}
+              size="small"
             />
           </Card>
         </Col>

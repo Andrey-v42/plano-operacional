@@ -1060,7 +1060,7 @@ const Cronometro = () => {
                     
                     {isRunning && (
                         <Select 
-                            placeholder="Selecione a justificativa" 
+                            placeholder="Selecione a justificativa"
                             options={justificativaOptions} 
                             onSelect={(value) => setJustificativa(value)}
                             style={{ width: '100%' }}
@@ -1088,7 +1088,7 @@ const Cronometro = () => {
         {
             label: (
                 <span>
-                    <ClockCircleOutlined />
+                    <ClockCircleOutlined style={{ marginRight: '4px' }} />
                     Setup
                 </span>
             ),
@@ -1219,10 +1219,9 @@ const Cronometro = () => {
         {
             label: (
                 <span>
-                    <Badge count={timelineItemsAditivo?.length || 0} showZero={false} size="small">
-                        <ClockCircleOutlined />
+
+                        <ClockCircleOutlined style={{ marginRight: '4px' }} />
                         Aditivo
-                    </Badge>
                 </span>
             ),
             key: '2',
@@ -1370,10 +1369,10 @@ const Cronometro = () => {
                     items={tabItems}
                     type="card"
                     style={{
-                        background: 'white',
+                        background: '#fff',
+                        padding: '16px',
                         borderRadius: '8px',
-                        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-                        padding: '16px'
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
                     }}
                 />
             </div>

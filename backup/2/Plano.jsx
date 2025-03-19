@@ -166,12 +166,6 @@ const Plano = () => {
     const [valuePowerbank, setValuePowerbank] = useState(0)
     const [valueTomada, setValueTomada] = useState(0)
 
-    const [addingEquipment, setAddingEquipment] = useState(false);
-    const [newEquipmentType, setNewEquipmentType] = useState(null);
-    const [newEquipmentModel, setNewEquipmentModel] = useState(null);
-    const [newEquipmentQuantity, setNewEquipmentQuantity] = useState(1);
-    const [currentExpandedRecord, setCurrentExpandedRecord] = useState(null);
-
     const [createPonto, setCreatePonto] = useState(false)
 
     const [formValues, setFormValues] = useState({});
@@ -303,9 +297,6 @@ const Plano = () => {
             dataIndex: 'Ponto de Venda',
             key: 'Ponto de Venda',
             render: (text, record) => <a onClick={() => showDrawer(record)}>{text}</a>,
-            onClick: (event) => {
-                event.stopPropagation();
-            }
         },
         {
             title: 'Setor',
@@ -2686,301 +2677,6 @@ const Plano = () => {
         );
     };
 
-    const getDefaultModelName = (equipmentType) => {
-        switch (equipmentType) {
-            case 'TERMINAL':
-                return 'Terminal';
-            case 'CARREGADOR':
-                return 'Carregador';
-            case 'CAPA':
-                return 'Capa / Suporte';
-            case 'SUPORTE':
-                return 'Capa / Suporte';
-            case 'CARTAO':
-            case 'CARTÃO CASHLESS':
-                return 'Cartão Cashless';
-            case 'POWERBANK':
-                return 'Powerbank';
-            case 'TOMADA':
-            case 'PONTO DE TOMADA':
-                return 'Ponto de Tomada';
-            default:
-                return equipmentType;
-        }
-    };
-
-    const refreshPlanoData = async () => {
-        try {
-            setTableLoading(true);
-
-            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/planoOperacional` }),
-            });
-
-            const responseEntrega = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosEntrega` }),
-            });
-
-            const responseDevolucao = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/protocolosDevolucao` }),
-            });
-
-            let docs = await response.json();
-            docs = docs.docs;
-
-            let docsEntrega = await responseEntrega.json()
-            docsEntrega = docsEntrega.docs;
-
-            let docsDevolucao = await responseDevolucao.json()
-            docsDevolucao = docsDevolucao.docs;
-
-            const entregaMap = Object.fromEntries(docsEntrega.map(doc => [doc.id, doc.data]));
-            const devolucaoMap = Object.fromEntries(docsDevolucao.map(doc => [doc.id, doc.data]));
-
-            // Process with new equipment structure
-            const formattedData = docs.filter(doc => doc.data.CATEGORIA !== 'CART - CARTÕES').map((doc) => {
-                const data = doc.data;
-                const entregaData = entregaMap[doc.id] || {};
-                const devolucaoData = devolucaoMap[doc.id] || {};
-
-                // Process equipments from new array structure
-                const equipments = data.EQUIPAMENTOS || [];
-
-                // Initialize counters for each equipment type
-                let totalTerminais = 0;
-                let carregadores = 0;
-                let capas = 0;
-                let cartoes = 0;
-                let powerbanks = 0;
-                let tomadas = 0;
-                let modelo = '';
-
-                // Process equipment data
-                equipments.forEach(equip => {
-                    // Set primary terminal model if available
-                    if (equip.TIPO === 'TERMINAL' && !modelo) {
-                        modelo = equip.MODELO;
-                    }
-
-                    // Accumulate quantities based on equipment type
-                    switch (equip.TIPO) {
-                        case 'TERMINAL':
-                            totalTerminais += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        case 'CARREGADOR':
-                            carregadores += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        case 'CAPA':
-                        case 'SUPORTE':
-                            capas += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        case 'CARTAO':
-                        case 'CARTÃO CASHLESS':
-                            cartoes += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        case 'POWERBANK':
-                            powerbanks += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        case 'TOMADA':
-                        case 'PONTO DE TOMADA':
-                            tomadas += parseInt(equip.QUANTIDADE) || 0;
-                            break;
-                        default:
-                            break;
-                    }
-                });
-
-                // Fallback to the old structure if EQUIPAMENTOS is not present
-                if (equipments.length === 0) {
-                    modelo = data.MODELO || '';
-                    totalTerminais = data['TOTAL TERM'] ? data['TOTAL TERM'] == ' ' ? 0 : parseInt(data['TOTAL TERM']) : 0;
-                    cartoes = data['CARTÃO CASHLES'] ? data['CARTÃO CASHLES'] == ' ' ? 0 : parseInt(data['CARTÃO CASHLES']) : 0;
-                    powerbanks = data['POWER BANK'] ? data['POWER BANK'] == ' ' ? 0 : parseInt(data['POWER BANK']) : 0;
-                    carregadores = data.CARREG ? data.CARREG == ' ' ? 0 : parseInt(data.CARREG) : 0;
-                    capas = data['CAPA SUPORTE'] ? data['CAPA SUPORTE'] == ' ' ? 0 : parseInt(data['CAPA SUPORTE']) : 0;
-                    tomadas = data['PONTOS TOMADA'] ? data['PONTOS TOMADA'] == ' ' ? 0 : parseInt(data['PONTOS TOMADA']) : 0;
-                }
-
-                return {
-                    key: doc.id,
-                    ID: data.rowNumber,
-                    Setor: data.SETOR || 'N/A',
-                    'Ponto de Venda': data['NOME PDV'],
-                    Categoria: data.CATEGORIA || 'N/A',
-                    Status: data.aberto && !data.devolvido ? 'Entregue'
-                        : data.aberto && data.devolvido ? 'Devolvido'
-                            : 'Entrega Pendente',
-                    'Perda/Avaria': devolucaoData?.Avarias?.length > 0 ? 'Sim' : 'Não',
-                    modelo: modelo,
-                    cartoes: cartoes,
-                    totalTerminais: totalTerminais,
-                    powerbanks: powerbanks,
-                    carregadores: carregadores,
-                    capas: capas,
-                    tomadas: tomadas,
-                    desativado: data.desativado == true ? true : false,
-                    modifications: data.modifications ? data.modifications : null,
-                    statusModification: data.statusModification ? data.statusModification : null,
-                    entregaInfo: entregaData,
-                    devolucaoInfo: devolucaoData,
-                    equipamentos: equipments
-                };
-            });
-
-            setDataPlano(formattedData);
-            setTableLoading(false);
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            setTableLoading(false);
-        }
-    };
-
-    const addNewEquipment = async (record) => {
-        setAddingEquipment(false);
-
-        if (!newEquipmentType || newEquipmentQuantity <= 0) {
-            openNotificationFailure('Por favor, preencha todos os campos corretamente.');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            // Get current document data
-            const docRef = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    url: `pipe/pipeId_${pipeId}/planoOperacional`,
-                    docId: record.key
-                })
-            });
-
-            const docData = await docRef.json();
-
-            // Prepare new equipment entry
-            const newEquipmentEntry = {
-                TIPO: newEquipmentType,
-                MODELO: newEquipmentModel || getDefaultModelName(newEquipmentType),
-                QUANTIDADE: newEquipmentQuantity
-            };
-
-            // Add to existing equipment array or create a new one
-            let updatedEquipments = [];
-            if (docData && Array.isArray(docData.EQUIPAMENTOS)) {
-                updatedEquipments = [...docData.EQUIPAMENTOS];
-
-                // Check if this equipment type already exists
-                const existingIndex = updatedEquipments.findIndex(equip =>
-                    equip.TIPO === newEquipmentType && equip.MODELO === newEquipmentEntry.MODELO
-                );
-
-                if (existingIndex >= 0) {
-                    // Update quantity of existing equipment
-                    updatedEquipments[existingIndex].QUANTIDADE =
-                        parseInt(updatedEquipments[existingIndex].QUANTIDADE) + parseInt(newEquipmentQuantity);
-                } else {
-                    // Add new equipment
-                    updatedEquipments.push(newEquipmentEntry);
-                }
-            } else {
-                // Create new equipment array with the new entry
-                updatedEquipments = [newEquipmentEntry];
-            }
-
-            // Update the document with new equipment array
-            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/editDocAlternative', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    docId: `pipeId_${pipeId}/planoOperacional/${record.key}`,
-                    data: { EQUIPAMENTOS: updatedEquipments }
-                })
-            });
-
-            // Record the modification
-            await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addModificationCard', {
-                method: 'POST',
-                headers: {
-                    "Content-Type": "application/JSON",
-                    "Authorization": `Bearer ${JSON.parse(localStorage.getItem('authToken')).token}`
-                },
-                body: JSON.stringify({
-                    collectionURL: `pipe/pipeId_${pipeId}/planoOperacional`,
-                    docId: record.key,
-                    formData: {
-                        equipment: newEquipmentType,
-                        newEquipmentValue: newEquipmentQuantity,
-                        oldEquipmentValue: 0,
-                        currentUser: localStorage.getItem('currentUser')
-                    }
-                })
-            });
-
-            // Refresh data to update the UI
-            await refreshPlanoData();
-            openNotificationSucess();
-
-            // Reset form fields
-            setNewEquipmentType(null);
-            setNewEquipmentModel(null);
-            setNewEquipmentQuantity(1);
-
-        } catch (error) {
-            console.error('Error adding new equipment:', error);
-            openNotificationFailure('Erro ao adicionar equipamento: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getEquipmentTypeOptions = () => {
-        return [
-            { value: 'TERMINAL', label: 'Terminal' },
-            { value: 'CARREGADOR', label: 'Carregador' },
-            { value: 'CAPA', label: 'Capa / Suporte' },
-            { value: 'SUPORTE', label: 'Suporte' },
-            { value: 'CARTAO', label: 'Cartão Cashless' },
-            { value: 'POWERBANK', label: 'Powerbank' },
-            { value: 'TOMADA', label: 'Ponto de Tomada' },
-        ];
-    };
-
-    const getPosModelOptions = () => {
-        return [
-            { value: 'Pag A930', label: 'Pag A930' },
-            { value: 'Pag P2', label: 'Pag P2' },
-            { value: 'Pag Moderninha X', label: 'Pag Moderninha X' },
-            { value: 'Safra P2', label: 'Safra P2' },
-            { value: 'Safra L300', label: 'Safra L300' },
-            { value: 'GetNet P2', label: 'GetNet P2' },
-            { value: 'Pinbank P2', label: 'Pinbank P2' },
-            { value: 'Mercado Pago A910', label: 'Mercado Pago A910' },
-            { value: 'Cielo L300', label: 'Cielo L300' },
-            { value: 'Rede L400', label: 'Rede L400' },
-            { value: 'Celular', label: 'Celular' },
-            { value: 'Tablet', label: 'Tablet' },
-        ];
-    };
-
-
-
     const hasSelected = selectedRowKeys.length > 0;
 
     return (
@@ -3221,416 +2917,331 @@ const Plano = () => {
                     </Flex>
 
                     <Table style={{ width: "100%" }} loading={tableLoading} rowSelection={rowSelection} columns={columns} dataSource={dataPlano} scroll={{ x: "max-content" }} rowClassName={((record) => record.desativado == true ? "deactivated-row" : "")} expandable={{
-                        expandedRowRender: (record) => {
-                            // Set current expanded record when row is expanded
-                            if (!currentExpandedRecord || currentExpandedRecord.key !== record.key) {
-                                setCurrentExpandedRecord(record);
-                                setAddingEquipment(false);
-                                setNewEquipmentType(null);
-                                setNewEquipmentModel(null);
-                                setNewEquipmentQuantity(1);
-                            }
-
-                            return (
-                                <>
-                                    <div className='info-pdv'>
-                                        <Card loading={false} key={record.key} title='Equipamentos' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
-                                            {/* Display primary equipment values */}
-                                            <Card.Grid style={gridStyle}>
-                                                Terminal
-                                                <br />
-                                                {
-                                                    !editTerminais ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValueTerminal(record.totalTerminais)
-                                                                setEditTerminais(true)
-                                                            }}
-                                                            key={'terminal_' + record.key}>
-                                                            {record.totalTerminais}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.totalTerminais}
-                                                                    onChange={(value) => setValueTerminal(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async (e) => {
-                                                                        await editValue('terminal_' + record.key, record.totalTerminais)
-                                                                        setEditTerminais(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-                                            <Card.Grid style={gridStyle}>
-                                                Carregadores
-                                                <br />
-                                                {
-                                                    !editCarregador ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValueCarregador(record.carregadores)
-                                                                setEditCarregador(true)
-                                                            }}
-                                                            key={'carregador_' + record.key}>
-                                                            {record.carregadores}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.carregadores}
-                                                                    onChange={(value) => setValueCarregador(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async () => {
-                                                                        await editValue('carregador_' + record.key, record.carregadores)
-                                                                        setEditCarregador(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-                                            <Card.Grid style={gridStyle}>
-                                                Capas / Suportes
-                                                <br />
-                                                {
-                                                    !editCapa ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValueCapa(record.capas)
-                                                                setEditCapa(true)
-                                                            }}
-                                                            key={'capa_' + record.key}>
-                                                            {record.capas}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.capas}
-                                                                    onChange={(value) => setValueCapa(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async () => {
-                                                                        await editValue('capa_' + record.key, record.capas)
-                                                                        setEditCapa(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-                                            <Card.Grid style={gridStyle}>
-                                                Cartões Cashless
-                                                <br />
-                                                {
-                                                    !editCartao ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValueCartao(record.cartoes)
-                                                                setEditCartao(true)
-                                                            }}
-                                                            key={'cartao_' + record.key}>
-                                                            {record.cartoes}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.cartoes}
-                                                                    onChange={(value) => setValueCartao(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async () => {
-                                                                        await editValue('cartao_' + record.key, record.cartoes)
-                                                                        setEditCartao(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-                                            <Card.Grid style={gridStyle}>
-                                                Power Banks
-                                                <br />
-                                                {
-                                                    !editPowerbank ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValuePowerbank(record.powerbanks)
-                                                                setEditPowerbank(true)
-                                                            }}
-                                                            key={'powerbank_' + record.key}>
-                                                            {record.powerbanks}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.powerbanks}
-                                                                    onChange={(value) => setValuePowerbank(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async () => {
-                                                                        await editValue('powerbank_' + record.key, record.powerbanks)
-                                                                        setEditPowerbank(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-                                            <Card.Grid style={gridStyle}>
-                                                Pontos de Tomada
-                                                <br />
-                                                {
-                                                    !editTomada ?
-                                                        <a
-                                                            onClick={() => {
-                                                                setValueTomada(record.tomadas)
-                                                                setEditTomada(true)
-                                                            }}
-                                                            key={'tomada_' + record.key}>
-                                                            {record.tomadas}
-                                                        </a> :
-                                                        (
-                                                            <Flex align='center' >
-                                                                <InputNumber
-                                                                    style={{ marginLeft: 'auto', marginRight: '5px' }}
-                                                                    defaultValue={record.tomadas}
-                                                                    onChange={(value) => setValueTomada(value)}
-                                                                    min={0} />
-                                                                <Button
-                                                                    style={{ marginRight: 'auto' }}
-                                                                    type='primary'
-                                                                    loading={loading}
-                                                                    onClick={async () => {
-                                                                        await editValue('tomada_' + record.key, record.tomadas)
-                                                                        setEditTomada(false)
-                                                                    }} >
-                                                                    Ok
-                                                                </Button>
-                                                            </Flex>
-                                                        )
-                                                }
-                                            </Card.Grid>
-
-                                            {/* NEW: Add Equipment card */}
-                                            <Card.Grid
-                                                style={{
-                                                    ...gridStyle,
-                                                    backgroundColor: '#f8f8f8',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center'
-                                                }}
-                                                onClick={() => setAddingEquipment(!addingEquipment)}
-                                            >
-                                                {!addingEquipment ? (
-                                                    <>
-                                                        <span style={{ fontSize: '20px', fontWeight: 'bold' }}>+</span>
-                                                        <span>Adicionar<br />Equipamento</span>
-                                                    </>
-                                                ) : (
-                                                    <Flex vertical style={{ width: '100%' }}>
-                                                        <Select
-                                                            placeholder="Tipo de Equipamento"
-                                                            style={{ width: '100%', marginBottom: '8px' }}
-                                                            options={getEquipmentTypeOptions()}
-                                                            onChange={(value) => {
-                                                                setNewEquipmentType(value);
-                                                                // Reset model when type changes
-                                                                setNewEquipmentModel(null);
-                                                            }}
-                                                        />
-
-                                                        {newEquipmentType === 'TERMINAL' && (
-                                                            <Select
-                                                                placeholder="Modelo do Terminal"
-                                                                style={{ width: '100%', marginBottom: '8px' }}
-                                                                options={getPosModelOptions()}
-                                                                onChange={(value) => setNewEquipmentModel(value)}
-                                                            />
-                                                        )}
-
-                                                        <InputNumber
-                                                            placeholder="Quantidade"
-                                                            style={{ width: '100%', marginBottom: '8px' }}
-                                                            min={1}
-                                                            defaultValue={1}
-                                                            onChange={(value) => setNewEquipmentQuantity(value)}
-                                                        />
-
-                                                        <Flex justify="space-between">
+                        expandedRowRender: (record) => (
+                            <>
+                                <div className='info-pdv'>
+                                    <Card loading={false} key={record.key} title='Equipamentos' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                        {/* Display primary equipment values */}
+                                        <Card.Grid style={gridStyle}>
+                                            Terminal
+                                            <br />
+                                            {
+                                                !editTerminais ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValueTerminal(record.totalTerminais)
+                                                            setEditTerminais(true)
+                                                        }}
+                                                        key={'terminal_' + record.key}>
+                                                        {record.totalTerminais}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.totalTerminais}
+                                                                onChange={(value) => setValueTerminal(value)}
+                                                                min={0} />
                                                             <Button
-                                                                size="small"
-                                                                onClick={() => setAddingEquipment(false)}
-                                                            >
-                                                                Cancelar
-                                                            </Button>
-                                                            <Button
-                                                                type="primary"
-                                                                size="small"
-                                                                onClick={() => addNewEquipment(record)}
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
                                                                 loading={loading}
-                                                            >
-                                                                Confirmar
+                                                                onClick={async (e) => {
+                                                                    await editValue('terminal_' + record.key, record.totalTerminais)
+                                                                    setEditTerminais(false)
+                                                                }} >
+                                                                Ok
                                                             </Button>
                                                         </Flex>
-                                                    </Flex>
-                                                )}
-                                            </Card.Grid>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                        <Card.Grid style={gridStyle}>
+                                            Carregadores
+                                            <br />
+                                            {
+                                                !editCarregador ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValueCarregador(record.carregadores)
+                                                            setEditCarregador(true)
+                                                        }}
+                                                        key={'carregador_' + record.key}>
+                                                        {record.carregadores}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.carregadores}
+                                                                onChange={(value) => setValueCarregador(value)}
+                                                                min={0} />
+                                                            <Button
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
+                                                                loading={loading}
+                                                                onClick={async () => {
+                                                                    await editValue('carregador_' + record.key, record.carregadores)
+                                                                    setEditCarregador(false)
+                                                                }} >
+                                                                Ok
+                                                            </Button>
+                                                        </Flex>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                        <Card.Grid style={gridStyle}>
+                                            Capas / Suportes
+                                            <br />
+                                            {
+                                                !editCapa ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValueCapa(record.capas)
+                                                            setEditCapa(true)
+                                                        }}
+                                                        key={'capa_' + record.key}>
+                                                        {record.capas}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.capas}
+                                                                onChange={(value) => setValueCapa(value)}
+                                                                min={0} />
+                                                            <Button
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
+                                                                loading={loading}
+                                                                onClick={async () => {
+                                                                    await editValue('capa_' + record.key, record.capas)
+                                                                    setEditCapa(false)
+                                                                }} >
+                                                                Ok
+                                                            </Button>
+                                                        </Flex>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                        <Card.Grid style={gridStyle}>
+                                            Cartões Cashless
+                                            <br />
+                                            {
+                                                !editCartao ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValueCartao(record.cartoes)
+                                                            setEditCartao(true)
+                                                        }}
+                                                        key={'cartao_' + record.key}>
+                                                        {record.cartoes}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.cartoes}
+                                                                onChange={(value) => setValueCartao(value)}
+                                                                min={0} />
+                                                            <Button
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
+                                                                loading={loading}
+                                                                onClick={async () => {
+                                                                    await editValue('cartao_' + record.key, record.cartoes)
+                                                                    setEditCartao(false)
+                                                                }} >
+                                                                Ok
+                                                            </Button>
+                                                        </Flex>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                        <Card.Grid style={gridStyle}>
+                                            Power Banks
+                                            <br />
+                                            {
+                                                !editPowerbank ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValuePowerbank(record.powerbanks)
+                                                            setEditPowerbank(true)
+                                                        }}
+                                                        key={'powerbank_' + record.key}>
+                                                        {record.powerbanks}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.powerbanks}
+                                                                onChange={(value) => setValuePowerbank(value)}
+                                                                min={0} />
+                                                            <Button
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
+                                                                loading={loading}
+                                                                onClick={async () => {
+                                                                    await editValue('powerbank_' + record.key, record.powerbanks)
+                                                                    setEditPowerbank(false)
+                                                                }} >
+                                                                Ok
+                                                            </Button>
+                                                        </Flex>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                        <Card.Grid style={gridStyle}>
+                                            Pontos de Tomada
+                                            <br />
+                                            {
+                                                !editTomada ?
+                                                    <a
+                                                        onClick={() => {
+                                                            setValueTomada(record.tomadas)
+                                                            setEditTomada(true)
+                                                        }}
+                                                        key={'tomada_' + record.key}>
+                                                        {record.tomadas}
+                                                    </a> :
+                                                    (
+                                                        <Flex align='center' >
+                                                            <InputNumber
+                                                                style={{ marginLeft: 'auto', marginRight: '5px' }}
+                                                                defaultValue={record.tomadas}
+                                                                onChange={(value) => setValueTomada(value)}
+                                                                min={0} />
+                                                            <Button
+                                                                style={{ marginRight: 'auto' }}
+                                                                type='primary'
+                                                                loading={loading}
+                                                                onClick={async () => {
+                                                                    await editValue('tomada_' + record.key, record.tomadas)
+                                                                    setEditTomada(false)
+                                                                }} >
+                                                                Ok
+                                                            </Button>
+                                                        </Flex>
+                                                    )
+                                            }
+                                        </Card.Grid>
+                                    </Card>
+                                </div>
+
+                                {/* Display detailed equipment list if available */}
+                                {record.equipamentos && record.equipamentos.length > 0 && (
+                                    <div className='info-pdv'>
+                                        <Card loading={false} key={record.key + '_detailed'} title='Detalhamento de Equipamentos' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                            <Table
+                                                pagination={false}
+                                                columns={[
+                                                    {
+                                                        title: 'Tipo',
+                                                        dataIndex: 'TIPO',
+                                                        key: 'tipo'
+                                                    },
+                                                    {
+                                                        title: 'Modelo',
+                                                        dataIndex: 'MODELO',
+                                                        key: 'modelo'
+                                                    },
+                                                    {
+                                                        title: 'Quantidade',
+                                                        dataIndex: 'QUANTIDADE',
+                                                        key: 'quantidade'
+                                                    }
+                                                ]}
+                                                dataSource={record.equipamentos.map((item, index) => ({
+                                                    ...item,
+                                                    key: index
+                                                }))}
+                                                scroll={{ x: "max-content" }}
+                                            />
                                         </Card>
                                     </div>
+                                )}
 
-                                    {/* Display detailed equipment list if available */}
-                                    {record.equipamentos && record.equipamentos.length > 0 && (
-                                        <div className='info-pdv'>
-                                            <Card loading={false} key={record.key + '_detailed'} title='Detalhamento de Equipamentos' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                {record.modifications && (
+                                    <div className='info-pdv'>
+                                        <Card loading={false} key={record.key + '_modifications'} title='Histórico de Modificação' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                            <Table pagination={false} columns={columnsModifications} dataSource={record.modifications} scroll={{ x: "max-content" }} />
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {record.statusModification && (
+                                    <div className='info-pdv'>
+                                        <Card loading={false} key={record.key + '_statusModification'} title='Histórico de Modificação de Status de Entrega' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                            <Table pagination={false} columns={columnsStatusModifications} dataSource={record.statusModification} scroll={{ x: "max-content" }} />
+                                        </Card>
+                                    </div>
+                                )}
+
+                                <div className='info-pdv'>
+                                    <Card loading={false} title='Protocolo de Entrega' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                        <Card.Grid style={gridStyle}><b>Nome do Parceiro:</b><br />{record.entregaInfo.Cliente || 'Não Entregue'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>CPF:</b><br />{record.entregaInfo.CPF ? "x".repeat(8) + record.entregaInfo.CPF.slice(8) : 'Não Entregue'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Telefone:</b><br />{record.entregaInfo.Telefone || 'Não Entregue'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Data da Entrega:</b><br />{record.entregaInfo.dataHora || 'Não Entregue'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Técnico Responsável:</b><br />{record.entregaInfo.TecnicoResponsavel || 'Não Entregue'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Assinatura:</b><br />
+                                            {record.entregaInfo?.assinatura ? (
+                                                <img src={record.entregaInfo.assinatura} style={{ width: '75px', margin: '0' }} />
+                                            ) : (
+                                                'Não Entregue'
+                                            )}</Card.Grid>
+                                    </Card>
+                                </div>
+                                <div className='info-pdv'>
+                                    <Card loading={false} title='Protocolo de Devolução' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
+                                        <Card.Grid style={gridStyle}><b>Nome do Parceiro:</b><br />{record.devolucaoInfo.Cliente || 'Não Devolvido'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>CPF:</b><br />{record.devolucaoInfo.CPF ? "x".repeat(8) + record.devolucaoInfo.CPF.slice(8) : 'Não Devolvido'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Telefone:</b><br />{record.devolucaoInfo.Telefone || 'Não Devolvido'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Data da Devolução:</b><br />{record.devolucaoInfo.dataHora || 'Não Devolvido'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Técnico Responsável:</b><br />{record.devolucaoInfo.TecnicoResponsavel || 'Não Devolvido'}</Card.Grid>
+                                        <Card.Grid style={gridStyle}><b>Assinatura:</b><br />
+                                            {record.devolucaoInfo?.assinatura ? (
+                                                <img src={record.devolucaoInfo.assinatura} style={{ width: '100px', padding: '0' }} />
+                                            ) : (
+                                                'Não Devolvido'
+                                            )}</Card.Grid>
+                                        <Card.Grid style={{ width: '100%', padding: '12px' }}>
+                                            <div style={{ fontSize: 'small', marginBottom: '8px' }}><b>Avarias</b></div>
+                                            {record.devolucaoInfo?.Avarias && record.devolucaoInfo.Avarias.length > 0 ? (
                                                 <Table
-                                                    pagination={false}
+                                                    dataSource={parseAvariasForTable(record.devolucaoInfo.Avarias)}
                                                     columns={[
                                                         {
-                                                            title: 'Tipo',
-                                                            dataIndex: 'TIPO',
-                                                            key: 'tipo'
+                                                            title: 'Equipamento',
+                                                            dataIndex: 'equipamento',
+                                                            key: 'equipamento',
                                                         },
                                                         {
-                                                            title: 'Modelo',
-                                                            dataIndex: 'MODELO',
-                                                            key: 'modelo'
+                                                            title: 'Tipo da Avaria',
+                                                            dataIndex: 'tipoAvaria',
+                                                            key: 'tipoAvaria',
                                                         },
                                                         {
                                                             title: 'Quantidade',
-                                                            dataIndex: 'QUANTIDADE',
-                                                            key: 'quantidade'
+                                                            dataIndex: 'quantidade',
+                                                            key: 'quantidade',
                                                         }
                                                     ]}
-                                                    dataSource={record.equipamentos.map((item, index) => ({
-                                                        ...item,
-                                                        key: index
-                                                    }))}
-                                                    scroll={{ x: "max-content" }}
+                                                    pagination={false}
+                                                    size="small"
+                                                    bordered
                                                 />
-                                            </Card>
-                                        </div>
-                                    )}
-
-                                    {/* Rest of the expanded row content remains the same */}
-                                    {record.modifications && (
-                                        <div className='info-pdv'>
-                                            <Card loading={false} key={record.key + '_modifications'} title='Histórico de Modificação' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
-                                                <Table pagination={false} columns={columnsModifications} dataSource={record.modifications} scroll={{ x: "max-content" }} />
-                                            </Card>
-                                        </div>
-                                    )}
-
-                                    {record.statusModification && (
-                                        <div className='info-pdv'>
-                                            <Card loading={false} key={record.key + '_statusModification'} title='Histórico de Modificação de Status de Entrega' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
-                                                <Table pagination={false} columns={columnsStatusModifications} dataSource={record.statusModification} scroll={{ x: "max-content" }} />
-                                            </Card>
-                                        </div>
-                                    )}
-
-                                    <div className='info-pdv'>
-                                        <Card loading={false} title='Protocolo de Entrega' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
-                                            <Card.Grid style={gridStyle}><b>Nome do Parceiro:</b><br />{record.entregaInfo.Cliente || 'Não Entregue'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>CPF:</b><br />{record.entregaInfo.CPF ? "x".repeat(8) + record.entregaInfo.CPF.slice(8) : 'Não Entregue'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Telefone:</b><br />{record.entregaInfo.Telefone || 'Não Entregue'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Data da Entrega:</b><br />{record.entregaInfo.dataHora || 'Não Entregue'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Técnico Responsável:</b><br />{record.entregaInfo.TecnicoResponsavel || 'Não Entregue'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Assinatura:</b><br />
-                                                {record.entregaInfo?.assinatura ? (
-                                                    <img src={record.entregaInfo.assinatura} style={{ width: '75px', margin: '0' }} />
-                                                ) : (
-                                                    'Não Entregue'
-                                                )}</Card.Grid>
-                                        </Card>
-                                    </div>
-                                    <div className='info-pdv'>
-                                        <Card loading={false} title='Protocolo de Devolução' style={{ width: '100%', textAlign: 'center', fontSize: 'x-small' }} >
-                                            <Card.Grid style={gridStyle}><b>Nome do Parceiro:</b><br />{record.devolucaoInfo.Cliente || 'Não Devolvido'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>CPF:</b><br />{record.devolucaoInfo.CPF ? "x".repeat(8) + record.devolucaoInfo.CPF.slice(8) : 'Não Devolvido'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Telefone:</b><br />{record.devolucaoInfo.Telefone || 'Não Devolvido'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Data da Devolução:</b><br />{record.devolucaoInfo.dataHora || 'Não Devolvido'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Técnico Responsável:</b><br />{record.devolucaoInfo.TecnicoResponsavel || 'Não Devolvido'}</Card.Grid>
-                                            <Card.Grid style={gridStyle}><b>Assinatura:</b><br />
-                                                {record.devolucaoInfo?.assinatura ? (
-                                                    <img src={record.devolucaoInfo.assinatura} style={{ width: '100px', padding: '0' }} />
-                                                ) : (
-                                                    'Não Devolvido'
-                                                )}</Card.Grid>
-                                            <Card.Grid style={{ width: '100%', padding: '12px' }}>
-                                                <div style={{ fontSize: 'small', marginBottom: '8px' }}><b>Avarias</b></div>
-                                                {record.devolucaoInfo?.Avarias && record.devolucaoInfo.Avarias.length > 0 ? (
-                                                    <Table
-                                                        dataSource={parseAvariasForTable(record.devolucaoInfo.Avarias)}
-                                                        columns={[
-                                                            {
-                                                                title: 'Equipamento',
-                                                                dataIndex: 'equipamento',
-                                                                key: 'equipamento',
-                                                            },
-                                                            {
-                                                                title: 'Tipo da Avaria',
-                                                                dataIndex: 'tipoAvaria',
-                                                                key: 'tipoAvaria',
-                                                            },
-                                                            {
-                                                                title: 'Quantidade',
-                                                                dataIndex: 'quantidade',
-                                                                key: 'quantidade',
-                                                            }
-                                                        ]}
-                                                        pagination={false}
-                                                        size="small"
-                                                        bordered
-                                                    />
-                                                ) : (
-                                                    'Nenhuma avaria registrada'
-                                                )}
-                                            </Card.Grid>
-                                        </Card>
-                                    </div>
-                                </>
-                            );
-                        },
-                        expandedRowKeys: expandedRowKeys,
+                                            ) : (
+                                                'Nenhuma avaria registrada'
+                                            )}
+                                        </Card.Grid>
+                                    </Card>
+                                </div>
+                            </>
+                        ), expandedRowKeys: expandedRowKeys,
                         onExpand: (expanded, record) => {
-                            setExpandedRowKeys(
-                                expanded
-                                    ? [...expandedRowKeys, record.key]
-                                    : expandedRowKeys.filter((key) => key !== record.key)
-                            );
+                            setExpandedRowKeys(expanded ? [...expandedRowKeys, record.key] : expandedRowKeys.filter((key) => key !== record.key));
                         },
                     }} onRow={(record) => ({
                         onClick: () => handleRowClick(record),

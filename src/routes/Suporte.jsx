@@ -12,6 +12,7 @@ const { Title, Text } = Typography;
 
 const Suporte = () => {
     const [optionsPontos, setOptionsPontos] = useState(null);
+    const [optionsSetores, setOptionsSetores] = useState(null);
     const [fileList, setFileList] = useState([]);
     const [buttonChamadoLoading, setButtonChamadoLoading] = useState(false);
     const [dataChamados, setDataChamados] = useState([]);
@@ -56,37 +57,37 @@ const Suporte = () => {
 
     const fetchMessages = async (ticketId) => {
         if (!ticketId || !pipeId) return;
-    
+
         try {
-          const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
-            })
-          });
-    
-          const data = await response.json();
-    
-          if (data && data.docs) {
-            const sortedMessages = data.docs
-              .map(doc => ({
-                id: doc.id,
-                text: doc.data.text,
-                sender: doc.data.sender,
-                timestamp: doc.data.timestamp,
-                isCurrentUser: doc.data.sender === currentUser
-              }))
-              .sort((a, b) => a.timestamp - b.timestamp);
-    
-            setMessages(sortedMessages);
-          } else {
-            setMessages([]);
-          }
+            const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    url: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`
+                })
+            });
+
+            const data = await response.json();
+
+            if (data && data.docs) {
+                const sortedMessages = data.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        text: doc.data.text,
+                        sender: doc.data.sender,
+                        timestamp: doc.data.timestamp,
+                        isCurrentUser: doc.data.sender === currentUser
+                    }))
+                    .sort((a, b) => a.timestamp - b.timestamp);
+
+                setMessages(sortedMessages);
+            } else {
+                setMessages([]);
+            }
         } catch (error) {
-          console.error('Error fetching messages:', error);
+            console.error('Error fetching messages:', error);
         }
     };
 
@@ -330,7 +331,7 @@ const Suporte = () => {
     const handleAnswerClick = async (recordId, resposta) => {
         try {
             setButtonAnswerLoading(true);
-    
+
             const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/setDocMerge', {
                 method: 'POST',
                 headers: {
@@ -347,7 +348,7 @@ const Suporte = () => {
                     }
                 })
             });
-    
+
             await fetchChamados();
             const currentTicket = dataChamados.find((chamado) => chamado.id === recordId);
             await sendNotificationClosed(currentTicket.userId, recordId);
@@ -361,7 +362,7 @@ const Suporte = () => {
     };
 
     const enviarChamado = async (values) => {
-        if (values.categoria && values.ponto && values.modelo && values.descricao) {
+        if (values.categoria && values.ponto && values.modelo && values.descricao && values.setor) {
             setButtonChamadoLoading(true);
             try {
                 values.urgencia = handleUrgencia(values.categoria)
@@ -535,6 +536,8 @@ const Suporte = () => {
                         timestampResposta: doc.data.timestampResposta || '',
                         timestampAnalise: doc.data.timestampAnalise || '',
                         userId: doc.data.userId || '',
+                        setor: doc.data.setor || '',
+                        atendente: doc.data.atendente || null,
                     }
                 }
             });
@@ -579,22 +582,19 @@ const Suporte = () => {
                                             />
                                         </Form.Item>
                                     </Col>
-                                    {/* <Col span={12}>
+                                    <Col span={12}>
                                         <Form.Item
-                                            label={<Text strong>Nível de Urgência</Text>}
-                                            name='urgencia'
+                                            label={<Text strong>Setor</Text>}
+                                            name='setor'
                                             rules={[{ required: true, message: 'Campo obrigatório' }]}
                                         >
                                             <Select
-                                                placeholder='Selecione o nível de urgência'
-                                                options={[
-                                                    { value: 'Urgente', label: 'Urgente' },
-                                                    { value: 'Sem Urgência', label: 'Sem Urgência' }
-                                                ]}
+                                                placeholder='Selecione o setor'
+                                                options={optionsSetores}
                                                 style={{ borderRadius: '4px' }}
                                             />
                                         </Form.Item>
-                                    </Col> */}
+                                    </Col>
                                 </Row>
 
                                 <Row gutter={16}>
@@ -840,7 +840,19 @@ const Suporte = () => {
                         value: doc.id
                     }
                 });
+
+                let setores = data.map((doc) => {
+                    return {
+                        label: doc.data.SETOR,
+                        value: doc.data.SETOR
+                    }
+                });
+                setores = setores.filter((item, index, self) =>
+                    index === self.findIndex(obj => JSON.stringify(obj) === JSON.stringify(item))
+                );
+
                 setOptionsPontos([{ label: 'N/A', value: 'N/A' }, ...pontos]);
+                setOptionsSetores([{ label: 'N/A', value: 'N/A' }, ...setores]);
             } catch (error) {
                 console.log(error);
                 openNotificationFailure('Erro ao carregar pontos de venda.');
