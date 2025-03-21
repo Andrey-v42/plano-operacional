@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge, Avatar, Tooltip as TooltipAntd } from 'antd';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined, FilterOutlined } from '@ant-design/icons';
+import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined, FilterOutlined, AlertOutlined, AppstoreOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -97,6 +97,26 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       .slice(0, 5); // Top 5
 
     setTopSetoresWithOpenTickets(topSetores);
+  };
+
+  const prepareCategoriaPDVData = () => {
+    const categoriaPDVCounts = {};
+
+    // Count occurrences of each categoriaPDV
+    filteredData.forEach(item => {
+      if (item.categoriaPDV) {
+        categoriaPDVCounts[item.categoriaPDV] = (categoriaPDVCounts[item.categoriaPDV] || 0) + 1;
+      }
+    });
+
+    // Convert to array, sort by count in descending order, and take top 5
+    return Object.keys(categoriaPDVCounts)
+      .map(category => ({ 
+        category, 
+        count: categoriaPDVCounts[category] 
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
   };
 
   const fetchChatData = async () => {
@@ -567,6 +587,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
   const resolutionTimeData = prepareResolutionTimeData();
   const categoryData = prepareCategoryData();
   const responsivenessData = prepareResponsivenessByUrgency();
+  const categoriaPDVData = prepareCategoriaPDVData();
 
   const toggleFilter = () => {
     setFilterVisible(!filterVisible);
@@ -738,7 +759,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
   return (
-    <div style={{ padding: '1rem', backgroundColor: '#f8f8f8' }}>
+    <div style={{ padding: '1rem', backgroundColor: '#f8f8f8', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }}>
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col span={20}>
           <Title level={4}>Painel de Gerenciamento de Chamados</Title>
@@ -1026,7 +1047,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           <Title level={5}>Análise de Usuários</Title>
         </Col> */}
         <Col xs={24} md={8}>
-          <Card title="Top 5 Atendentes" extra={<TeamOutlined />}>
+          <Card title="Maiores Atendentes" extra={<TeamOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topSupportUsers}
@@ -1056,7 +1077,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Top 5 Solicitantes" extra={<UserOutlined />}>
+          <Card title="Maiores Solicitantes" extra={<UserOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topTicketCreators}
@@ -1086,7 +1107,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Top 5 Setores com Chamados" extra={<ShopOutlined />}>
+          <Card title="Maiores Setores com Chamados" extra={<ShopOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topSetoresWithOpenTickets}
@@ -1118,7 +1139,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       </Row>
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={8}>
-          <Card title="Top 5 PDVs com Chamados" extra={<ShopOutlined />}>
+          <Card title="Maiores Pontos de Venda com Chamados" extra={<ShopOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={topPDVsWithOpenTickets}
@@ -1130,7 +1151,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
                 <YAxis
                   type="category"
                   dataKey="pdv"
-                  width={70}
+                  width={120}
                   tick={(props) => {
                     const { x, y, payload } = props;
                     return (
@@ -1148,30 +1169,47 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Status dos Chamados">
+          <Card title="Maiores Categorias de PDV com Chamados" extra={<AppstoreOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={75}
-                  fill="#8884d8"
-                  dataKey="value"
+              <BarChart
+                data={categoriaPDVData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="category"
+                  width={120}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    return (
+                      <text x={x} y={y} dy={3} textAnchor="end" fill="#666" fontSize={12}>
+                        {payload.value.length > 15 ? `${payload.value.substring(0, 12)}...` : payload.value}
+                      </text>
+                    );
+                  }}
+                />
+                <Tooltip 
+                  formatter={(value, name, props) => [value, 'Chamados']}
+                  labelFormatter={(value) => [`Categoria PDV: ${value}`]} 
+                />
+                <Bar 
+                  dataKey="count" 
+                  name="Chamados" 
+                  fill="#1890ff"
                 >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {categoriaPDVData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Distribuição por Urgência">
+          <Card title="Distribuição por Urgência" extra={<AlertOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie

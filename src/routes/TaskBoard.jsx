@@ -14,6 +14,9 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
   const [buttonReopenLoading, setButtonReopenLoading] = useState({});
   const [filterSectors, setFilterSectors] = useState([]);
   const [filtersCategories, setFiltersCategories] = useState([]);
+  const [filteredInfo, setFilteredInfo] = useState(
+    JSON.parse(localStorage.getItem('taskboardFilters')) || {}
+  );
 
   const pendingTickets = dataChamados.filter(ticket => ticket.status === 'pending');
   const analysisTickets = dataChamados.filter(ticket => ticket.status === 'analysis');
@@ -133,6 +136,16 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
     );
   };
 
+  const handleTableChange = (pagination, filters, sorter) => {
+    setFilteredInfo(filters);
+    localStorage.setItem('taskboardFilters', JSON.stringify(filters));
+  };
+
+  const clearAllFilters = () => {
+    setFilteredInfo({});
+    localStorage.removeItem('taskboardFilters');
+  };
+  
   const optionsClassificacao = {
     "Alteração de Cardápio": [
       { value: 'Criação de produto', label: 'Criação de produto' },
@@ -324,6 +337,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       key: 'categoria',
       width: '20%',
       filters: filtersCategories,
+      filteredValue: filteredInfo.categoria || null,
       onFilter: (value, record) => record.categoria.includes(value),
     },
     {
@@ -332,6 +346,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       key: 'setor',
       width: '15%',
       filters: filterSectors,
+      filteredValue: filteredInfo.setor || null,
       onFilter: (value, record) => record.setor.includes(value),
       render: (setor) => (
         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -603,7 +618,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
 
   const renderTableSection = (title, data, statusKey, icon) => {
     const isOpen = openPanels.includes(statusKey);
-
+  
     return (
       <Card
         title={
@@ -638,6 +653,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               }
             }
           }}
+          onChange={handleTableChange}
           size="middle"
           rowClassName={(record) => record.urgencia === 'Urgente' ? 'urgent-row' : ''}
           onRow={(record) => ({
@@ -688,6 +704,8 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
         <Button type="primary" onClick={fetchChamados}>
           Atualizar
         </Button>
+
+        <Button type='primary' onClick={clearAllFilters} style={{ marginLeft: '10px' }}>Limpar Filtros</Button>
       </div>
 
       {renderTableSection(

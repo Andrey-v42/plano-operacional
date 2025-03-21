@@ -7,6 +7,7 @@ import Dashboard from './Dashboard';
 import ChatSuporte from './ChatSuporte';
 import TaskBoard from './TaskBoard';
 import TicketChatDrawer from './components/TicketChatDrawer';
+import TicketViewToggle from './TicketViewToggle';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
@@ -320,7 +321,6 @@ const Suporte = () => {
 
     const handleFileChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
-        console.log(newFileList[0].originFileObj);
     };
 
     const handleAnswerClick = async (recordId, resposta, classificacao) => {
@@ -596,33 +596,51 @@ const Suporte = () => {
             });
             let data = await response.json();
             data = data.docs;
-            let chamados = data.map((doc) => {
+            let chamados = await Promise.all(data.map(async (doc) => {
+                doc.data.categoriaPDV = 'N/A'
                 if (currentUser !== doc.data.solicitante && permission !== 'admin' && permission !== 'ecc' && permissionEvento !== 'C-CCO' && permissionEvento !== 'Head') {
                     return null;
                 } else {
-                    return {
-                        key: doc.id,
-                        id: doc.id,
-                        solicitante: doc.data.solicitante,
-                        categoria: doc.data.categoria,
-                        status: doc.data.status,
-                        timestampAberto: doc.data.timestampAberto,
-                        urgencia: doc.data.urgencia,
-                        ponto: doc.data.ponto,
-                        modelo: doc.data.modelo,
-                        descricao: doc.data.descricao,
-                        resposta: doc.data.resposta || '',
-                        anexos: doc.data.anexos || [],
-                        timestampResposta: doc.data.timestampResposta || '',
-                        timestampAnalise: doc.data.timestampAnalise || '',
-                        userId: doc.data.userId || '',
-                        setor: doc.data.setor || '',
-                        atendente: doc.data.atendente || null,
-                        timestampValidacao: doc.data.timestampValidacao || '',
-                        timestampReaberto: doc.data.timestampReaberto || '',
+                    if (doc.data.ponto != 'N/A') {
+                        const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                url: `pipe/pipeId_${pipeId}/planoOperacional`,
+                                docId: doc.data.ponto
+                            })
+                        });
+                        const data = await response.json();
+                        doc.data.categoriaPDV = data.CATEGORIA
                     }
                 }
-            });
+                return {
+                    key: doc.id,
+                    id: doc.id,
+                    solicitante: doc.data.solicitante,
+                    categoria: doc.data.categoria,
+                    status: doc.data.status,
+                    timestampAberto: doc.data.timestampAberto,
+                    urgencia: doc.data.urgencia,
+                    ponto: doc.data.ponto,
+                    modelo: doc.data.modelo,
+                    descricao: doc.data.descricao,
+                    resposta: doc.data.resposta || '',
+                    anexos: doc.data.anexos || [],
+                    timestampResposta: doc.data.timestampResposta || '',
+                    timestampAnalise: doc.data.timestampAnalise || '',
+                    userId: doc.data.userId || '',
+                    setor: doc.data.setor || '',
+                    atendente: doc.data.atendente || null,
+                    timestampValidacao: doc.data.timestampValidacao || '',
+                    timestampReaberto: doc.data.timestampReaberto || '',
+                    classificacao: doc.data.classificacao || '',
+                    categoriaPDV: doc.data.categoriaPDV || 'N/A',
+                }
+            }
+            ));
             chamados = chamados.filter((chamado) => chamado !== null);
             setDataChamados(chamados);
         } catch (error) {
@@ -843,12 +861,12 @@ const Suporte = () => {
                         bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                     >
-                        <TaskBoard
+                        <TicketViewToggle
                             dataChamados={dataChamados}
                             fetchChamados={fetchChamados}
                             handleAnswerClick={handleAnswerClick}
                             changeStatus={changeStatus}
-                            reopenTicket={reopenTicket}  // Add this line
+                            reopenTicket={reopenTicket}
                             handleCreateChatForTicket={handleCreateChatForTicket}
                         />
 
@@ -978,7 +996,7 @@ const Suporte = () => {
     }, []);
 
     return (
-        <div style={{ padding: '20px', width: '100%' }}>
+        <div style={{ padding: '20px', width: '100%', height: '100%' }}>
             {contextHolder}
             <Tabs
                 items={tabsItems}
@@ -992,6 +1010,7 @@ const Suporte = () => {
                     borderRadius: '8px',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
                     width: '100%',
+                    height: '100%',
                 }}
             />
 

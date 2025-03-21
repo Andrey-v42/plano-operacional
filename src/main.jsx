@@ -11,7 +11,7 @@ const Root = () => {
     return (
         <StrictMode>
             <HashRouter>
-                <ForceDesktopView />
+                {/* <ForceDesktopView /> */}
                 <App isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
             </HashRouter>
         </StrictMode>
