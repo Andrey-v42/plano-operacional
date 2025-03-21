@@ -701,9 +701,9 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-        <Button type="primary" onClick={fetchChamados}>
+        {/* <Button type="primary" onClick={fetchChamados}>
           Atualizar
-        </Button>
+        </Button> */}
 
         <Button type='primary' onClick={clearAllFilters} style={{ marginLeft: '10px' }}>Limpar Filtros</Button>
       </div>
