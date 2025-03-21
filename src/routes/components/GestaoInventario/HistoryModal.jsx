@@ -8,8 +8,13 @@ import {
   Tag, 
   Divider, 
   Button, 
-  Timeline 
+  Timeline,
+  Empty
 } from 'antd';
+import { 
+  HistoryOutlined,
+  ImportOutlined
+} from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -36,6 +41,14 @@ export const HistoryModal = ({
 
   const handleHistoryPageChange = (page) => {
     setCurrentHistoryPage(page);
+  };
+
+  // Função para renderizar ícone apropriado baseado no tipo de operação
+  const getTimelineIcon = (item) => {
+    if (item.motivo?.includes("Cadastro")) {
+      return <ImportOutlined style={{ color: '#1890ff' }} />;
+    }
+    return <HistoryOutlined style={{ color: '#52c41a' }} />;
   };
 
   return (
@@ -79,13 +92,14 @@ export const HistoryModal = ({
         </Row>
       </Card>
 
-      <Divider orientation="left">Histórico de Alocações</Divider>
+      <Divider orientation="left">Histórico de Movimentações</Divider>
 
       {paginatedHistory.length > 0 ? (
         <Timeline
           mode="left"
           items={paginatedHistory.map((item) => ({
             label: item.data,
+            dot: getTimelineIcon(item),
             children: (
               <Card size="small" style={{ marginBottom: "10px" }}>
                 <p>
@@ -106,9 +120,10 @@ export const HistoryModal = ({
           }))}
         />
       ) : (
-        <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-          Nenhum histórico disponível para este ativo
-        </div>
+        <Empty
+          description="Nenhum histórico disponível para este ativo"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       )}
 
       {totalHistoryItems > historyPageSize && (

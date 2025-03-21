@@ -15,11 +15,35 @@ import {
 
 const { Option } = Select;
 
-export const CadastroAtivos = ({ openNotificationSucess }) => {
+export const CadastroAtivos = ({ openNotificationSucess, addAssetToState }) => {
   const [form] = Form.useForm();
 
   const handleSubmit = (values) => {
     console.log('Valores do formulário:', values);
+    
+    // Adicionar data atual e histórico inicial
+    const now = new Date();
+    const formattedDate = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    
+    // Criar objeto de ativo com histórico inicial
+    const newAsset = {
+      ...values,
+      historico: [
+        {
+          data: formattedDate,
+          destino: "Estoque",
+          nomeDestino: "Entrada inicial no sistema",
+          os: "N/A",
+          motivo: "Cadastro inicial do ativo",
+          responsavel: "Sistema"
+        }
+      ]
+    };
+    
+    // Adicionar ao estado global se a função estiver disponível
+    if (addAssetToState) {
+      addAssetToState(newAsset);
+    }
     
     // Simular envio para backend
     setTimeout(() => {
@@ -63,7 +87,6 @@ export const CadastroAtivos = ({ openNotificationSucess }) => {
             <Form.Item
               label="RFID"
               name="rfid"
-              rules={[{ required: true, message: 'Por favor, informe o RFID!' }]}
             >
               <Input placeholder="RFID" />
             </Form.Item>
@@ -90,6 +113,7 @@ export const CadastroAtivos = ({ openNotificationSucess }) => {
             <Form.Item
               label="Device Z"
               name="deviceZ"
+              rules={[{ required: true, message: 'Por favor, informe o Device Z!' }]}
             >
               <Input placeholder="Device Z" />
             </Form.Item>
@@ -129,7 +153,34 @@ export const CadastroAtivos = ({ openNotificationSucess }) => {
               name="alocacao"
               rules={[{ required: true, message: 'Por favor, informe a alocação!' }]}
             >
-              <Input placeholder="Local de alocação atual" />
+              <Select placeholder="Selecione a localização">
+                <Option value="São Paulo - SP (Matriz)">São Paulo - SP (Matriz)</Option>
+                <Option value="Rio de Janeiro - RJ">Rio de Janeiro - RJ</Option>
+                <Option value="Salvador - BA">Salvador - BA</Option>
+                <Option value="Vitória - ES">Vitória - ES</Option>
+                <Option value="Belém - PA">Belém - PA</Option>
+                <Option value="Recife - PE">Recife - PE</Option>
+                <Option value="Belo Horizonte - MG">Belo Horizonte - MG</Option>
+                <Option value="Goiânia - GO">Goiânia - GO</Option>
+                <Option value="Porto Alegre - RS">Porto Alegre - RS</Option>
+                <Option value="Fortaleza - CE">Fortaleza - CE</Option>
+                <Option value="Brasília - DF">Brasília - DF</Option>
+                <Option value="Curitiba - PR">Curitiba - PR</Option>
+                <Option value="Balneário Camboriú - SC">Balneário Camboriú - SC</Option>
+                <Option value="Floripa - SC">Floripa - SC</Option>
+                <Option value="Ribeirão Preto - SP">Ribeirão Preto - SP</Option>
+                <Option value="Uberlândia - MG">Uberlândia - MG</Option>
+                <Option value="Campinas - SP">Campinas - SP</Option>
+                <Option value="Campo Grande - MS">Campo Grande - MS</Option>
+                <Option value="Caxias do Sul - RS">Caxias do Sul - RS</Option>
+                <Option value="Cuiabá - MT">Cuiabá - MT</Option>
+                <Option value="João Pessoa - PB">João Pessoa - PB</Option>
+                <Option value="Londrina - PR">Londrina - PR</Option>
+                <Option value="Manaus - AM">Manaus - AM</Option>
+                <Option value="Natal - RN">Natal - RN</Option>
+                <Option value="Porto Seguro - BA">Porto Seguro - BA</Option>
+                <Option value="Santos - SP">Santos - SP</Option>
+              </Select>
             </Form.Item>
           </Col>
         </Row>
