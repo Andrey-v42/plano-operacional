@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge, Avatar, Tooltip as TooltipAntd } from 'antd';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
+import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined, FilterOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -17,44 +17,40 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     activeChats: 0,
     avgMessagesPerChat: 0,
     responseRatePercent: 0,
-    avgFirstResponseTime: 0 // New metric for first response time
+    avgFirstResponseTime: 0
   });
   const [chatData, setChatData] = useState([]);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
-  const [topSupportUsers, setTopSupportUsers] = useState([]); // New state for top support users
-  const [topTicketCreators, setTopTicketCreators] = useState([]); // New state for top ticket creators
-  const [topPDVsWithOpenTickets, setTopPDVsWithOpenTickets] = useState([]); // New state for top PDVs
-  const [topSetoresWithOpenTickets, setTopSetoresWithOpenTickets] = useState([]); // New state for top PDVs
+  const [topSupportUsers, setTopSupportUsers] = useState([]);
+  const [topTicketCreators, setTopTicketCreators] = useState([]);
+  const [topPDVsWithOpenTickets, setTopPDVsWithOpenTickets] = useState([]);
+  const [topSetoresWithOpenTickets, setTopSetoresWithOpenTickets] = useState([]);
+  const [filterVisible, setFilterVisible] = useState(false);
 
   useEffect(() => {
-    // Initialize with all data
     if (dataChamados) {
       filterData(dataChamados, dateRange, categoryFilter, urgencyFilter);
       fetchChatData();
       calculateTopUsers(dataChamados);
       calculateTopPDVs(dataChamados);
+      calculateTopSetores(dataChamados);
     }
   }, [dataChamados]);
 
-  // New function to calculate top users and ticket creators
   const calculateTopUsers = (data) => {
-    // Calculate top support users (who answered most tickets)
     const supportUserCounts = {};
     const ticketCreatorCounts = {};
 
     data.forEach(ticket => {
-      // Count ticket creators
       if (ticket.solicitante) {
         ticketCreatorCounts[ticket.solicitante] = (ticketCreatorCounts[ticket.solicitante] || 0) + 1;
       }
 
-      // Count support users who have responded to tickets
       if (ticket.atendente && ticket.status !== 'pending') {
         supportUserCounts[ticket.atendente] = (supportUserCounts[ticket.atendente] || 0) + 1;
       }
     });
 
-    // Convert to arrays and sort
     const supportUsers = Object.keys(supportUserCounts)
       .map(user => ({ user, count: supportUserCounts[user] }))
       .sort((a, b) => b.count - a.count)
@@ -69,33 +65,27 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     setTopTicketCreators(ticketCreators);
   };
 
-  // New function to calculate top PDVs with open tickets
   const calculateTopPDVs = (data) => {
     const pdvCounts = {};
 
-    // Count open tickets per PDV
     data.forEach(ticket => {
       if (ticket.ponto) {
         pdvCounts[ticket.ponto] = (pdvCounts[ticket.ponto] || 0) + 1;
       }
     });
 
-    // Convert to array and sort
     const topPDVs = Object.keys(pdvCounts)
       .map(pdv => ({ pdv, count: pdvCounts[pdv] }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5); // Top 5
+      .slice(0, 5);
 
     setTopPDVsWithOpenTickets(topPDVs);
   };
 
   const calculateTopSetores = (data) => {
     const setorCounts = {};
-    console.log(data)
-    // Count pending tickets per setor
     data.forEach(ticket => {
-      // Only count tickets with "pending" status
-      if (ticket.status === "pending" && ticket.setor) {
+      if (ticket.setor) {
         setorCounts[ticket.setor] = (setorCounts[ticket.setor] || 0) + 1;
       }
     });
@@ -106,7 +96,6 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5); // Top 5
 
-    console.log(topSetores);
     setTopSetoresWithOpenTickets(topSetores);
   };
 
@@ -361,7 +350,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     filteredData.forEach(item => {
       if (item.status === 'closed' && item.timestampAberto && item.timestampResposta) {
         const date = new Date(item.timestampAberto).toLocaleDateString();
-        const resolutionTime = (item.timestampResposta - item.timestampAberto) / (1000 * 60 * 60); // hours
+        const resolutionTime = (item.timestampResposta - item.timestampAberto) / (1000 * 60 * 60);
 
         if (!dateResolutionTimes[date]) {
           dateResolutionTimes[date] = 0;
@@ -425,50 +414,122 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     return result;
   };
 
-  // Calculate key metrics
   const calculateMetrics = () => {
     let totalTickets = filteredData.length;
     let openTickets = filteredData.filter(item => item.status === 'pending').length;
     let inProgressTickets = filteredData.filter(item => item.status === 'analysis').length;
     let validationTickets = filteredData.filter(item => item.status === 'validation').length;
-    let reopenedTickets = filteredData.filter(item => item.status === 'reopened').length; // Add reopened count
+    let reopenedTickets = filteredData.filter(item => item.status === 'reopened').length;
     let resolvedTickets = filteredData.filter(item => item.status === 'closed').length;
 
     let responseTimes = 0;
     let analysisTimeSum = 0;
     let validationTimeSum = 0;
-    let reopeningTimeSum = 0; // Add reopening time tracking
+    let reopeningTimeSum = 0;
     let resolutionTimes = 0;
+
     let count = 0;
     let analysisCount = 0;
     let validationCount = 0;
-    let reopeningCount = 0; // Add reopening count
+    let reopeningCount = 0;
     let resolutionCount = 0;
+
+    let invalidAnalysisTimeOrder = 0;
+    let invalidValidationTimeOrder = 0;
+    let missingAnalysisTime = 0;
+    let missingValidationTime = 0;
+    let missingReopeningData = 0;
 
     filteredData.forEach(item => {
       if (item.timestampAberto && item.timestampAnalise) {
-        responseTimes += (item.timestampAnalise - item.timestampAberto);
-        count++;
+        if (item.timestampAnalise > item.timestampAberto) {
+          responseTimes += (item.timestampAnalise - item.timestampAberto);
+          count++;
+        }
       }
 
       if (item.timestampAnalise && item.timestampValidacao) {
-        analysisTimeSum += (item.timestampValidacao - item.timestampAnalise);
-        analysisCount++;
+        let analysisTime = 0;
+
+        if (item.timestampValidacao > item.timestampAnalise) {
+          analysisTime = item.timestampValidacao - item.timestampAnalise;
+          analysisTimeSum += analysisTime;
+          analysisCount++;
+        } else {
+          invalidAnalysisTimeOrder++;
+        }
+      } else {
+        missingAnalysisTime++;
       }
 
       if (item.timestampValidacao && item.timestampResposta) {
-        validationTimeSum += (item.timestampResposta - item.timestampValidacao);
-        validationCount++;
+        let validationTime = 0;
+
+        if (item.timestampResposta > item.timestampValidacao) {
+          validationTime = item.timestampResposta - item.timestampValidacao;
+          validationTimeSum += validationTime;
+          validationCount++;
+        } else {
+          invalidValidationTimeOrder++;
+        }
+      } else {
+        missingValidationTime++;
       }
 
-      // Track time from reopening to next action (either analysis or response)
       if (item.timestampReaberto) {
+        let handledReopenedTicket = false;
+
+        const actionsAfterReopening = [];
+
         if (item.timestampAnalise && item.timestampAnalise > item.timestampReaberto) {
-          reopeningTimeSum += (item.timestampAnalise - item.timestampReaberto);
+          actionsAfterReopening.push({
+            type: 'analysis',
+            timestamp: item.timestampAnalise
+          });
+        }
+
+        if (item.timestampValidacao && item.timestampValidacao > item.timestampReaberto) {
+          actionsAfterReopening.push({
+            type: 'validation',
+            timestamp: item.timestampValidacao
+          });
+        }
+
+        if (item.timestampResposta && item.timestampResposta > item.timestampReaberto) {
+          actionsAfterReopening.push({
+            type: 'response',
+            timestamp: item.timestampResposta
+          });
+        }
+
+        if (actionsAfterReopening.length > 0) {
+          actionsAfterReopening.sort((a, b) => a.timestamp - b.timestamp);
+          const firstAction = actionsAfterReopening[0];
+
+          reopeningTimeSum += (firstAction.timestamp - item.timestampReaberto);
           reopeningCount++;
-        } else if (item.timestampResposta && item.timestampResposta > item.timestampReaberto) {
-          reopeningTimeSum += (item.timestampResposta - item.timestampReaberto);
-          reopeningCount++;
+          handledReopenedTicket = true;
+        }
+
+        if (!handledReopenedTicket) {
+          const possibleAnalysisFields = [
+            'timestampAnaliseAfterReopen',
+            'timestampAnalisePos',
+            'timestampAnalise2',
+          ];
+
+          for (const field of possibleAnalysisFields) {
+            if (item[field] && item[field] > item.timestampReaberto) {
+              reopeningTimeSum += (item[field] - item.timestampReaberto);
+              reopeningCount++;
+              handledReopenedTicket = true;
+              break;
+            }
+          }
+        }
+
+        if (!handledReopenedTicket) {
+          missingReopeningData++;
         }
       }
 
@@ -478,43 +539,23 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       }
     });
 
-    let avgResponseTime = 0;
-    let avgAnalysisTime = 0;
-    let avgValidationTime = 0;
-    let avgReopeningResponseTime = 0; // Add reopening response time
-    let avgResolutionTime = 0;
-
-    if (count > 0) {
-      avgResponseTime = responseTimes / count / (1000 * 60); // minutes
-    }
-
-    if (analysisCount > 0) {
-      avgAnalysisTime = analysisTimeSum / analysisCount / (1000 * 60); // minutes
-    }
-
-    if (validationCount > 0) {
-      avgValidationTime = validationTimeSum / validationCount / (1000 * 60); // minutes
-    }
-
-    if (reopeningCount > 0) {
-      avgReopeningResponseTime = reopeningTimeSum / reopeningCount / (1000 * 60); // minutes
-    }
-
-    if (resolutionCount > 0) {
-      avgResolutionTime = resolutionTimes / resolutionCount / (1000 * 60); // minutes
-    }
+    let avgResponseTime = count > 0 ? responseTimes / count / (1000 * 60) : 0;
+    let avgAnalysisTime = analysisCount > 0 ? analysisTimeSum / analysisCount / (1000 * 60) : 0;
+    let avgValidationTime = validationCount > 0 ? validationTimeSum / validationCount / (1000 * 60) : 0;
+    let avgReopeningResponseTime = reopeningCount > 0 ? reopeningTimeSum / reopeningCount / (1000 * 60) : 0;
+    let avgResolutionTime = resolutionCount > 0 ? resolutionTimes / resolutionCount / (1000 * 60) : 0;
 
     return {
       totalTickets,
       openTickets,
       inProgressTickets,
       validationTickets,
-      reopenedTickets, // Add reopened tickets count
+      reopenedTickets,
       resolvedTickets,
       avgResponseTime: avgResponseTime.toFixed(1),
       avgAnalysisTime: avgAnalysisTime.toFixed(1),
       avgValidationTime: avgValidationTime.toFixed(1),
-      avgReopeningResponseTime: avgReopeningResponseTime.toFixed(1), // Add reopening response time
+      avgReopeningResponseTime: avgReopeningResponseTime.toFixed(1),
       avgResolutionTime: avgResolutionTime.toFixed(1)
     };
   };
@@ -526,6 +567,10 @@ const Dashboard = ({ dataChamados, pipeId }) => {
   const resolutionTimeData = prepareResolutionTimeData();
   const categoryData = prepareCategoryData();
   const responsivenessData = prepareResponsivenessByUrgency();
+
+  const toggleFilter = () => {
+    setFilterVisible(!filterVisible);
+  };
 
   // Prepare categories for filter
   const categoryOptions = dataChamados ?
@@ -539,7 +584,6 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     .sort((a, b) => b.timestampAberto - a.timestampAberto)
     .slice(0, 5);
 
-  // Columns for tables
   const recentColumns = [
     {
       title: 'ID',
@@ -576,7 +620,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           color = 'orange';
           text = 'Em validação';
         } else if (status === 'reopened') {
-          color = 'purple'; // Use purple for reopened tickets
+          color = 'purple';
           text = 'Reaberto';
         }
 
@@ -609,7 +653,6 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     },
   ];
 
-  // Columns for top support users table
   const topSupportColumns = [
     {
       title: 'Atendente',
@@ -629,7 +672,6 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     }
   ];
 
-  // Columns for top ticket creators table
   const topCreatorsColumns = [
     {
       title: 'Usuário',
@@ -649,7 +691,6 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     }
   ];
 
-  // Columns for top PDVs table
   const topPDVsColumns = [
     {
       title: 'PDV',
@@ -699,13 +740,18 @@ const Dashboard = ({ dataChamados, pipeId }) => {
   return (
     <div style={{ padding: '1rem', backgroundColor: '#f8f8f8' }}>
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col span={24}>
+        <Col span={20}>
           <Title level={4}>Painel de Gerenciamento de Chamados</Title>
           <Text type="secondary">Visualize estatísticas e tendências dos chamados de suporte</Text>
         </Col>
+        <Col span={4}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4rem' }}>
+          <FilterOutlined style={{ fontSize: '24px', cursor: 'pointer' }} onClick={toggleFilter} />
+        </div>
+        </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+      {filterVisible == true && <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} md={8}>
           <RangePicker style={{ width: '100%' }} onChange={handleDateChange} />
         </Col>
@@ -731,10 +777,10 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             defaultValue="all"
           />
         </Col>
-      </Row>
+      </Row>}
 
       {/* Summary Statistics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} sm={12} md={4}>
           <Card>
             <Statistic title="Total de Chamados" value={metrics.totalTickets} />
@@ -765,77 +811,111 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             <Statistic title="Chamados Resolvidos" value={metrics.resolvedTickets} valueStyle={{ color: '#52c41a' }} />
           </Card>
         </Col>
+      </Row> */}
+
+      <Row gutter={[16, 16]}>
+        {/* Left column - Bar chart */}
+        <Col xs={24} md={12}>
+          <Card title="Distribuição de Chamados por Status" className="dashboard-card">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={statusData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value, name, props) => [`${value} chamados`, 'Quantidade']}
+                  labelFormatter={(value) => [`Status: ${value}`]}
+                />
+                <Legend verticalAlign="top" height={36} />
+                <Bar
+                  dataKey="value"
+                  name="Número de Chamados"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="chart-summary" style={{ textAlign: 'center', marginTop: '10px' }}>
+              <p>Total de chamados: {metrics.totalTickets} | Abertos: {metrics.openTickets} | Resolvidos: {metrics.resolvedTickets}</p>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Right column - Metrics cards */}
+        <Col xs={24} md={12}>
+          <Row gutter={[16, 16]}>
+            {/* First row of cards */}
+            <Col xs={24} sm={12}>
+              <Card>
+                <Statistic
+                  title="Tempo Médio de 1ª Resposta"
+                  value={metrics.avgResponseTime}
+                  suffix="min"
+                  precision={1}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Card>
+                <Statistic
+                  title="Tempo Médio em Análise"
+                  value={metrics.avgAnalysisTime}
+                  suffix="min"
+                  precision={1}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+
+            {/* Second row of cards */}
+            <Col xs={24} sm={12}>
+              <Card>
+                <Statistic
+                  title="Tempo Médio em Validação"
+                  value={metrics.avgValidationTime}
+                  suffix="min"
+                  precision={1}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Card>
+                <Statistic
+                  title="Resposta após Reabertura"
+                  value={metrics.avgReopeningResponseTime}
+                  suffix="min"
+                  precision={1}
+                  valueStyle={{ color: '#722ed1' }}
+                />
+              </Card>
+            </Col>
+
+            {/* Third row - Full width card */}
+            <Col xs={24}>
+              <Card>
+                <Statistic
+                  title="Tempo Médio de Resolução"
+                  value={metrics.avgResolutionTime}
+                  suffix="min"
+                  precision={1}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </Col>
       </Row>
 
-      {/* Chat Metrics */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col span={24}>
-          <Title level={5}>Métricas de Chat</Title>
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-          <Card>
-            <Statistic
-              title="Total de Chats"
-              value={chatMetrics.totalChats}
-              prefix={<CommentOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-          <Card>
-            <Statistic
-              title="Chats Ativos"
-              value={chatMetrics.activeChats}
-              prefix={<MessageOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col xs={24} sm={12} md={5}>
-          <Card>
-            <Statistic
-              title="Mensagens por Chat"
-              value={chatMetrics.avgMessagesPerChat}
-              prefix={<UserOutlined />}
-              precision={1}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={4}>
-          <Card>
-            <Statistic
-              title="Taxa de Resposta"
-              value={chatMetrics.responseRatePercent}
-              suffix="%"
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{
-                color: parseInt(chatMetrics.responseRatePercent) > 80 ? '#52c41a' :
-                  parseInt(chatMetrics.responseRatePercent) > 50 ? '#faad14' : '#ff4d4f'
-              }}
-            />
-          </Card>
-        </Col>
-        {/* New metric */}
-        <Col xs={24} sm={12} md={7}>
           <Card>
             <Statistic
               title="Tempo Médio de 1ª Resposta"
-              value={chatMetrics.avgFirstResponseTime}
-              suffix="min"
-              prefix={<ClockCircleOutlined />}
-              precision={1}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} sm={12} md={5}>
-          <Card>
-            <Statistic
-              title="Tempo Médio de Resposta"
               value={metrics.avgResponseTime}
               suffix="min"
               precision={1}
@@ -885,60 +965,191 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
-      {/* New section for top support users and ticket creators */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+      {/* Chat Metrics */}
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col span={24}>
+          <Title level={5}>Métricas de Chat</Title>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total de Chats"
+              value={chatMetrics.totalChats}
+              prefix={<CommentOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Chats Ativos"
+              value={chatMetrics.activeChats}
+              prefix={<MessageOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Mensagens por Chat"
+              value={chatMetrics.avgMessagesPerChat}
+              prefix={<UserOutlined />}
+              precision={1}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card>
+            <Statistic
+              title="Taxa de Resposta"
+              value={chatMetrics.responseRatePercent}
+              suffix="%"
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{
+                color: parseInt(chatMetrics.responseRatePercent) > 80 ? '#52c41a' :
+                  parseInt(chatMetrics.responseRatePercent) > 50 ? '#faad14' : '#ff4d4f'
+              }}
+            />
+          </Card>
+        </Col>
+      </Row> */}
+
+
+
+      {/* Section for top support users and ticket creators */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '1rem', marginTop: '1rem' }}>
+        {/* <Col span={24}>
           <Title level={5}>Análise de Usuários</Title>
-        </Col>
-        <Col xs={24} md={6}>
+        </Col> */}
+        <Col xs={24} md={8}>
           <Card title="Top 5 Atendentes" extra={<TeamOutlined />}>
-            <Table
-              dataSource={topSupportUsers}
-              columns={topSupportColumns}
-              pagination={false}
-              size="small"
-            />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={topSupportUsers}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="user"
+                  width={120}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    return (
+                      <text x={x} y={y} dy={3} textAnchor="end" fill="#666" fontSize={12}>
+                        {payload.value.length > 15 ? `${payload.value.substring(0, 12)}...` : payload.value}
+                      </text>
+                    );
+                  }}
+                />
+                <Tooltip formatter={(value, name, props) => [value, 'Chamados']}
+                  labelFormatter={(value) => [`Atendente: ${value}`]} />
+                <Bar dataKey="count" name="Chamados Atendidos" fill="#1890ff" />
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
         </Col>
-        <Col xs={24} md={6}>
+        <Col xs={24} md={8}>
           <Card title="Top 5 Solicitantes" extra={<UserOutlined />}>
-            <Table
-              dataSource={topTicketCreators}
-              columns={topCreatorsColumns}
-              pagination={false}
-              size="small"
-            />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={topTicketCreators}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="user"
+                  width={120}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    return (
+                      <text x={x} y={y} dy={3} textAnchor="end" fill="#666" fontSize={12}>
+                        {payload.value.length > 15 ? `${payload.value.substring(0, 12)}...` : payload.value}
+                      </text>
+                    );
+                  }}
+                />
+                <Tooltip formatter={(value, name, props) => [value, 'Chamados']}
+                  labelFormatter={(value) => [`Solicitante: ${value}`]} />
+                <Bar dataKey="count" name="Chamados Criados" fill="#faad14" />
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
         </Col>
-        <Col xs={24} md={6}>
+        <Col xs={24} md={8}>
           <Card title="Top 5 Setores com Chamados" extra={<ShopOutlined />}>
-            <Table
-              dataSource={topSetoresWithOpenTickets}
-              columns={topSetoresColumns}
-              pagination={false}
-              size="small"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card title="Top 5 PDVs com Chamados" extra={<ShopOutlined />}>
-            <Table
-              dataSource={topPDVsWithOpenTickets}
-              columns={topPDVsColumns}
-              pagination={false}
-              size="small"
-            />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={topSetoresWithOpenTickets}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="setor"
+                  width={120}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    return (
+                      <text x={x} y={y} dy={3} textAnchor="end" fill="#666" fontSize={12}>
+                        {payload.value.length > 15 ? `${payload.value.substring(0, 12)}...` : payload.value}
+                      </text>
+                    );
+                  }}
+                />
+                <Tooltip formatter={(value, name, props) => [value, 'Chamados']}
+                  labelFormatter={(value) => [`Setor: ${value}`]} />
+                <Bar dataKey="count" name="Chamados Abertos" fill="#ff4d4f" />
+              </BarChart>
+            </ResponsiveContainer>
           </Card>
         </Col>
       </Row>
-
-      {/* Charts Section */}
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} md={12}>
+        <Col xs={24} md={8}>
+          <Card title="Top 5 PDVs com Chamados" extra={<ShopOutlined />}>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={topPDVsWithOpenTickets}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis
+                  type="category"
+                  dataKey="pdv"
+                  width={70}
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    return (
+                      <text x={x} y={y} dy={3} textAnchor="end" fill="#666" fontSize={12}>
+                        {payload.value.length > 15 ? `${payload.value.substring(0, 12)}...` : payload.value}
+                      </text>
+                    );
+                  }}
+                />
+                <Tooltip formatter={(value, name, props) => [value, 'Chamados']}
+                  labelFormatter={(value) => [`PDV: ${value}`]} />
+                <Bar dataKey="count" name="Chamados Abertos" fill="#722ed1" />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
           <Card title="Status dos Chamados">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={statusData}
@@ -946,7 +1157,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
                   cy="50%"
                   labelLine={true}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  outerRadius={75}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -959,9 +1170,9 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             </ResponsiveContainer>
           </Card>
         </Col>
-        <Col xs={24} md={12}>
+        <Col xs={24} md={8}>
           <Card title="Distribuição por Urgência">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
                   data={urgencyData}
@@ -969,7 +1180,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
                   cy="50%"
                   labelLine={true}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  outerRadius={75}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -984,7 +1195,11 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+      {/* Charts Section */}
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+      </Row> */}
+
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
         <Col span={24}>
           <Card title="Tendência de Chamados">
             <ResponsiveContainer width="100%" height={300}>
@@ -1005,12 +1220,12 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             </ResponsiveContainer>
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} md={12}>
+        <Col xs={24} md={24}>
           <Card title="Top 5 Categorias">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={categoryData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
@@ -1025,9 +1240,9 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             </ResponsiveContainer>
           </Card>
         </Col>
-        <Col xs={24} md={12}>
+        {/* <Col xs={24} md={12}>
           <Card title="Tempo de Resolução por Dia">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={resolutionTimeData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
@@ -1037,11 +1252,11 @@ const Dashboard = ({ dataChamados, pipeId }) => {
               </BarChart>
             </ResponsiveContainer>
           </Card>
-        </Col>
+        </Col> */}
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} md={12}>
+      {/* <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
+        <Col xs={24} md={6}>
           <Card title="Tempo de Resposta por Urgência">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={responsivenessData}>
@@ -1078,9 +1293,9 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             </ResponsiveContainer>
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
-      <Row gutter={[16, 16]}>
+      {/* <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card title="Chamados Recentes">
             <Table
@@ -1091,7 +1306,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             />
           </Card>
         </Col>
-      </Row>
+      </Row> */}
     </div>
   );
 };

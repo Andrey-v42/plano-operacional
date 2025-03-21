@@ -39,9 +39,8 @@ const Analytics = () => {
     ]
 
     return (
-        <div style={{ padding: '24px' }}>
-            <h1>Analytics Dashboard</h1>
-            <Tabs defaultActiveKey="1" items={items} />
+        <div style={{ padding: '24px', width: '100%' }}>
+            <Tabs defaultActiveKey="1" items={items} style={{ width: '100%' }} />
         </div>
     )
 }

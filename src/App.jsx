@@ -11,7 +11,10 @@ import {
     QuestionCircleOutlined,
     CustomerServiceFilled,
     SettingOutlined,
-    BarChartOutlined
+    BarChartOutlined,
+    DropboxOutlined,
+    TeamOutlined,
+    OpenAIOutlined
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Flex } from 'antd';
 const { Header, Sider, Content } = Layout;
@@ -154,7 +157,7 @@ const App = () => {
                         },
                         {
                             key: '2',
-                            icon: <ClockCircleOutlined />,
+                            icon: <TeamOutlined />,
                             label: 'Controle de Ponto',
                             onClick: () => {
                                 setSelectedKey(['2'])
@@ -187,7 +190,7 @@ const App = () => {
                         },
                         {
                             key: '5',
-                            icon: <MessageOutlined />,
+                            icon: <OpenAIOutlined />,
                             label: 'GPT-Z',
                             onClick: () => {
                                 setSelectedKey(['5'])
@@ -221,7 +224,7 @@ const App = () => {
                         }, 
                         {
                             key: '8',
-                            icon: <SettingOutlined />,
+                            icon: <DropboxOutlined />,
                             label: 'Estoque',
                             onClick: () => {
                                 setSelectedKey(['8'])

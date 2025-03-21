@@ -320,6 +320,7 @@ const Suporte = () => {
 
     const handleFileChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
+        console.log(newFileList[0].originFileObj);
     };
 
     const handleAnswerClick = async (recordId, resposta, classificacao) => {
@@ -345,9 +346,9 @@ const Suporte = () => {
 
             await fetchChamados();
             const currentTicket = dataChamados.find((chamado) => chamado.id === recordId);
-            await sendNotificationClosed(currentTicket.userId, recordId);
             setButtonAnswerLoading(false);
             openNotificationSucess('Chamado respondido com sucesso!');
+            await sendNotificationClosed(currentTicket.userId, recordId);
         } catch (error) {
             console.error('Error:', error);
             setButtonAnswerLoading(false);
@@ -358,6 +359,31 @@ const Suporte = () => {
     const enviarChamado = async (values) => {
         if (values.categoria && values.ponto && values.modelo && values.descricao && values.setor) {
             setButtonChamadoLoading(true);
+            values.anexos = []
+            if (fileList.length > 0) {
+                try {
+                    for (const file of fileList) {
+                        const fileBase64 = await fileToBase64(file.originFileObj);
+                        const responseFileUpload = await fetch('https://us-central1-zops-mobile.cloudfunctions.net/uploadFile', {
+                            method: 'POST',
+                            headers: {
+                                "Content-Type": 'application/JSON'
+                            },
+                            body: JSON.stringify({
+                                fileName: file.name,
+                                mimeType: file.type,
+                                filePath: `pipe/pipeId_${pipeId}/chamados/${currentUser}`,
+                                fileData: fileBase64[1]
+                            })
+                        })
+
+                        const dataFile = await responseFileUpload.json()
+                        values.anexos.push(dataFile.url)
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
             try {
                 values.urgencia = handleUrgencia(values.categoria)
                 const responseUsers = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
@@ -391,11 +417,11 @@ const Suporte = () => {
 
                 if (response.ok) {
                     openNotificationSucess('Chamado aberto com sucesso!');
-                    await sendNotification(values);
                     formChamado.resetFields();
                     setFileList([]);
                     setButtonChamadoLoading(false);
                     fetchChamados();
+                    await sendNotification(values);
                 } else {
                     setButtonChamadoLoading(false);
                     openNotificationFailure('Erro ao abrir chamado. Tente novamente ou entre em contato com o suporte por outros canais de atendimento.');
@@ -475,8 +501,8 @@ const Suporte = () => {
             const currentTicket = dataChamados.find((chamado) => chamado.id === id);
 
             // Notify support staff about reopened ticket
-            await sendNotificationReopened(currentTicket.userId, id, motivoReabertura);
             openNotificationSucess('Chamado reaberto com sucesso!');
+            await sendNotificationReopened(currentTicket.userId, id, motivoReabertura);
         } catch (error) {
             console.error('Error:', error);
             openNotificationFailure('Erro ao reabrir chamado. Tente novamente.');
@@ -508,11 +534,11 @@ const Suporte = () => {
 
             await fetchChamados();
             const currentTicket = dataChamados.find((chamado) => chamado.id === id);
-            await sendNotificationClosed(currentTicket.userId, id);
             setButtonAnswerLoading(false);
             setAnswerFormVisible(false);
             formAnswer.resetFields();
             openNotificationSucess('Chamado respondido com sucesso!');
+            await sendNotificationClosed(currentTicket.userId, id);
         } catch (error) {
             console.error('Error:', error);
             setButtonAnswerLoading(false);
@@ -547,6 +573,15 @@ const Suporte = () => {
             ),
         });
     };
+
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(','));
+            reader.onerror = error => reject(error);
+        });
+    }
 
     const fetchChamados = async () => {
         try {
@@ -583,6 +618,8 @@ const Suporte = () => {
                         userId: doc.data.userId || '',
                         setor: doc.data.setor || '',
                         atendente: doc.data.atendente || null,
+                        timestampValidacao: doc.data.timestampValidacao || '',
+                        timestampReaberto: doc.data.timestampReaberto || '',
                     }
                 }
             });
@@ -609,7 +646,7 @@ const Suporte = () => {
                             title={<Title level={4}>Abrir Chamado de Suporte</Title>}
                             bordered={false}
                             className="card-with-shadow"
-                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', width: '85vw' }}
+                            style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)' }}
                         >
                             <Form onFinish={enviarChamado} form={formChamado} layout="vertical">
                                 <Row gutter={16}>
@@ -745,7 +782,7 @@ const Suporte = () => {
             ),
             key: '2',
             children: (
-                <div style={{ minWidth: '80vw' }}>
+                <div >
                     <Card
                         bordered={false}
                         style={{ borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', marginBottom: '16px' }}
@@ -771,7 +808,7 @@ const Suporte = () => {
                                     title={<Text strong>Em Análise</Text>}
                                     value={dataChamados.filter(c => c.status === 'analysis').length}
                                     valueStyle={{ color: '#1890ff' }}
-                                    prefix={<SyncOutlined spin={true} />}
+                                    prefix={<SyncOutlined />}
                                 />
                             </Col>
                             <Col span={4}>
@@ -941,7 +978,7 @@ const Suporte = () => {
     }, []);
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div style={{ padding: '20px', width: '100%' }}>
             {contextHolder}
             <Tabs
                 items={tabsItems}
@@ -953,7 +990,8 @@ const Suporte = () => {
                     background: '#fff',
                     padding: '16px',
                     borderRadius: '8px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                    width: '100%',
                 }}
             />
 

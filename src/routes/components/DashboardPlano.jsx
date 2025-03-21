@@ -400,9 +400,8 @@ const DashboardPlano = ({ pipeId }) => {
     }
 
     return (
-        <div style={{ padding: '24px', width: '75vw' }}>
-            <h1>Dashboard Operacional</h1>
-            <p>Visão geral dos pontos de venda e equipamentos para o evento</p>
+        <div style={{ padding: '24px', width: '100%' }}>
+            {/* <p>Visão geral dos pontos de venda e equipamentos para o evento</p> */}
 
             <Divider orientation="left">Métricas Principais</Divider>
 

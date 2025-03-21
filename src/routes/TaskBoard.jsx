@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Badge, Button, Collapse, Space, Tag, Form, Input, Tooltip, Col, Row, Select } from 'antd';
+import { Card, Table, Typography, Badge, Button, Space, Tag, Form, Input, Tooltip, Col, Row, Select } from 'antd';
 import { DownOutlined, UpOutlined, CheckCircleOutlined, ClockCircleOutlined, SyncOutlined, CommentOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { data } from 'react-router-dom';
 
 const { Title, Text } = Typography;
-const { Panel } = Collapse;
 const { TextArea } = Input;
-
-// The issue is likely in the renderTableSection function
-// Let's rewrite this function to make sure it doesn't call itself recursively
 
 const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatus, reopenTicket, handleCreateChatForTicket }) => {
   const [openPanels, setOpenPanels] = useState(['pending', 'analysis', 'validation', 'reopened']);
@@ -20,7 +15,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
   const [filterSectors, setFilterSectors] = useState([]);
   const [filtersCategories, setFiltersCategories] = useState([]);
 
-  // Group data by status
   const pendingTickets = dataChamados.filter(ticket => ticket.status === 'pending');
   const analysisTickets = dataChamados.filter(ticket => ticket.status === 'analysis');
   const validationTickets = dataChamados.filter(ticket => ticket.status === 'validation');
@@ -373,9 +367,28 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       <Row gutter={16}>
         <Col span={12}>
           <Space direction="vertical">
+          <div>
+                <Text strong>ID:</Text> {record.id}
+              </div>
+
             <div style={{ maxWidth: '400px', wordBreak: 'anywhere', }}>
               <Text strong>Descrição:</Text> {record.descricao}
             </div>
+
+            {record.anexos && record.anexos.length > 0 && (
+              <div style={{ maxHeight: '400px', overflowY: 'scroll' }}>
+                <Text strong>Anexos:</Text>
+                <ul style={{ listStyleType: 'none', padding: 0 }}>
+                  {record.anexos.map((anexo, index) => (
+                    <li key={index}>
+                      <a href={anexo} target="_blank" rel="noopener noreferrer">
+                        <img loading='lazy' src={anexo}  style={{ width: '90%', height: 'auto' }} alt={`Anexo ${index + 1}`} />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {record.status === 'analysis' && record.timestampAnalise && (
               <div>
@@ -487,7 +500,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
         </Space>
       </Row>
       
-      {/* Answer form inside expanded row */}
       <Row style={{ marginTop: 16, width: '100%' }} gutter={16}>
         {(record.status === 'analysis' || record.status === 'validation' || record.status === 'reopened') && answerForms[record.id] && (
           <Card
@@ -543,7 +555,6 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
           </Card>
         )}
         
-        {/* Reopen form inside expanded row */}
         {record.status === 'closed' && reopenForm[record.id] && (
           <Card
             title="Reabrir Chamado"

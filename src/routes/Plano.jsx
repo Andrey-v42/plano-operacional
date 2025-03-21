@@ -3463,7 +3463,7 @@ const Plano = () => {
                                                         <span>Adicionar<br />Equipamento</span>
                                                     </>
                                                 ) : (
-                                                    <Flex vertical style={{ width: '100%' }}>
+                                                    <Flex vertical style={{ width: '100%' }} onClick={(e) => e.stopPropagation()}>
                                                         <Select
                                                             placeholder="Tipo de Equipamento"
                                                             style={{ width: '100%', marginBottom: '8px' }}
