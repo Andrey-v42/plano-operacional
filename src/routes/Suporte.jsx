@@ -615,29 +615,29 @@ const Suporte = () => {
                         const data = await response.json();
                         doc.data.categoriaPDV = data.CATEGORIA
                     }
-                }
-                return {
-                    key: doc.id,
-                    id: doc.id,
-                    solicitante: doc.data.solicitante,
-                    categoria: doc.data.categoria,
-                    status: doc.data.status,
-                    timestampAberto: doc.data.timestampAberto,
-                    urgencia: doc.data.urgencia,
-                    ponto: doc.data.ponto,
-                    modelo: doc.data.modelo,
-                    descricao: doc.data.descricao,
-                    resposta: doc.data.resposta || '',
-                    anexos: doc.data.anexos || [],
-                    timestampResposta: doc.data.timestampResposta || '',
-                    timestampAnalise: doc.data.timestampAnalise || '',
-                    userId: doc.data.userId || '',
-                    setor: doc.data.setor || '',
-                    atendente: doc.data.atendente || null,
-                    timestampValidacao: doc.data.timestampValidacao || '',
-                    timestampReaberto: doc.data.timestampReaberto || '',
-                    classificacao: doc.data.classificacao || '',
-                    categoriaPDV: doc.data.categoriaPDV || 'N/A',
+                    return {
+                        key: doc.id,
+                        id: doc.id,
+                        solicitante: doc.data.solicitante,
+                        categoria: doc.data.categoria,
+                        status: doc.data.status,
+                        timestampAberto: doc.data.timestampAberto,
+                        urgencia: doc.data.urgencia,
+                        ponto: doc.data.ponto,
+                        modelo: doc.data.modelo,
+                        descricao: doc.data.descricao,
+                        resposta: doc.data.resposta || '',
+                        anexos: doc.data.anexos || [],
+                        timestampResposta: doc.data.timestampResposta || '',
+                        timestampAnalise: doc.data.timestampAnalise || '',
+                        userId: doc.data.userId || '',
+                        setor: doc.data.setor || '',
+                        atendente: doc.data.atendente || null,
+                        timestampValidacao: doc.data.timestampValidacao || '',
+                        timestampReaberto: doc.data.timestampReaberto || '',
+                        classificacao: doc.data.classificacao || '',
+                        categoriaPDV: doc.data.categoriaPDV || 'N/A',
+                    }
                 }
             }
             ));
