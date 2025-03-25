@@ -532,7 +532,7 @@ const Fechamento = () => {
                     const responseFechamento = await fetch(`https://api.clickup.com/api/v2/task/${jsonEvento.taskId}/attachment`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': "pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ",
+                            'Authorization': "pk_55187515_WQ6SMNQ94QIX2ZPPTY97F4DRQ1DOC9R6",
                         },
                         body: formData
                     });
@@ -546,7 +546,7 @@ const Fechamento = () => {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/JSON',
-                                'Authorization': "pk_89229936_3NFZ3NSHS6PQ4JOXR6P3YDVI0R0BTCWE",
+                                'Authorization': "pk_55187515_WQ6SMNQ94QIX2ZPPTY97F4DRQ1DOC9R6",
                             },
                             body: JSON.stringify({
                                 value: JSON.stringify({ value: relatorioOcorrencias.relatorio })

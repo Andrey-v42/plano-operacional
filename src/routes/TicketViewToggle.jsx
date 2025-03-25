@@ -4,25 +4,23 @@ import { TableOutlined, AppstoreOutlined, ReloadOutlined } from '@ant-design/ico
 import TaskBoard from './TaskBoard';
 import KanbanBoard from './KanbanBoard';
 
-const TicketViewToggle = ({ 
-  dataChamados, 
-  fetchChamados, 
-  handleAnswerClick, 
-  changeStatus, 
-  reopenTicket, 
-  handleCreateChatForTicket 
+const TicketViewToggle = ({
+  dataChamados,
+  fetchChamados,
+  handleAnswerClick,
+  changeStatus,
+  reopenTicket,
+  handleCreateChatForTicket
 }) => {
-  const [viewType, setViewType] = useState('table'); // 'table' or 'kanban'
+  const [viewType, setViewType] = useState('table');
 
   const handleViewChange = (e) => {
     const newView = e.target.value;
     setViewType(newView);
-    
-    // Save preference to localStorage
+
     localStorage.setItem('ticketViewPreference', newView);
   };
 
-  // Initialize view type from localStorage if available
   React.useEffect(() => {
     const savedViewPreference = localStorage.getItem('ticketViewPreference');
     if (savedViewPreference) {
@@ -38,8 +36,8 @@ const TicketViewToggle = ({
         bodyStyle={{ padding: '12px' }}
       >
         <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-          <Radio.Group 
-            value={viewType} 
+          <Radio.Group
+            value={viewType}
             onChange={handleViewChange}
             buttonStyle="solid"
           >
@@ -50,10 +48,10 @@ const TicketViewToggle = ({
               <AppstoreOutlined /> Kanban
             </Radio.Button>
           </Radio.Group>
-          
-          <Button 
-            type="primary" 
-            icon={<ReloadOutlined />} 
+
+          <Button
+            type="primary"
+            icon={<ReloadOutlined />}
             onClick={fetchChamados}
           >
             Atualizar

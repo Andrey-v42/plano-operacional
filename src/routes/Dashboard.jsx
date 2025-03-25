@@ -111,9 +111,9 @@ const Dashboard = ({ dataChamados, pipeId }) => {
 
     // Convert to array, sort by count in descending order, and take top 5
     return Object.keys(categoriaPDVCounts)
-      .map(category => ({ 
-        category, 
-        count: categoriaPDVCounts[category] 
+      .map(category => ({
+        category,
+        count: categoriaPDVCounts[category]
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
@@ -468,15 +468,23 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         }
       }
 
-      if (item.timestampAnalise && item.timestampValidacao) {
+      if (item.timestampAnalise) {
         let analysisTime = 0;
+        let endTimeForAnalysis;
 
-        if (item.timestampValidacao > item.timestampAnalise) {
-          analysisTime = item.timestampValidacao - item.timestampAnalise;
+        if (item.timestampValidacao && item.timestampValidacao > item.timestampAnalise) {
+          endTimeForAnalysis = item.timestampValidacao;
+        }
+        else if (item.timestampResposta && item.timestampResposta > item.timestampAnalise) {
+          endTimeForAnalysis = item.timestampResposta;
+        }
+
+        if (endTimeForAnalysis) {
+          analysisTime = endTimeForAnalysis - item.timestampAnalise;
           analysisTimeSum += analysisTime;
           analysisCount++;
         } else {
-          invalidAnalysisTimeOrder++;
+          missingAnalysisTime++;
         }
       } else {
         missingAnalysisTime++;
@@ -564,7 +572,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
     let avgValidationTime = validationCount > 0 ? validationTimeSum / validationCount / (1000 * 60) : 0;
     let avgReopeningResponseTime = reopeningCount > 0 ? reopeningTimeSum / reopeningCount / (1000 * 60) : 0;
     let avgResolutionTime = resolutionCount > 0 ? resolutionTimes / resolutionCount / (1000 * 60) : 0;
-
+    console.log(avgAnalysisTime);
     return {
       totalTickets,
       openTickets,
@@ -578,6 +586,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       avgReopeningResponseTime: avgReopeningResponseTime.toFixed(1),
       avgResolutionTime: avgResolutionTime.toFixed(1)
     };
+
   };
 
   const metrics = calculateMetrics();
@@ -766,9 +775,9 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           <Text type="secondary">Visualize estatísticas e tendências dos chamados de suporte</Text>
         </Col>
         <Col span={4}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4rem' }}>
-          <FilterOutlined style={{ fontSize: '24px', cursor: 'pointer' }} onClick={toggleFilter} />
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4rem' }}>
+            <FilterOutlined style={{ fontSize: '24px', cursor: 'pointer' }} onClick={toggleFilter} />
+          </div>
         </Col>
       </Row>
 
@@ -1191,13 +1200,13 @@ const Dashboard = ({ dataChamados, pipeId }) => {
                     );
                   }}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value, name, props) => [value, 'Chamados']}
-                  labelFormatter={(value) => [`Categoria PDV: ${value}`]} 
+                  labelFormatter={(value) => [`Categoria PDV: ${value}`]}
                 />
-                <Bar 
-                  dataKey="count" 
-                  name="Chamados" 
+                <Bar
+                  dataKey="count"
+                  name="Chamados"
                   fill="#1890ff"
                 >
                   {categoriaPDVData.map((entry, index) => (

@@ -180,7 +180,7 @@ const Ponto = () => {
 
     useEffect(() => {
         const getLocation = () => {
-            if (navigator.geolocation) {
+            if (true == true) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const { latitude, longitude } = position.coords;
@@ -304,27 +304,80 @@ const Ponto = () => {
     const registrarPonto = async (values) => {
         if (location === null) {
             openNotificationFailure('Erro ao registrar local. Por favor, ative o serviço de localização do dispositivo ou permita o acesso.')
-            return
+            return;
         }
-
+    
         try {
-            setButtonLoading(true)
-            const formData = {
-                nome: localStorage.getItem('currentUser'),
-                [`localizacao_${values.operacao}`]: [location.latitude, location.longitude],
-                funcao: values.funcao
+            setButtonLoading(true);
+            
+            // First, check if the user has any existing records and if the last one has a registered exit
+            const currentUser = localStorage.getItem('currentUser');
+            const checkResponse = await fetch(
+                'https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/controlePonto` }),
+                }
+            );
+    
+            const checkResult = await checkResponse.json();
+            
+            // Filter records for the current user
+            const userRecords = checkResult.docs
+                .filter(doc => doc.data.nome === currentUser)
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data
+                }));
+            
+            // Sort by most recent first (using the same sorting logic as in mapAndSortPontoData)
+            userRecords.sort((a, b) => {
+                const timestampA = getLatestTimestamp(a);
+                const timestampB = getLatestTimestamp(b);
+                return timestampB - timestampA; // Descending order
+            });
+            
+            // Check if the user has records and if the last one doesn't have a registered exit
+            if (userRecords.length > 0) {
+                const lastRecord = userRecords[0];
+                
+                // Check if the last record doesn't have a saida (exit) value or if it's a placeholder
+                if (!lastRecord.saida || lastRecord.saida === '+' || lastRecord.saida === '-') {
+                    setButtonLoading(false);
+                    openNotificationFailure('Você precisa registrar sua saída no último ponto antes de criar um novo registro.');
+                    return;
+                }
             }
-
+            
+            // If we get here, the user can create a new record
+            let formData = {};
+            if (location === null) {
+                formData = {
+                    nome: currentUser,
+                    [`localizacao_${values.operacao}`]: [0, 0],
+                    funcao: values.funcao
+                };
+            } else {
+                formData = {
+                    nome: currentUser,
+                    [`localizacao_${values.operacao}`]: [location.latitude, location.longitude],
+                    funcao: values.funcao
+                };
+            }
+    
             const now = new Date();
             const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
             const currentTimeString = now.toLocaleDateString('pt-BR', options) + ' ' + now.toLocaleTimeString('pt-BR');
-
+    
             if (values.operacao == 'retirada') {
-                formData.retirada = currentTimeString
+                formData.retirada = currentTimeString;
             } else {
-                formData.entrada = currentTimeString
+                formData.entrada = currentTimeString;
             }
-
+    
             const responseRegistro = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
                 method: 'POST',
                 headers: {
@@ -332,11 +385,13 @@ const Ponto = () => {
                 },
                 body: JSON.stringify({ collectionURL: `pipe/pipeId_${pipeId}/controlePonto`, formData }),
             });
-
+    
             if (responseRegistro.ok) {
-                openNotificationSucess('Ponto registrado com sucesso!')
-                setDrawerVisible(false)
-                setTableLoading(true)
+                openNotificationSucess('Ponto registrado com sucesso!');
+                setDrawerVisible(false);
+                setTableLoading(true);
+                
+                // Refresh the data
                 const response = await fetch(
                     'https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder',
                     {
@@ -347,16 +402,16 @@ const Ponto = () => {
                         body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/controlePonto` }),
                     }
                 );
-
+    
                 const result = await response.json();
-
-                const dataPonto = mapAndSortPontoData(result)
-
-                setButtonLoading(false)
+                const dataPonto = mapAndSortPontoData(result);
+    
+                setButtonLoading(false);
                 setDocs(dataPonto);
-                setTableLoading(false)
+                setTableLoading(false);
             }
         } catch (error) {
+            setButtonLoading(false);
             openNotificationFailure('Erro ao registrar ponto: ' + error);
         }
     }

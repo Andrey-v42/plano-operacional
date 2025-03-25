@@ -1,0 +1,235 @@
+/* NotificationSetup Component Styles */
+
+.notification-setup {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    margin: 10px 0;
+    position: relative;
+  }
+  
+  /* Debug toggle button */
+  .debug-toggle {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.7;
+    z-index: 100;
+  }
+  
+  .debug-toggle:hover {
+    opacity: 1;
+  }
+  
+  /* iOS specific styles */
+  .notification-setup.ios-mode {
+    max-width: 500px;
+    margin: 15px auto;
+    padding: 10px;
+  }
+  
+  /* Notification prompt container */
+  .notification-prompt {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .notification-prompt h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 18px;
+  }
+  
+  .notification-prompt p {
+    margin-bottom: 20px;
+    color: #666;
+    font-size: 14px;
+  }
+  
+  /* Enable notifications button */
+  .enable-notifications-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .enable-notifications-btn:hover {
+    background-color: #0069d9;
+  }
+  
+  .enable-notifications-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+  /* Loading state */
+  .notification-loading {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .notification-loading::before {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #6c757d;
+    border-radius: 50%;
+    border-top-color: transparent;
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Error notification */
+  .notification-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  
+  /* Success notification */
+  .notification-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  
+  /* Close button for notifications */
+  .notification-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+  }
+  
+  .notification-close:hover {
+    opacity: 1;
+  }
+  
+  /* Debug information section */
+  .notification-debug {
+    margin-top: 10px;
+  }
+  
+  .notification-debug pre {
+    white-space: pre-wrap;
+    font-size: 12px;
+    max-height: 120px;
+    overflow: auto;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  /* Toggle debug button */
+  .toggle-debug-btn {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    margin-top: 8px;
+    cursor: pointer;
+    display: block;
+  }
+  
+  .toggle-debug-btn:hover {
+    background-color: #5a6268;
+  }
+  
+  /* Debug details styling (for non-iOS) */
+  .notification-debug-details {
+    margin-top: 10px;
+  }
+  
+  .notification-debug-details summary {
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 14px;
+    user-select: none;
+  }
+  
+  .notification-debug-details summary:hover {
+    color: #495057;
+  }
+  
+  .notification-debug-details pre {
+    margin-top: 5px;
+    white-space: pre-wrap;
+    font-size: 12px;
+    max-height: 120px;
+    overflow: auto;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  /* iOS installation banner */
+  .notification-banner {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  
+  .notification-banner h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 16px;
+  }
+  
+  .notification-banner p {
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+  
+  /* Safari specific styles */
+  .notification-setup.safari-mode {
+    max-width: 500px;
+    margin: 15px auto;
+  }

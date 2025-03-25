@@ -286,12 +286,12 @@ const KanbanBoard = ({
             </div>
 
             <Space style={{ marginBottom: '12px' }}>
-              {ticket.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc') && (
+              {ticket.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
                 <Button type="primary" size="small" onClick={(e) => { e.stopPropagation(); changeStatus(ticket.id); }}>
                   Abrir Ticket
                 </Button>
               )}
-              {ticket.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc') && (
+              {ticket.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
                 <Button
                   type="primary"
                   size="small"
@@ -300,7 +300,7 @@ const KanbanBoard = ({
                   Enviar para Validação
                 </Button>
               )}
-              {ticket.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc') && (
+              {ticket.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
                 <Button
                   type="primary"
                   size="small"
@@ -309,7 +309,7 @@ const KanbanBoard = ({
                   Iniciar Análise
                 </Button>
               )}
-              {(ticket.status === 'validation' || ticket.status === 'analysis' || ticket.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc') && (
+              {(ticket.status === 'validation' || ticket.status === 'analysis' || ticket.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
                 <Button
                   type="primary"
                   size="small"
@@ -328,7 +328,7 @@ const KanbanBoard = ({
                   Reabrir Chamado
                 </Button>
               )}
-              {ticket.status !== 'closed' && (currentUser === ticket.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc') && (
+              {ticket.status !== 'closed' && (currentUser === ticket.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
                 <Button
                   type="default"
                   size="small"

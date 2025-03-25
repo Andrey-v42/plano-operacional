@@ -41,7 +41,7 @@ const Login = () => {
         let adminPrivilege = false
         if (response.status === 200) {
             const data = await response.json()
-            if (data.permission != 'admin' && data.permission != 'config' && data.permission != 'get' && data.permission != 'controle') {
+            if (data.permission != 'admin' && data.permission != 'planner' && data.permission != 'config' && data.permission != 'get' && data.permission != 'controle') {
                 const responseEvento = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
                     method: 'POST',
                     headers: {
@@ -51,7 +51,7 @@ const Login = () => {
                 })
                 const dataEvento = await responseEvento.json()
                 for (const equipe of dataEvento.equipeEscalada) {
-                    if (equipe.nome == data.user) {
+                    if (equipe.nome.trim().toLowerCase() == data.user.trim().toLowerCase()) {
                         usuarioEscalado = true
                         permissionEvento = equipe.funcao
                     }

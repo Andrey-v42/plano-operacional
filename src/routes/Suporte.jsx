@@ -154,7 +154,8 @@ const Suporte = () => {
         { value: 'Recargas expiradas', label: 'Recargas expiradas' },
         { value: 'Zig Tag Cheio', label: 'Zig Tag Cheio' },
         { value: 'Queima de Ficha', label: 'Queima de Ficha' },
-        { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' }
+        { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' },
+        { value: 'Cartão de senhas', label: 'Cartão de senhas' }
     ];
 
     const optionsTerminal = [
@@ -196,7 +197,7 @@ const Suporte = () => {
         const dataUsersArray = dataUsers.docs.map(doc => ({ id: doc.id, permission: doc.data.permission, name: doc.data.username, tokens: doc.data.tokens || [] }));
 
         for (const user of dataUsersArray) {
-            if (dataEvento.equipeEscalada.some(item => (item.funcao == 'Head' && item.nome === user.name) || (item.funcao == 'C-CCO' && item.nome === user.name) || (user.permission === 'admin'))) {
+            if (dataEvento.equipeEscalada.some(item => (item.funcao == 'Head' && item.nome === user.name) || (item.funcao == 'C-CCO' && item.nome === user.name) || (user.permission === 'admin') || (user.permission === 'planner'))) {
                 if (user.tokens.length > 0) {
                     try {
                         await fetch('https://us-central1-zops-mobile.cloudfunctions.net/sendNotification', {
@@ -356,6 +357,20 @@ const Suporte = () => {
         }
     };
 
+    function generateRandomString(length = 30) {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const charactersLength = characters.length;
+
+        let result = '';
+
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charactersLength);
+            result += characters.charAt(randomIndex);
+        }
+
+        return result;
+    }
+
     const enviarChamado = async (values) => {
         if (values.categoria && values.ponto && values.modelo && values.descricao && values.setor) {
             setButtonChamadoLoading(true);
@@ -370,7 +385,7 @@ const Suporte = () => {
                                 "Content-Type": 'application/JSON'
                             },
                             body: JSON.stringify({
-                                fileName: file.name,
+                                fileName: generateRandomString(),
                                 mimeType: file.type,
                                 filePath: `pipe/pipeId_${pipeId}/chamados/${currentUser}`,
                                 fileData: fileBase64[1]
@@ -598,7 +613,7 @@ const Suporte = () => {
             data = data.docs;
             let chamados = await Promise.all(data.map(async (doc) => {
                 doc.data.categoriaPDV = 'N/A'
-                if (currentUser !== doc.data.solicitante && permission !== 'admin' && permission !== 'ecc' && permissionEvento !== 'C-CCO' && permissionEvento !== 'Head') {
+                if (currentUser !== doc.data.solicitante && permission !== 'admin' && permission !== 'ecc' && permission !== 'planner' && permissionEvento !== 'C-CCO' && permissionEvento !== 'Head') {
                     return null;
                 } else {
                     if (doc.data.ponto != 'N/A') {

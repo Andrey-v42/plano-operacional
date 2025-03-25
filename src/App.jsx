@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NotificationSetup from './routes/NotificationSetup';
 
 import {
     MenuFoldOutlined,
@@ -30,7 +31,6 @@ import Suporte from './routes/Suporte';
 import Estoque from './routes/Estoque';
 import { messaging, generateToken } from '../firebaseConfig';
 import { onMessage } from 'firebase/messaging';
-import Analytics from './routes/Analytics';
 
 function NotFound() {
     return <div>Page not found</div>;
@@ -60,70 +60,66 @@ const App = () => {
     useEffect(() => {
         const getAuthentication = async () => {
             const authStatus = JSON.parse(localStorage.getItem('isAuthenticated'));
-
+    
             if (!authStatus || !authStatus.value || !authStatus.expirationDate) {
                 navigate(`/login?pipeId=${pipeId}`);
                 return;
             }
-
+    
             const isValid = authStatus.value === 'true' && authStatus.expirationDate >= new Date().getTime();
-
+    
             if (isValid) {
                 setIsAuthenticated(true);
+                // await requestPermission();
+                // await registerServiceWorker();
+                setPermissionRequested(true);
             } else {
                 localStorage.removeItem('isAuthenticated');
                 navigate(`/login?pipeId=${pipeId}`);
             }
         }
-
+    
         const saveToken = async (token) => {
             try {
                 const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/saveToken', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         collectionName: `users`,
                         docId: localStorage.getItem('userId'),
                         token: token
                     })
-                })
-
-                if (response.ok) {
-                    console.log('Token saved succesfully')
-                }
+                });
+                if (response.ok) console.log('Token saved successfully');
             } catch (error) {
-                console.error('Error saving token:', error)
+                console.error('Error saving token:', error);
             }
         }
-
+    
         const registerServiceWorker = async () => {
             if ("serviceWorker" in navigator) {
-              try {
-                const swPath = `/firebase-messaging-sw.js`;
-                const registration = await navigator.serviceWorker.register(swPath);
-                console.log("Service Worker registered at:", swPath);
-              } catch (error) {
-                console.error("Error registering Service Worker:", error);
-              }
+                try {
+                    const swPath = `/firebase-messaging-sw.js`;
+                    const registration = await navigator.serviceWorker.register(swPath);
+                    console.log("Service Worker registered at:", swPath);
+                } catch (error) {
+                    console.error("Error registering Service Worker:", error);
+                }
             }
-          };
-
+        };
+    
         const requestPermission = async () => {
-            const token = await generateToken()
-            await saveToken(token)
+            const token = await generateToken();
+            await saveToken(token);
         }
-
-        getAuthentication()
-        if(isAuthenticated == true && permissionRequested == false) {
-            requestPermission()
-            registerServiceWorker()
-            setPermissionRequested(true)
-        }
-    }, [navigate])
+    
+        console.log('useEffect is running');
+        getAuthentication();
+    }, []);
 
     return (
+        <>
+        <NotificationSetup />
         <Layout style={{ minHeight: '100vh' }}>
             <Sider
                 trigger={null}
@@ -234,17 +230,6 @@ const App = () => {
                             },
 
                         },
-                        {
-                            key: '9',
-                            icon: <BarChartOutlined />,
-                            label: 'Analytics',
-                            onClick: () => {
-                                setSelectedKey(['9'])
-                                localStorage.setItem("selectedKey", "9")
-                                navigate(`/analytics?pipeId=${pipeId}`);
-                                setCollapsed(true)
-                            }
-                        }
                     ]}
                 />
             </Sider>
@@ -295,7 +280,6 @@ const App = () => {
                         <Route path="/cronometro" element={<Cronometro />} />
                         <Route path="/suporte" element={<Suporte />} />
                         <Route path="/estoque" element={<Estoque />} />
-                        <Route path="/analytics" element={<Analytics />} />
                         <Route path="/" element={<Login />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
@@ -303,6 +287,7 @@ const App = () => {
                 </Content>
             </Layout>
         </Layout>
+        </>
     );
 };
 export default App;
