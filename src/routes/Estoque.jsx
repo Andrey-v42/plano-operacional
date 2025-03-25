@@ -18,11 +18,11 @@ import GestaoAtivos from "./components/GestaoInventario/GestaoAtivos";
 import CadastroAtivos from "./components/GestaoInventario/CadastroAtivos";
 import CadastroMassaAtivos from "./components/GestaoInventario/CadastroMassaAtivos";
 import MovimentacaoEstoque from "./components/GestaoInventario/MovimentacaoEstoque";
+import MovementReasonModal from "./components/GestaoInventario/MovementReasonModal";
 
 // Importar modal e outros componentes
 import HistoryModal from "./components/GestaoInventario/HistoryModal";
 
-const { TabPane } = Tabs;
 const { Title } = Typography;
 
 const GestaoInventario = () => {
@@ -174,58 +174,74 @@ const GestaoInventario = () => {
     fetchAssets();
   }, []);
 
+  // Tabs items configuration
+  const tabItems = [
+    {
+      key: "1",
+      label: "Dashboard",
+      children: (
+        <Dashboard 
+          assets={assets} 
+          filteredAssets={filteredAssets} 
+        />
+      )
+    },
+    {
+      key: "2",
+      label: "Gestão de Ativos",
+      children: (
+        <GestaoAtivos 
+          assets={assets}
+          filteredAssets={filteredAssets}
+          setFilteredAssets={setFilteredAssets}
+          loadingAssets={loadingAssets}
+          showAssetHistory={showAssetHistory}
+        />
+      )
+    },
+    {
+      key: "3",
+      label: "Cadastro de Ativos",
+      children: (
+        <div style={{ padding: "20px 0" }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={4}>Selecione o modo de cadastro:</Title>
+            <Radio.Group 
+              value={cadastroMode} 
+              onChange={(e) => setCadastroMode(e.target.value)}
+              buttonStyle="solid"
+            >
+              <Radio.Button value="individual">Cadastro Individual</Radio.Button>
+              <Radio.Button value="massa">Cadastro em Massa</Radio.Button>
+            </Radio.Group>
+            <Divider />
+            {renderCadastroComponent()}
+          </Space>
+        </div>
+      )
+    },
+    {
+      key: "4",
+      label: "Movimentação de Estoque",
+      children: (
+        <MovimentacaoEstoque 
+          assets={assets}
+          openNotificationSucess={openNotificationSucess}
+          showAssetHistory={showAssetHistory}
+        />
+      )
+    }
+  ];
+
   return (
     <div style={{ padding: "20px", width: "100%" }}>
       {contextHolder}
 
       <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        type="card"
-        style={{ marginBottom: "20px"}}
-      >
-        <TabPane tab="Dashboard" key="1" style={{ padding: "20px", }}>
-          <Dashboard 
-            assets={assets} 
-            filteredAssets={filteredAssets} 
-          />
-        </TabPane>
-
-        <TabPane tab="Gestão de Ativos" key="2">
-          <GestaoAtivos 
-            assets={assets}
-            filteredAssets={filteredAssets}
-            setFilteredAssets={setFilteredAssets}
-            loadingAssets={loadingAssets}
-            showAssetHistory={showAssetHistory}
-          />
-        </TabPane>
-
-        <TabPane tab="Cadastro de Ativos" key="3">
-          <div style={{ padding: "20px 0" }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Title level={4}>Selecione o modo de cadastro:</Title>
-              <Radio.Group 
-                value={cadastroMode} 
-                onChange={(e) => setCadastroMode(e.target.value)}
-                buttonStyle="solid"
-              >
-                <Radio.Button value="individual">Cadastro Individual</Radio.Button>
-                <Radio.Button value="massa">Cadastro em Massa</Radio.Button>
-              </Radio.Group>
-              <Divider />
-              {renderCadastroComponent()}
-            </Space>
-          </div>
-        </TabPane>
-
-        <TabPane tab="Movimentação de Estoque" key="4">
-          <MovimentacaoEstoque 
-            assets={assets}
-            openNotificationSucess={openNotificationSucess}
-          />
-        </TabPane>
-      </Tabs>
+        defaultActiveKey="1"
+        items={tabItems}
+        style={{ marginBottom: "20px" }}
+      />
 
       {/* Modal de histórico */}
       <HistoryModal 
