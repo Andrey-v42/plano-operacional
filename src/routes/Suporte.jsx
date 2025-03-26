@@ -83,7 +83,8 @@ const Suporte = () => {
                         text: doc.data.text,
                         sender: doc.data.sender,
                         timestamp: doc.data.timestamp,
-                        isCurrentUser: doc.data.sender === currentUser
+                        isCurrentUser: doc.data.sender === currentUser,
+                        attachments: doc.data.attachments || []
                     }))
                     .sort((a, b) => a.timestamp - b.timestamp);
 

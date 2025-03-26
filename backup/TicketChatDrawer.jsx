@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Drawer, Input, Button, List, Avatar, Typography, Spin, Divider, Empty, Alert, Upload } from 'antd';
-import { SendOutlined, UserOutlined, CustomerServiceOutlined, UploadOutlined } from '@ant-design/icons';
+import { Drawer, Input, Button, List, Avatar, Typography, Spin, Divider, Empty, Alert } from 'antd';
+import { SendOutlined, UserOutlined, CustomerServiceOutlined } from '@ant-design/icons';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -14,7 +14,6 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
   const currentUser = localStorage.getItem('currentUser');
   const permission = localStorage.getItem('permission');
   const permissionEvento = localStorage.getItem('permissionEvento');
-  const [fileList, setFileList] = useState([]);
 
   useEffect(() => {
     // Declare the interval variable
@@ -36,7 +35,7 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
   }, [visible]);
 
   // Scroll to bottom whenever messages change
-
+  
   useEffect(() => {
     if (messageListRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
@@ -128,7 +127,7 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
   }
 
   const sendMessage = async () => {
-    if ((!newMessage.trim() && fileList.length === 0) || !ticketId || !pipeId) return;
+    if (!newMessage.trim() || !ticketId || !pipeId) return;
 
     setSending(true);
     setError(null);
@@ -138,40 +137,8 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
         text: newMessage,
         sender: currentUser,
         timestamp: new Date().getTime(),
-        read: false,
-        attachments: []
+        read: false
       };
-
-      // Upload attachments if any
-      if (fileList.length > 0) {
-        try {
-          for (const file of fileList) {
-            const fileBase64 = await fileToBase64(file.originFileObj);
-            const responseFileUpload = await fetch('https://us-central1-zops-mobile.cloudfunctions.net/uploadFile', {
-              method: 'POST',
-              headers: {
-                "Content-Type": 'application/JSON'
-              },
-              body: JSON.stringify({
-                fileName: generateRandomString(),
-                mimeType: file.type,
-                filePath: `pipe/pipeId_${pipeId}/chamados/${ticketId}/chat`,
-                fileData: fileBase64[1]
-              })
-            });
-
-            const dataFile = await responseFileUpload.json();
-            messageData.attachments.push({
-              url: dataFile.url,
-              name: file.name,
-              type: file.type
-            });
-          }
-        } catch (error) {
-          console.error('Error uploading files:', error);
-          setError('Erro ao enviar anexos. Tente novamente.');
-        }
-      }
 
       const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/addDoc', {
         method: 'POST',
@@ -186,14 +153,14 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
 
       if (response.ok) {
         setNewMessage('');
-        setFileList([]);
+        // setNewMessageSent(true)
         fetchMessages(ticketId);
         if (permissionEvento !== 'C-CCO' && permissionEvento !== 'Head' && permission !== 'admin') {
-          await sendNotificationSupport(newMessage);
-          console.log('Notificação enviada para o suporte');
+          await sendNotificationSupport(newMessage)
+          console.log('Notificação enviada para o suporte')
         } else {
-          console.log('Notificação enviada para o solicitante');
-          await sendNotificationSolicitante(newMessage);
+          console.log('Notificação enviada para o solicitante')
+          await sendNotificationSolicitante(newMessage)
         }
       } else {
         setError('Não foi possível enviar a mensagem. Tente novamente.');
@@ -211,30 +178,6 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
       e.preventDefault();
       sendMessage();
     }
-  };
-
-  const handleFileChange = ({ fileList: newFileList }) => {
-    setFileList(newFileList);
-  };
-
-  function generateRandomString(length = 30) {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const charactersLength = characters.length;
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charactersLength);
-      result += characters.charAt(randomIndex);
-    }
-    return result;
-  }
-
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result.split(','));
-      reader.onerror = error => reject(error);
-    });
   };
 
   return (
@@ -308,55 +251,6 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
                   <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                     {message.text}
                   </div>
-
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div style={{ marginTop: '8px' }}>
-                      {message.attachments.map((attachment, index) => (
-                        <div key={index} style={{ marginTop: '4px' }}>
-                          {attachment.type.startsWith('image/') ? (
-                            <div style={{ marginBottom: '8px' }}>
-                              <img
-                                src={attachment.url}
-                                alt={attachment.name || `Anexo ${index + 1}`}
-                                style={{
-                                  maxWidth: '100%',
-                                  maxHeight: '200px',
-                                  borderRadius: '4px',
-                                  border: '1px solid #e8e8e8'
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <a
-                              href={attachment.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '6px 10px',
-                                backgroundColor: message.isCurrentUser ? '#0076e4' : '#f0f0f0',
-                                color: message.isCurrentUser ? '#fff' : '#000',
-                                borderRadius: '4px',
-                                textDecoration: 'none'
-                              }}
-                            >
-                              <FileOutlined style={{ marginRight: '6px' }} />
-                              <span style={{
-                                maxWidth: '150px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {attachment.name || `Anexo ${index + 1}`}
-                              </span>
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
                   <div style={{ fontSize: '11px', marginTop: '6px', opacity: 0.7, textAlign: 'right' }}>
                     {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
@@ -377,31 +271,16 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
           disabled={sending}
           style={{ marginBottom: '10px', borderRadius: '8px' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Upload
-            fileList={fileList}
-            beforeUpload={Upload.LIST_IGNORE}
-            onChange={handleFileChange}
-            accept="image/*,.pdf,.doc,.docx,.xlsx"
-            multiple
-            showUploadList={{ showPreviewIcon: false }}
-            disabled={sending}
-          >
-            <Button icon={<UploadOutlined />} disabled={sending}>
-              Anexar
-            </Button>
-          </Upload>
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            loading={sending}
-            onClick={sendMessage}
-            disabled={!newMessage.trim() && fileList.length === 0}
-            style={{ borderRadius: '8px' }}
-          >
-            Enviar
-          </Button>
-        </div>
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          loading={sending}
+          onClick={sendMessage}
+          disabled={!newMessage.trim()}
+          style={{ borderRadius: '8px', float: 'right' }}
+        >
+          Enviar
+        </Button>
       </div>
     </Drawer>
   );
