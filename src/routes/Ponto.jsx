@@ -6,12 +6,12 @@ import { Table, Button, Flex, Drawer, Breadcrumb, notification, Form, Select } f
 import { SmileOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
 const Ponto = () => {
-    const [searchParams] = useSearchParams();
-    const pipeId = searchParams.get('pipeId');
-    const [docs, setDocs] = useState([]);
-    const [modalPonto, setModalPonto] = useState(false);
-    const [location, setLocation] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [searchParams] = useSearchParams()
+    const pipeId = searchParams.get('pipeId')
+    const [docs, setDocs] = useState([])
+    const [modalPonto, setModalPonto] = useState(false)
+    const [location, setLocation] = useState(null)
+    const [loading, setLoading] = useState(false)
     const [tableLoading, setTableLoading] = useState(false)
     const [filtersName, setFiltersName] = useState([])
     const [filtersFunction, setFiltersFunction] = useState([])
@@ -310,7 +310,6 @@ const Ponto = () => {
         try {
             setButtonLoading(true);
             
-            // First, check if the user has any existing records and if the last one has a registered exit
             const currentUser = localStorage.getItem('currentUser');
             const checkResponse = await fetch(
                 'https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder',
@@ -322,10 +321,9 @@ const Ponto = () => {
                     body: JSON.stringify({ url: `pipe/pipeId_${pipeId}/controlePonto` }),
                 }
             );
-    
+            
             const checkResult = await checkResponse.json();
             
-            // Filter records for the current user
             const userRecords = checkResult.docs
                 .filter(doc => doc.data.nome === currentUser)
                 .map(doc => ({
@@ -333,18 +331,15 @@ const Ponto = () => {
                     ...doc.data
                 }));
             
-            // Sort by most recent first (using the same sorting logic as in mapAndSortPontoData)
             userRecords.sort((a, b) => {
                 const timestampA = getLatestTimestamp(a);
                 const timestampB = getLatestTimestamp(b);
-                return timestampB - timestampA; // Descending order
+                return timestampB - timestampA;
             });
             
-            // Check if the user has records and if the last one doesn't have a registered exit
             if (userRecords.length > 0) {
                 const lastRecord = userRecords[0];
                 
-                // Check if the last record doesn't have a saida (exit) value or if it's a placeholder
                 if (!lastRecord.saida || lastRecord.saida === '+' || lastRecord.saida === '-') {
                     setButtonLoading(false);
                     openNotificationFailure('Você precisa registrar sua saída no último ponto antes de criar um novo registro.');
@@ -352,7 +347,6 @@ const Ponto = () => {
                 }
             }
             
-            // If we get here, the user can create a new record
             let formData = {};
             if (location === null) {
                 formData = {
@@ -391,7 +385,6 @@ const Ponto = () => {
                 setDrawerVisible(false);
                 setTableLoading(true);
                 
-                // Refresh the data
                 const response = await fetch(
                     'https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder',
                     {
