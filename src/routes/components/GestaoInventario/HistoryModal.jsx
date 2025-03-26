@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Modal, 
   Card, 
@@ -9,11 +9,15 @@ import {
   Divider, 
   Button, 
   Timeline,
-  Empty
+  Empty,
+  message
 } from 'antd';
 import { 
   HistoryOutlined,
-  ImportOutlined
+  ImportOutlined,
+  ApartmentOutlined,
+  ToolOutlined,
+  CarOutlined
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -26,18 +30,44 @@ export const HistoryModal = ({
   const [currentHistoryPage, setCurrentHistoryPage] = useState(1);
   const historyPageSize = 5;
 
+  // Efeito para resetar a página quando um novo ativo é exibido
+  useEffect(() => {
+    if (isModalVisible) {
+      setCurrentHistoryPage(1);
+      
+      // Log para debug - pode ser removido em produção
+      if (currentAsset?.historico) {
+        console.log('Histórico do ativo:', currentAsset.historico);
+      } else {
+        console.log('Ativo sem histórico:', currentAsset);
+      }
+    }
+  }, [isModalVisible, currentAsset]);
+
   // Se não há ativo selecionado, não renderizar nada
   if (!currentAsset) return null;
+
+  // Garantir que o histórico existe e está ordenado (mais recente primeiro)
+  const historicoOrdenado = currentAsset.historico 
+    ? [...currentAsset.historico].sort((a, b) => {
+        // Tentar converter para objetos Date
+        const dataA = new Date(a.data.replace(/(\d+)\/(\d+)\/(\d+)/, '$3/$2/$1'));
+        const dataB = new Date(b.data.replace(/(\d+)\/(\d+)\/(\d+)/, '$3/$2/$1'));
+        
+        // Se as datas são válidas, ordenar por data (mais recente primeiro)
+        if (!isNaN(dataA) && !isNaN(dataB)) {
+          return dataB - dataA;
+        }
+        // Fallback: manter a ordem original
+        return 0;
+      })
+    : [];
 
   // Paginar o histórico
   const start = (currentHistoryPage - 1) * historyPageSize;
   const end = start + historyPageSize;
-  const paginatedHistory = currentAsset.historico 
-    ? currentAsset.historico.slice(start, end) 
-    : [];
-  const totalHistoryItems = currentAsset.historico 
-    ? currentAsset.historico.length 
-    : 0;
+  const paginatedHistory = historicoOrdenado.slice(start, end);
+  const totalHistoryItems = historicoOrdenado.length;
 
   const handleHistoryPageChange = (page) => {
     setCurrentHistoryPage(page);
@@ -45,10 +75,17 @@ export const HistoryModal = ({
 
   // Função para renderizar ícone apropriado baseado no tipo de operação
   const getTimelineIcon = (item) => {
-    if (item.motivo?.includes("Cadastro")) {
+    if (item.motivo?.toLowerCase().includes("cadastro")) {
       return <ImportOutlined style={{ color: '#1890ff' }} />;
+    } else if (item.motivo?.toLowerCase().includes("manutenção")) {
+      return <ToolOutlined style={{ color: '#faad14' }} />;
+    } else if (item.motivo?.toLowerCase().includes("filial")) {
+      return <ApartmentOutlined style={{ color: '#722ed1' }} />;
+    } else if (item.motivo?.toLowerCase().includes("os") || item.motivo?.toLowerCase().includes("evento")) {
+      return <CarOutlined style={{ color: '#eb2f96' }} />;
+    } else {
+      return <HistoryOutlined style={{ color: '#52c41a' }} />;
     }
-    return <HistoryOutlined style={{ color: '#52c41a' }} />;
   };
 
   return (
@@ -115,6 +152,11 @@ export const HistoryModal = ({
                 <p>
                   <strong>Responsável:</strong> {item.responsavel}
                 </p>
+                {item.detalhes && (
+                  <p>
+                    <strong>Detalhes:</strong> {item.detalhes}
+                  </p>
+                )}
               </Card>
             ),
           }))}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Row, 
   Col, 
@@ -42,12 +42,23 @@ const calculateAssetMetrics = (filteredAssets) => {
 };
 
 export const GestaoAtivos = ({ 
-  assets, 
+  assets,
+  setAssets, // This is causing the error when not passed
   filteredAssets, 
   setFilteredAssets, 
-  loadingAssets, 
-  showAssetHistory 
+  loadingAssets,
+  setLoadingAssets, // This may also cause an error if not passed
+  showAssetHistory,
+  pipeId
 }) => {
+  const handleSetAssets = setAssets || (() => {
+    console.warn('setAssets not provided to GestaoAtivos component');
+  });
+
+  const handleSetLoadingAssets = setLoadingAssets || (() => {
+    console.warn('setLoadingAssets not provided to GestaoAtivos component');
+  });
+
   const [modeloFilter, setModeloFilter] = useState("all");
   const [assetCategoryFilter, setAssetCategoryFilter] = useState("all");
 
@@ -113,6 +124,47 @@ export const GestaoAtivos = ({
       ),
     },
   ];
+
+  const fetchAssets = () => {
+    handleSetLoadingAssets(true);
+    
+    const requestData = {
+      url: `/ativos`
+    };
+
+    fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshotNoOrder', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Falha ao buscar ativos');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Transform the data to match component's expected structure
+        const assetsData = data.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data
+        }));
+        
+        handleSetAssets(assetsData);
+        setFilteredAssets(assetsData);
+        handleSetLoadingAssets(false);
+      })
+      .catch(error => {
+        console.error('Erro ao buscar ativos:', error);
+        handleSetLoadingAssets(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchAssets();
+  }, [pipeId]);
 
   // Lógica de filtro
   const handleAssetSearch = (value) => {

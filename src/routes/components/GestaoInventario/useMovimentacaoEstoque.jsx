@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { notification } from 'antd';
 
-export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
+const useMovimentacaoEstoque = (assets, openNotificationSucess, updateAssets) => {
   // State declarations
   const [searchResults, setSearchResults] = useState([]);
   const [targetKeys, setTargetKeys] = useState([]);
@@ -20,7 +20,16 @@ export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
   // Initialize filtered assets
   useEffect(() => {
     setFilteredAssets(assets);
-  }, [assets]);
+    
+    // Find already allocated assets for this OS
+    const initialAllocated = assets
+      .filter(asset => asset.alocacao && asset.alocacao.includes(`OS: ${pipeId}`))
+      .map(asset => asset.id.toString());
+      
+    if (initialAllocated.length > 0) {
+      setTargetKeys(initialAllocated);
+    }
+  }, [assets, pipeId]);
   
   // Filter assets by category
   const handleAssetCategoryChange = (category) => {
@@ -63,16 +72,29 @@ export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
     if (found) {
       setSearchResults([found]);
       
-      // Automatically allocate the asset
+      // Automatically allocate the asset if not already allocated
       if (!targetKeys.includes(found.id.toString())) {
         const newTargetKeys = [...targetKeys, found.id.toString()];
         setTargetKeys(newTargetKeys);
-        openNotificationSucess(`Ativo ${found.modelo} (${found.rfid}) alocado automaticamente`);
+        
+        // Automatically open movement reason modal for the found asset
+        setPendingMovement({
+          type: 'transfer',
+          keys: [found.id.toString()],
+          direction: 'to'
+        });
+        setIsMovementReasonModalVisible(true);
+      } else {
+        // Asset already allocated
+        notification.info({
+          message: 'Ativo já alocado',
+          description: `O ativo ${found.modelo} (${found.rfid}) já está alocado nesta OS`
+        });
       }
     } else {
       notification.error({
         message: 'Ativo não encontrado',
-        description: `Não foi possível encontrar um ativo com o identificador ${value}`,
+        description: `Não foi possível encontrar um ativo com o identificador ${value}`
       });
     }
   };
@@ -83,7 +105,7 @@ export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
       .filter(asset => targetKeys.includes(asset.id.toString()))
       .map(asset => ({
         key: asset.id.toString(),
-        title: `${asset.modelo} - ${asset.serialMaquina} (${asset.rfid})`,
+        title: `${asset.modelo} - ${asset.serialMaquina || 'N/A'} (${asset.rfid})`,
         description: asset.categoria
       }));
   };
@@ -126,34 +148,70 @@ export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
     
     setTargetKeys(nextTargetKeys);
 
+    // Format date for history
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+
+    // Create deep copies of assets to update
+    const assetsToUpdate = JSON.parse(JSON.stringify(assets));
+    
     // Update history for each moved asset
-    const updatedAssets = movedAssets.map(asset => {
-      // Create a new history entry
-      const newHistoryEntry = {
-        data: movementData.timestamp,
-        os: 'OS_ATUAL', // Replace with actual OS identifier
-        destino: movementData.branch || 'Movimentação Interna',
-        nomeDestino: movementData.branch || '',
-        motivo: movementData.reason === 'os' ? 'Movido para o evento (OS)' :
-                movementData.reason === 'maintenance' ? 'Manutenção na adquirente' :
-                `Movido para filial: ${movementData.branch}`,
-        responsavel: 'USUARIO_ATUAL', // Replace with actual user
-        detalhes: movementData.details || ''
-      };
+    movedAssets.forEach(movedAsset => {
+      // Find the asset in the copied array
+      const assetToUpdate = assetsToUpdate.find(asset => asset.id === movedAsset.id);
+      
+      if (assetToUpdate) {
+        // Get the appropriate reason label based on the reason code
+        const reasonLabel = 
+          movementData.reason === 'os' ? 'Movido para o evento (OS)' :
+          movementData.reason === 'maintenance' ? 'Manutenção na adquirente' :
+          movementData.reason === 'branch' ? `Movido para filial: ${movementData.branch}` :
+          'Outro';
+        
+        // Create a new history entry
+        const newHistoryEntry = {
+          data: formattedDate,
+          os: pendingMovement.direction === 'to' ? pipeId : 'N/A',
+          destino: movementData.reason === 'branch' 
+            ? movementData.branch 
+            : (pendingMovement.direction === 'to' ? `OS: ${pipeId}` : 'Estoque'),
+          nomeDestino: movementData.branch || '',
+          motivo: reasonLabel,
+          responsavel: 'Operador', // Would be replaced with actual user in a real app
+          detalhes: movementData.details || ''
+        };
 
-      // Ensure historico array exists
-      const updatedHistorico = asset.historico ? 
-        [...asset.historico, newHistoryEntry] : 
-        [newHistoryEntry];
-
-      return {
-        ...asset,
-        historico: updatedHistorico,
-        alocacao: movementData.branch || 'Movimentação Interna'
-      };
+        // Ensure historico array exists
+        if (!assetToUpdate.historico) {
+          assetToUpdate.historico = [];
+        }
+        
+        // Add new entry to the beginning to show most recent first
+        assetToUpdate.historico.unshift(newHistoryEntry);
+        
+        // Update allocation
+        if (movementData.reason === 'branch') {
+          assetToUpdate.alocacao = movementData.branch;
+        } else if (pendingMovement.direction === 'to') {
+          assetToUpdate.alocacao = `Em OS: ${pipeId}`;
+        } else {
+          assetToUpdate.alocacao = 'Estoque'; // Return to stock
+        }
+      }
     });
 
-    // Simulate API update
+    // Here you would typically call an API to update the assets
+    if (typeof updateAssets === 'function') {
+      updateAssets(assetsToUpdate);
+    }
+
+    // Show success notification
     setTimeout(() => {
       if (pendingMovement.direction === 'to') {
         openNotificationSucess(
@@ -166,11 +224,11 @@ export const useMovimentacaoEstoque = (assets, openNotificationSucess) => {
       }
 
       // Update allocated assets
-      const updatedAllocatedAssets = assets.filter((asset) =>
+      const updatedAllocatedAssets = assetsToUpdate.filter((asset) =>
         nextTargetKeys.includes(asset.id.toString())
       );
       setAllocatedAssets(updatedAllocatedAssets);
-    }, 1000);
+    }, 500);
 
     // Reset pending movement
     setPendingMovement({

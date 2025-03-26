@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Row, 
   Col, 
@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import TreeTransfer from './TreeTransfer';
 import MovementReasonModal from './MovementReasonModal';
+import HistoryModal from './HistoryModal';
 import useMovimentacaoEstoque from './useMovimentacaoEstoque';
 
 const { Search } = Input;
@@ -25,8 +26,12 @@ const { Search } = Input;
 const MovimentacaoEstoque = ({ 
   assets, 
   openNotificationSucess,
-  showAssetHistory 
+  updateAssets
 }) => {
+  // State for asset history modal
+  const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false);
+  const [currentAsset, setCurrentAsset] = useState(null);
+
   const {
     // Using hook to manage states and logic
     searchResults,
@@ -47,7 +52,19 @@ const MovimentacaoEstoque = ({
     convertAssetsToTreeData,
     handleMovementReasonConfirm,
     handleMovementReasonCancel
-  } = useMovimentacaoEstoque(assets, openNotificationSucess);
+  } = useMovimentacaoEstoque(assets, openNotificationSucess, updateAssets);
+
+  // Method to show asset history
+  const showAssetHistory = (asset) => {
+    setCurrentAsset(asset);
+    setIsHistoryModalVisible(true);
+  };
+
+  // Method to close asset history modal
+  const handleHistoryModalCancel = () => {
+    setIsHistoryModalVisible(false);
+    setCurrentAsset(null);
+  };
 
   // Method to prepare data for transfer
   const convertFilteredToTransferData = () => {
@@ -55,7 +72,7 @@ const MovimentacaoEstoque = ({
       .filter(asset => !targetKeys.includes(asset.id.toString())) // Exclude already allocated
       .map(asset => ({
         key: asset.id.toString(),
-        title: `${asset.modelo} - ${asset.serialMaquina} (${asset.rfid})`,
+        title: `${asset.modelo} - ${asset.serialMaquina || 'N/A'} (${asset.rfid})`,
         description: asset.categoria,
         disabled: asset.situacao !== "Apto" // Disable ineligible assets
       }));
@@ -68,7 +85,7 @@ const MovimentacaoEstoque = ({
     );
   };
 
-  // Columns for search results (integrated with GestaoAtivos)
+  // Columns for search results
   const assetsColumns = [
     {
       title: "Modelo",
@@ -191,7 +208,7 @@ const MovimentacaoEstoque = ({
         
         {searchResults && searchResults.length > 0 && (
           <div style={{ marginTop: '20px' }}>
-            <h5>Resultados da Busca (Alocados Automaticamente)</h5>
+            <h4>Resultados da Busca</h4>
             <Table 
               dataSource={searchResults}
               columns={assetsColumns}
@@ -213,7 +230,7 @@ const MovimentacaoEstoque = ({
               <p>• Lado <strong>esquerdo:</strong> ativos disponíveis para alocação na OS.</p>
               <p>• Lado <strong>direito:</strong> ativos já alocados na OS.</p>
               <p>• Use as setas para mover os ativos entre as listas.</p>
-              <p>• As mudanças são salvas automaticamente.</p>
+              <p>• As mudanças são registradas no histórico do ativo.</p>
               <p>• <strong>Busca de ativos:</strong> Os ativos encontrados são automaticamente alocados para a OS.</p>
               {scannerMode && <p>• <strong>Modo Scanner Ativado:</strong> Escaneie um código de barras para alocar automaticamente o ativo à OS.</p>}
             </div>
@@ -246,6 +263,13 @@ const MovimentacaoEstoque = ({
           onCancel={handleMovementReasonCancel}
           assets={getMovedAssets()}
           movementType={pendingMovement.type}
+        />
+        
+        {/* History Modal */}
+        <HistoryModal
+          isModalVisible={isHistoryModalVisible}
+          currentAsset={currentAsset}
+          handleModalCancel={handleHistoryModalCancel}
         />
 
         {targetKeys && targetKeys.length > 0 && (
