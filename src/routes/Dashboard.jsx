@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Statistic, Row, Col, DatePicker, Select, Typography, Table, Tag, Divider, Badge, Avatar, Tooltip as TooltipAntd } from 'antd';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Legend, Tooltip, ResponsiveContainer } from 'recharts';
-import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined, FilterOutlined, AlertOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { CommentOutlined, ClockCircleOutlined, CheckCircleOutlined, MessageOutlined, UserOutlined, ShopOutlined, TeamOutlined, FilterOutlined, AlertOutlined, AppstoreOutlined, FileOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -871,7 +871,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
               </BarChart>
             </ResponsiveContainer>
             <div className="chart-summary" style={{ textAlign: 'center', marginTop: '10px' }}>
-              <p>Total de chamados: {metrics.totalTickets} | Abertos: {metrics.openTickets} | Resolvidos: {metrics.resolvedTickets}</p>
+              <p style={{ fontWeight: 'bold' }}>Total de chamados: {metrics.totalTickets} | Abertos: {metrics.openTickets} | Resolvidos: {metrics.resolvedTickets}</p>
             </div>
           </Card>
         </Col>
@@ -880,6 +880,15 @@ const Dashboard = ({ dataChamados, pipeId }) => {
         <Col xs={24} md={12}>
           <Row gutter={[16, 16]}>
             {/* First row of cards */}
+            <Col xs={24} sm={12}>
+              <Card>
+                <Statistic
+                  title="Total de Chamados"
+                  value={metrics.totalTickets}
+                  
+                />
+              </Card>
+            </Col>
             <Col xs={24} sm={12}>
               <Card>
                 <Statistic
@@ -927,7 +936,7 @@ const Dashboard = ({ dataChamados, pipeId }) => {
             </Col>
 
             {/* Third row - Full width card */}
-            <Col xs={24}>
+            <Col xs={24} sm={12}>
               <Card>
                 <Statistic
                   title="Tempo Médio de Resolução"
@@ -1218,25 +1227,19 @@ const Dashboard = ({ dataChamados, pipeId }) => {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Distribuição por Urgência" extra={<AlertOutlined />}>
+          <Card title="Top 5 Categorias">
             <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={urgencyData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={75}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {urgencyData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
+              <BarChart data={categoryData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="category" width={150} />
                 <Tooltip />
-              </PieChart>
+                <Bar dataKey="count" fill="#1890ff" name="Número de Chamados">
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </Card>
         </Col>
@@ -1270,23 +1273,30 @@ const Dashboard = ({ dataChamados, pipeId }) => {
       </Row> */}
 
       <Row gutter={[16, 16]} style={{ marginBottom: '1rem' }}>
-        <Col xs={24} md={24}>
-          <Card title="Top 5 Categorias">
+      <Col xs={24} md={24}>
+          <Card title="Distribuição por Urgência" extra={<AlertOutlined />}>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={categoryData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="category" width={150} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#1890ff" name="Número de Chamados">
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              <PieChart>
+                <Pie
+                  data={urgencyData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={75}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {urgencyData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                </Bar>
-              </BarChart>
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </Card>
         </Col>
+
         {/* <Col xs={24} md={12}>
           <Card title="Tempo de Resolução por Dia">
             <ResponsiveContainer width="100%" height={220}>

@@ -17,6 +17,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
   const [filteredInfo, setFilteredInfo] = useState(
     JSON.parse(localStorage.getItem('taskboardFilters')) || {}
   );
+  const [cannedResponses, setCannedResponses] = useState('');
 
   const pendingTickets = dataChamados.filter(ticket => ticket.status === 'pending');
   const analysisTickets = dataChamados.filter(ticket => ticket.status === 'analysis');
@@ -141,11 +142,15 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
     localStorage.setItem('taskboardFilters', JSON.stringify(filters));
   };
 
+  const handleCannedResponsesChange = (value) => {
+    setCannedResponses(value);
+  };
+
   const clearAllFilters = () => {
     setFilteredInfo({});
     localStorage.removeItem('taskboardFilters');
   };
-  
+
   const optionsClassificacao = {
     "Alteração de Cardápio": [
       { value: 'Criação de produto', label: 'Criação de produto' },
@@ -153,7 +158,8 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Associar cardápio a operador', label: 'Associar cardápio a operador' },
       { value: 'Alteração de valor', label: 'Alteração de valor' },
       { value: 'Associar produto a bar', label: 'Associar produto a bar' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Substituição de equipamento": [
       { value: 'Perda', label: 'Perda' },
@@ -163,7 +169,8 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Tamper', label: 'Tamper' },
       { value: 'Tampa Traseira', label: 'Tampa Traseira' },
       { value: 'Impressora', label: 'Impressora' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Erro de login": [
       { value: 'Cardápio não associado', label: 'Cardápio não associado' },
@@ -172,10 +179,13 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Terminal não associado', label: 'Terminal não associado' },
       { value: 'Data da sessão não configurada', label: 'Data da sessão não configurada' },
       { value: 'Operador não ativo', label: 'Operador não ativo' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Alteração de funcionalidades": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Alteração de funcionalidades', label: 'Alteração de funcionalidades' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Acesso": [
       { value: 'Criação acesso gerencial', label: 'Criação acesso gerencial' },
@@ -183,59 +193,78 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Alteração nos operadores', label: 'Alteração nos operadores' },
       { value: 'Vincular place ao acesso', label: 'Vincular place ao acesso' },
       { value: 'Alteração de senha', label: 'Alteração de senha' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Alteração quantidade de terminais": [
-      { value: 'Aumento', label: 'Aumento' },
-      { value: 'Redução', label: 'Redução' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Aumento na quantidade de terminais', label: 'Aumento na quantidade de terminais' },
+      { value: 'Redução na quantidade de terminais', label: 'Redução na quantidade de terminais' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Fechamento manual de ambulante": [
       { value: 'Tamper', label: 'Tamper' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Transação Apartada": [
-      { value: 'GetNet', label: 'GetNet' },
-      { value: 'Paybird', label: 'Paybird' },
-      { value: 'Pagseguro', label: 'Pagseguro' },
-      { value: 'SafraPay', label: 'SafraPay' },
-      { value: 'MercadoPago', label: 'MercadoPago' },
-      { value: 'Pinbank', label: 'Pinbank' },
-      { value: 'Rede', label: 'Rede' },
+      // { value: 'GetNet', label: 'GetNet' },
+      // { value: 'Paybird', label: 'Paybird' },
+      // { value: 'Pagseguro', label: 'Pagseguro' },
+      // { value: 'SafraPay', label: 'SafraPay' },
+      // { value: 'MercadoPago', label: 'MercadoPago' },
+      // { value: 'Pinbank', label: 'Pinbank' },
+      // { value: 'Rede', label: 'Rede' },
       { value: 'Cielo', label: 'Cielo' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Envio de Insumos": [
-      { value: 'No site', label: 'No site' },
-      { value: 'Para o site', label: 'Para o site' },
-      { value: 'N/A', label: 'N/A' }
+      // { value: 'No site', label: 'No site' },
+      { value: 'Capa/Suporte', label: 'Capa/Suporte' },
+      { value: 'Bobina', label: 'Bobina' },
+      { value: 'Gerentes de Senha', label: 'Gerentes de Senha' },
+      { value: 'Cartões Cashless', label: 'Cartões Cashless' },
+      { value: 'Pirulito/Costeira', label: 'Pirulito/Costeira' },
+      { value: 'Bateria', label: 'Bateria' },
+      { value: 'Filtro de Linha', label: 'Filtro de Linha' },
+      { value: 'Capa de Chuva', label: 'Capa de Chuva' },
+      { value: 'Powerbank', label: 'Powerbank' },
+      { value: 'Papel Filme', label: 'Papel Filme' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Análise Relatorial": [
-      { value: 'Interpretativo', label: 'Interpretativo' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Análise Relatorial', label: 'Análise Relatorial' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
-    "Problemas de conexão": [
+    "Problemas de conexão com internet": [
       { value: 'Chip', label: 'Chip' },
       { value: 'Conexão Wi-Fi', label: 'Conexão Wi-Fi' },
       { value: 'Área sem cobertura', label: 'Área sem cobertura' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Erro de Impressão": [
       { value: 'Configuração', label: 'Configuração' },
       { value: 'Avaria', label: 'Avaria' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Erro de leitura na TAG": [
       { value: 'Tag avariada', label: 'Tag avariada' },
       { value: 'Tag não cadastrada', label: 'Tag não cadastrada' },
       { value: 'Incompatibilidade', label: 'Incompatibilidade' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Cobrança indevida": [
       { value: 'Valor incorreto', label: 'Valor incorreto' },
       { value: 'Duplicidade na cobrança', label: 'Duplicidade na cobrança' },
       { value: 'Integração', label: 'Integração' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Ponto de venda": [
       { value: 'Criação ponto de venda', label: 'Criação ponto de venda' },
@@ -243,16 +272,20 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Vinculação de operadores', label: 'Vinculação de operadores' },
       { value: 'Desativar ponto de venda', label: 'Desativar ponto de venda' },
       { value: 'Desativar operador', label: 'Desativar operador' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Duplicação de Saldo": [
       { value: 'Bug', label: 'Bug' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Entradas": [
       { value: 'Criação de entrada', label: 'Criação de entrada' },
       { value: 'Alteração de valor', label: 'Alteração de valor' },
       { value: 'Criação de setor', label: 'Criação de setor' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Registro de check in": [
       { value: 'Técnico não associado ao projeto', label: 'Técnico não associado ao projeto' },
@@ -260,84 +293,119 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       { value: 'Pendência na aprovação de cadastro', label: 'Pendência na aprovação de cadastro' },
       { value: 'Pendência na abertura do check in', label: 'Pendência na abertura do check in' },
       { value: 'Erro operacional', label: 'Erro operacional' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Estorno adquirência": [
+      { value: 'Senha de estorno', label: 'Senha de estorno' },
       { value: 'Data divergente', label: 'Data divergente' },
       { value: 'Bug', label: 'Bug' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Erro mensagem adquirência": [
       { value: 'Contrato com CPF', label: 'Contrato com CPF' },
       { value: 'Queda de EC', label: 'Queda de EC' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Estoque Z": [
       { value: 'Criação', label: 'Criação' },
       { value: 'Cadastro base', label: 'Cadastro base' },
       { value: 'Quantidade', label: 'Quantidade' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Falha de Sincronia": [
       { value: 'Conexão', label: 'Conexão' },
       { value: 'Bug', label: 'Bug' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Fechamento de comanda Pós Paga": [
       { value: 'Erro operacional', label: 'Erro operacional' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Impressora remota": [
       { value: 'IP', label: 'IP' },
       { value: 'Seleção de bar', label: 'Seleção de bar' },
       { value: 'Redes diferentes', label: 'Redes diferentes' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Limite não integrado": [
       { value: 'Criação', label: 'Criação' },
       { value: 'Alteração', label: 'Alteração' },
       { value: 'Permissão gerencial', label: 'Permissão gerencial' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Logo de Ficha": [
       { value: 'Criação', label: 'Criação' },
       { value: 'Alteração', label: 'Alteração' },
       { value: 'Exclusão', label: 'Exclusão' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Múltiplos pagamentos": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Múltiplos pagamentos', label: 'Múltiplos pagamentos' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Produtos de Devolução": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Configuração', label: 'Configuração' },
+      { value: 'Tag', label: 'Tag' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Protocolo de equipamentos": [
       { value: 'Erro operacional', label: 'Erro operacional' },
       { value: 'Múltiplas assinaturas', label: 'Múltiplas assinaturas' },
       { value: 'Sincronia das informações', label: 'Sincronia das informações' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Pix não funcionando": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Configuração', label: 'Configuração' },
+      { value: 'Internet', label: 'Internet' },
+      { value: 'Conta', label: 'Conta' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Transferência de saldo": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Tag Diferente', label: 'Tag Diferente' },
+      { value: 'Transação apartada', label: 'Transação apartada' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Recargas expiradas": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Período', label: 'Período' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "ZigTag Cheio": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Recarga', label: 'Recarga' },
+      { value: 'Consumo', label: 'Consumo' },
+      { value: 'Memória', label: 'Memória' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Queima de Ficha": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Configuração do bar', label: 'Configuração do bar' },
+      { value: 'Internet', label: 'Internet' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Dúvida de processo ou produto": [
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Cartão de senhas": [
       { value: 'Criação de cartão de senha', label: 'Criação de cartão de senhas' },
-      { value: 'N/A', label: 'N/A' }
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ]
   }
 
@@ -413,9 +481,13 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       <Row gutter={16}>
         <Col span={12}>
           <Space direction="vertical">
-          <div>
-                <Text strong>ID:</Text> {record.id}
-              </div>
+            <div>
+              <Text strong>ID:</Text> {record.id}
+            </div>
+
+            <div>
+              <Text strong>Versão Cielo Mobile:</Text> {record.versao}
+            </div>
 
             <div style={{ maxWidth: '400px', wordBreak: 'anywhere', }}>
               <Text strong>Descrição:</Text> {record.descricao}
@@ -428,7 +500,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
                   {record.anexos.map((anexo, index) => (
                     <li key={index}>
                       <a href={anexo} target="_blank" rel="noopener noreferrer">
-                        <img loading='lazy' src={anexo}  style={{ width: '90%', height: 'auto' }} alt={`Anexo ${index + 1}`} />
+                        <img loading='lazy' src={anexo} style={{ width: '90%', height: 'auto' }} alt={`Anexo ${index + 1}`} />
                       </a>
                     </li>
                   ))}
@@ -492,12 +564,12 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
       </Row>
       <Row style={{ marginTop: 64 }} gutter={16}>
         <Space style={{ marginLeft: 'auto' }}>
-          {record.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner') && (
+          {record.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
             <Button type="primary" size="small" onClick={() => changeStatus(record.id)}>
               Abrir Ticket
             </Button>
           )}
-          {record.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner') && (
+          {record.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
             <Button
               type="primary"
               size="small"
@@ -506,7 +578,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               Enviar para Validação
             </Button>
           )}
-          {record.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner') && (
+          {record.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
             <Button
               type="primary"
               size="small"
@@ -515,7 +587,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               Iniciar Análise
             </Button>
           )}
-          {(record.status === 'validation' || record.status === 'analysis' || record.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner') && (
+          {(record.status === 'validation' || record.status === 'analysis' || record.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
             <Button
               type="primary"
               size="small"
@@ -534,7 +606,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               Reabrir Chamado
             </Button>
           )}
-          {record.status !== 'closed' && (currentUser === record.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner') && (
+          {record.status !== 'closed' && (currentUser === record.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission == 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
             <Button
               type="default"
               size="small"
@@ -545,13 +617,23 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
           )}
         </Space>
       </Row>
-      
+
       <Row style={{ marginTop: 16, width: '100%' }} gutter={16}>
         {(record.status === 'analysis' || record.status === 'validation' || record.status === 'reopened') && answerForms[record.id] && (
           <Card
             title="Responder Chamado"
             style={{ marginTop: 20, borderRadius: '8px', width: '100%' }}
           >
+            <Select 
+              style={{ width: '100%', marginBottom: 16 }}
+              placeholder={'Respostas prontas'}
+              options={[
+                { value: 'Feito', label: 'Feito' },
+                { value: 'Feito. Gentiliza atualizar cardápios.', label: 'Feito. Gentiliza atualizar cardápios.' },
+                { value: 'Feito. Gentilizar reautenticar terminal.'}
+              ]}
+              onChange={handleCannedResponsesChange}
+            />
             <Form
               layout='vertical'
               onFinish={(values) => handleSubmitAnswer(record.id, values)}
@@ -559,11 +641,13 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
               <Form.Item
                 label={<Text strong>Resposta</Text>}
                 name='resposta'
-                rules={[{ required: true, message: 'Campo obrigatório' }]}
+                rules={[{ required: false, message: 'Campo obrigatório' }]}
               >
                 <TextArea
-                  placeholder='Digite a resposta do chamado'
+                  placeholder={cannedResponses}
                   rows={4}
+                  value={cannedResponses}
+                  
                   style={{ borderRadius: '4px' }}
                 />
               </Form.Item>
@@ -600,7 +684,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
             </Form>
           </Card>
         )}
-        
+
         {record.status === 'closed' && reopenForm[record.id] && (
           <Card
             title="Reabrir Chamado"
@@ -649,7 +733,7 @@ const TaskBoard = ({ dataChamados, fetchChamados, handleAnswerClick, changeStatu
 
   const renderTableSection = (title, data, statusKey, icon) => {
     const isOpen = openPanels.includes(statusKey);
-  
+
     return (
       <Card
         title={

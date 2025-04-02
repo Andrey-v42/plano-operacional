@@ -24,6 +24,7 @@ const Suporte = () => {
     const [autoCreateChat, setAutoCreateChat] = useState(false);
     const [closedTicketsHidden, setClosedTicketsHidden] = useState(false);
     const [messages, setMessages] = useState([]);
+    const [versionFieldVisible, setVersionFieldVisible] = useState(true);
 
     const [chatDrawerVisible, setChatDrawerVisible] = useState(false);
     const [currentChatTicketId, setCurrentChatTicketId] = useState(null);
@@ -45,6 +46,16 @@ const Suporte = () => {
             fetchChamados();
         }
     };
+
+    const handleCategoriaChange = (value) => {
+        const categoriasAplicaveis = ['Substituição de equipamento', 'Erro de login', 'Alteração quantidade de terminais', 'Transação Apartada', 'Problemas de conexão com internet', 'Erro de Impressão', 'Erro de leitura na TAG', 'Cobrança indevida', 'Duplicação de Saldo', 'Estorno adquirência', 'Erro mensagem adquirência', 'Falha de Sincronia', 'Multiplos pagamentos', 'Pix não funcionando']
+        if(categoriasAplicaveis.includes(value)) {
+            setVersionFieldVisible(false);
+        } else {
+            setVersionFieldVisible(true);
+        }
+    };
+    
 
     const getStatusBadge = (status) => {
         if (status === 'pending') {
@@ -131,7 +142,7 @@ const Suporte = () => {
         { value: 'Transação Apartada', label: 'Transação Apartada' },
         { value: 'Envio de Insumos', label: 'Envio de Insumos' },
         { value: 'Análise Relatorial', label: 'Análise Relatorial' },
-        { value: 'Problemas de conexão', label: 'Problemas de conexão' },
+        { value: 'Problemas de conexão com internet', label: 'Problemas de conexão com internet' },
         { value: 'Erro de Impressão', label: 'Erro de Impressão' },
         { value: 'Erro de leitura na TAG', label: 'Erro de leitura na TAG' },
         { value: 'Cobrança indevida', label: 'Cobrança indevida' },
@@ -161,17 +172,18 @@ const Suporte = () => {
 
     const optionsTerminal = [
         { label: 'N/A', value: 'N/A' },
-        { label: 'Pag A930', value: 'Pag A930' },
-        { label: 'Pag P2', value: 'Pag P2' },
-        { label: 'Pag Moderninha X', value: 'Pag Moderninha X' },
-        { label: 'Safra P2', value: 'Safra P2' },
-        { label: 'Safra L300', value: 'Safra L300' },
-        { label: 'Getnet P2', value: 'Getnet P2' },
-        { label: 'Pinbank P2', value: 'Pinbank P2' },
-        { label: 'Mercado Pago A910', value: 'Mercado Pago A910' },
+        // { label: 'Pag A930', value: 'Pag A930' },
+        // { label: 'Pag P2', value: 'Pag P2' },
+        // { label: 'Pag Moderninha X', value: 'Pag Moderninha X' },
+        // { label: 'Safra P2', value: 'Safra P2' },
+        // { label: 'Safra L300', value: 'Safra L300' },
+        // { label: 'Getnet P2', value: 'Getnet P2' },
+        // { label: 'Pinbank P2', value: 'Pinbank P2' },
+        // { label: 'Mercado Pago A910', value: 'Mercado Pago A910' },
         { label: 'Cielo L300', value: 'Cielo L300' },
-        { label: 'Rede L400', value: 'Rede L400' },
-        { label: 'PDV (Celular)', value: 'PDV (Celular)' },
+        { label: 'Paybird A77', value: 'Paybird A77'},
+        // { label: 'Rede L400', value: 'Rede L400' },
+        // { label: 'PDV (Celular)', value: 'PDV (Celular)' },
 
     ];
 
@@ -325,7 +337,7 @@ const Suporte = () => {
         setFileList(newFileList);
     };
 
-    const handleAnswerClick = async (recordId, resposta, classificacao) => {
+    const handleAnswerClick = async (recordId, resposta = 'N/A', classificacao) => {
         try {
             setButtonAnswerLoading(true);
 
@@ -615,7 +627,45 @@ const Suporte = () => {
             let chamados = await Promise.all(data.map(async (doc) => {
                 doc.data.categoriaPDV = 'N/A'
                 if (currentUser !== doc.data.solicitante && permission !== 'admin' && permission !== 'ecc' && permission !== 'planner' && permissionEvento !== 'C-CCO' && permissionEvento !== 'Head') {
-                    return null;
+                    // return null;
+                    if (doc.data.ponto != 'N/A') {
+                        const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                url: `pipe/pipeId_${pipeId}/planoOperacional`,
+                                docId: doc.data.ponto
+                            })
+                        });
+                        const data = await response.json();
+                        doc.data.categoriaPDV = data.CATEGORIA
+                    }
+                    return {
+                        key: doc.id,
+                        id: doc.id,
+                        solicitante: doc.data.solicitante,
+                        categoria: doc.data.categoria,
+                        status: doc.data.status,
+                        timestampAberto: doc.data.timestampAberto,
+                        urgencia: doc.data.urgencia,
+                        ponto: doc.data.ponto,
+                        modelo: doc.data.modelo,
+                        descricao: doc.data.descricao,
+                        resposta: doc.data.resposta || '',
+                        anexos: doc.data.anexos || [],
+                        timestampResposta: doc.data.timestampResposta || '',
+                        timestampAnalise: doc.data.timestampAnalise || '',
+                        userId: doc.data.userId || '',
+                        setor: doc.data.setor || '',
+                        atendente: doc.data.atendente || null,
+                        timestampValidacao: doc.data.timestampValidacao || '',
+                        timestampReaberto: doc.data.timestampReaberto || '',
+                        classificacao: doc.data.classificacao || '',
+                        categoriaPDV: doc.data.categoriaPDV || 'N/A',
+                        versao: doc.data.versao || 'N/A',
+                    }
                 } else {
                     if (doc.data.ponto != 'N/A') {
                         const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getDocAlternative', {
@@ -653,6 +703,7 @@ const Suporte = () => {
                         timestampReaberto: doc.data.timestampReaberto || '',
                         classificacao: doc.data.classificacao || '',
                         categoriaPDV: doc.data.categoriaPDV || 'N/A',
+                        versao: doc.data.versao || 'N/A',
                     }
                 }
             }
@@ -693,6 +744,7 @@ const Suporte = () => {
                                             <Select
                                                 placeholder="Selecione a categoria do chamado"
                                                 showSearch
+                                                onChange={handleCategoriaChange}
                                                 options={optionsCategoria}
                                                 style={{ borderRadius: '4px' }}
                                             />
@@ -709,6 +761,27 @@ const Suporte = () => {
                                                 options={optionsSetores}
                                                 style={{ borderRadius: '4px' }}
                                             />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
+                                <Row gutter={16}>
+                                    <Col span={12}>
+                                        <Form.Item
+                                            label={<Text strong>Versão Cielo Mobile</Text>}
+                                            name='versao'
+                                            rules={[{ required: !versionFieldVisible, message: 'Campo obrigatório' }]}
+                                            hidden={versionFieldVisible}
+                                        >
+                                            <Select
+                                                placeholder='Selecione a versão'
+                                            
+                                                options={[
+                                                    { value: '2.35.0.8 (CF19BPLLM40T.02)', label: '2.35.0.8 (CF19BPLLM40T.02)' },
+                                                    { value: '2.35.0.9 (CG19BPLL34T0T.03)', label: '2.35.0.9 (CG19BPLL34T0T.03)' },
+                                                ]}
+                                            >
+
+                                            </Select>
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -985,8 +1058,8 @@ const Suporte = () => {
                     index === self.findIndex(obj => JSON.stringify(obj) === JSON.stringify(item))
                 );
 
-                setOptionsPontos([{ label: 'N/A', value: 'N/A' }, ...pontos]);
-                setOptionsSetores([{ label: 'N/A', value: 'N/A' }, ...setores]);
+                setOptionsPontos([...pontos]);
+                setOptionsSetores([...setores]);
             } catch (error) {
                 console.log(error);
                 openNotificationFailure('Erro ao carregar pontos de venda.');

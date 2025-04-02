@@ -132,6 +132,8 @@ const KanbanBoard = ({
       { value: 'Associar cardápio a operador', label: 'Associar cardápio a operador' },
       { value: 'Alteração de valor', label: 'Alteração de valor' },
       { value: 'Associar produto a bar', label: 'Associar produto a bar' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
     "Substituição de equipamento": [
       { value: 'Perda', label: 'Perda' },
@@ -141,10 +143,245 @@ const KanbanBoard = ({
       { value: 'Tamper', label: 'Tamper' },
       { value: 'Tampa Traseira', label: 'Tampa Traseira' },
       { value: 'Impressora', label: 'Impressora' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
     ],
-    // ... [other classification options as in the original code]
-    // For brevity, I've omitted the full list, but in a real implementation you should include all options
-  };
+    "Erro de login": [
+      { value: 'Cardápio não associado', label: 'Cardápio não associado' },
+      { value: 'Senha', label: 'Senha' },
+      { value: 'Chave de ativação errada', label: 'Chave de ativação errada' },
+      { value: 'Terminal não associado', label: 'Terminal não associado' },
+      { value: 'Data da sessão não configurada', label: 'Data da sessão não configurada' },
+      { value: 'Operador não ativo', label: 'Operador não ativo' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Alteração de funcionalidades": [
+      { value: 'Alteração de funcionalidades', label: 'Alteração de funcionalidades' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Acesso": [
+      { value: 'Criação acesso gerencial', label: 'Criação acesso gerencial' },
+      { value: 'Criação operadores', label: 'Criação operadores' },
+      { value: 'Alteração nos operadores', label: 'Alteração nos operadores' },
+      { value: 'Vincular place ao acesso', label: 'Vincular place ao acesso' },
+      { value: 'Alteração de senha', label: 'Alteração de senha' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Alteração quantidade de terminais": [
+      { value: 'Aumento na quantidade de terminais', label: 'Aumento na quantidade de terminais' },
+      { value: 'Redução na quantidade de terminais', label: 'Redução na quantidade de terminais' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Fechamento manual de ambulante": [
+      { value: 'Tamper', label: 'Tamper' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Transação Apartada": [
+      // { value: 'GetNet', label: 'GetNet' },
+      // { value: 'Paybird', label: 'Paybird' },
+      // { value: 'Pagseguro', label: 'Pagseguro' },
+      // { value: 'SafraPay', label: 'SafraPay' },
+      // { value: 'MercadoPago', label: 'MercadoPago' },
+      // { value: 'Pinbank', label: 'Pinbank' },
+      // { value: 'Rede', label: 'Rede' },
+      { value: 'Cielo', label: 'Cielo' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Envio de Insumos": [
+      // { value: 'No site', label: 'No site' },
+      { value: 'Capa/Suporte', label: 'Capa/Suporte' },
+      { value: 'Bobina', label: 'Bobina' },
+      { value: 'Gerentes de Senha', label: 'Gerentes de Senha' },
+      { value: 'Cartões Cashless', label: 'Cartões Cashless' },
+      { value: 'Pirulito/Costeira', label: 'Pirulito/Costeira' },
+      { value: 'Bateria', label: 'Bateria' },
+      { value: 'Filtro de Linha', label: 'Filtro de Linha' },
+      { value: 'Capa de Chuva', label: 'Capa de Chuva' },
+      { value: 'Powerbank', label: 'Powerbank' },
+      { value: 'Papel Filme', label: 'Papel Filme' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Análise Relatorial": [
+      { value: 'Análise Relatorial', label: 'Análise Relatorial' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Problemas de conexão com internet": [
+      { value: 'Chip', label: 'Chip' },
+      { value: 'Conexão Wi-Fi', label: 'Conexão Wi-Fi' },
+      { value: 'Área sem cobertura', label: 'Área sem cobertura' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Erro de Impressão": [
+      { value: 'Configuração', label: 'Configuração' },
+      { value: 'Avaria', label: 'Avaria' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Erro de leitura na TAG": [
+      { value: 'Tag avariada', label: 'Tag avariada' },
+      { value: 'Tag não cadastrada', label: 'Tag não cadastrada' },
+      { value: 'Incompatibilidade', label: 'Incompatibilidade' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Cobrança indevida": [
+      { value: 'Valor incorreto', label: 'Valor incorreto' },
+      { value: 'Duplicidade na cobrança', label: 'Duplicidade na cobrança' },
+      { value: 'Integração', label: 'Integração' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Ponto de venda": [
+      { value: 'Criação ponto de venda', label: 'Criação ponto de venda' },
+      { value: 'Alteração ponto de venda', label: 'Alteração ponto de venda' },
+      { value: 'Vinculação de operadores', label: 'Vinculação de operadores' },
+      { value: 'Desativar ponto de venda', label: 'Desativar ponto de venda' },
+      { value: 'Desativar operador', label: 'Desativar operador' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Duplicação de Saldo": [
+      { value: 'Bug', label: 'Bug' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Entradas": [
+      { value: 'Criação de entrada', label: 'Criação de entrada' },
+      { value: 'Alteração de valor', label: 'Alteração de valor' },
+      { value: 'Criação de setor', label: 'Criação de setor' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Registro de check in": [
+      { value: 'Técnico não associado ao projeto', label: 'Técnico não associado ao projeto' },
+      { value: 'Técnico sem cadastro', label: 'Técnico sem cadastro' },
+      { value: 'Pendência na aprovação de cadastro', label: 'Pendência na aprovação de cadastro' },
+      { value: 'Pendência na abertura do check in', label: 'Pendência na abertura do check in' },
+      { value: 'Erro operacional', label: 'Erro operacional' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Estorno adquirência": [
+      { value: 'Senha de estorno', label: 'Senha de estorno' },
+      { value: 'Data divergente', label: 'Data divergente' },
+      { value: 'Bug', label: 'Bug' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Erro mensagem adquirência": [
+      { value: 'Contrato com CPF', label: 'Contrato com CPF' },
+      { value: 'Queda de EC', label: 'Queda de EC' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Estoque Z": [
+      { value: 'Criação', label: 'Criação' },
+      { value: 'Cadastro base', label: 'Cadastro base' },
+      { value: 'Quantidade', label: 'Quantidade' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Falha de Sincronia": [
+      { value: 'Conexão', label: 'Conexão' },
+      { value: 'Bug', label: 'Bug' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Fechamento de comanda Pós Paga": [
+      { value: 'Erro operacional', label: 'Erro operacional' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Impressora remota": [
+      { value: 'IP', label: 'IP' },
+      { value: 'Seleção de bar', label: 'Seleção de bar' },
+      { value: 'Redes diferentes', label: 'Redes diferentes' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Limite não integrado": [
+      { value: 'Criação', label: 'Criação' },
+      { value: 'Alteração', label: 'Alteração' },
+      { value: 'Permissão gerencial', label: 'Permissão gerencial' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Logo de Ficha": [
+      { value: 'Criação', label: 'Criação' },
+      { value: 'Alteração', label: 'Alteração' },
+      { value: 'Exclusão', label: 'Exclusão' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Múltiplos pagamentos": [
+      { value: 'Múltiplos pagamentos', label: 'Múltiplos pagamentos' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Produtos de Devolução": [
+      { value: 'Configuração', label: 'Configuração' },
+      { value: 'Tag', label: 'Tag' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Protocolo de equipamentos": [
+      { value: 'Erro operacional', label: 'Erro operacional' },
+      { value: 'Múltiplas assinaturas', label: 'Múltiplas assinaturas' },
+      { value: 'Sincronia das informações', label: 'Sincronia das informações' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Pix não funcionando": [
+      { value: 'Configuração', label: 'Configuração' },
+      { value: 'Internet', label: 'Internet' },
+      { value: 'Conta', label: 'Conta' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Transferência de saldo": [
+      { value: 'Tag Diferente', label: 'Tag Diferente' },
+      { value: 'Transação apartada', label: 'Transação apartada' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Recargas expiradas": [
+      { value: 'Período', label: 'Período' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "ZigTag Cheio": [
+      { value: 'Recarga', label: 'Recarga' },
+      { value: 'Consumo', label: 'Consumo' },
+      { value: 'Memória', label: 'Memória' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Queima de Ficha": [
+      { value: 'Configuração do bar', label: 'Configuração do bar' },
+      { value: 'Internet', label: 'Internet' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Dúvida de processo ou produto": [
+      { value: 'Dúvida de processo ou produto', label: 'Dúvida de processo ou produto' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ],
+    "Cartão de senhas": [
+      { value: 'Criação de cartão de senha', label: 'Criação de cartão de senhas' },
+      { value: 'Report aberto ao time de Tech', label: 'Report aberto ao time de Tech' },
+      { value: 'Improcedente', label: 'Improcedente' }
+    ]
+  }
 
   // Render individual ticket card
   const renderTicketCard = (ticket) => {
@@ -168,7 +405,7 @@ const KanbanBoard = ({
       >
         <div style={{ padding: '0px 4px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <Text strong style={{ fontSize: '14px' }}>#{ticket.id}</Text>
+            <Text strong style={{ fontSize: '14px' }}>{ticket.ponto}</Text>
             {getUrgencyTag(ticket.urgencia)}
           </div>
           
@@ -286,12 +523,12 @@ const KanbanBoard = ({
             </div>
 
             <Space style={{ marginBottom: '12px' }}>
-              {ticket.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
+              {ticket.status === 'pending' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
                 <Button type="primary" size="small" onClick={(e) => { e.stopPropagation(); changeStatus(ticket.id); }}>
                   Abrir Ticket
                 </Button>
               )}
-              {ticket.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
+              {ticket.status === 'analysis' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
                 <Button
                   type="primary"
                   size="small"
@@ -300,7 +537,7 @@ const KanbanBoard = ({
                   Enviar para Validação
                 </Button>
               )}
-              {ticket.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
+              {ticket.status === 'reopened' && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
                 <Button
                   type="primary"
                   size="small"
@@ -309,7 +546,7 @@ const KanbanBoard = ({
                   Iniciar Análise
                 </Button>
               )}
-              {(ticket.status === 'validation' || ticket.status === 'analysis' || ticket.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
+              {(ticket.status === 'validation' || ticket.status === 'analysis' || ticket.status === 'reopened') && (permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
                 <Button
                   type="primary"
                   size="small"
@@ -328,7 +565,7 @@ const KanbanBoard = ({
                   Reabrir Chamado
                 </Button>
               )}
-              {ticket.status !== 'closed' && (currentUser === ticket.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner') && (
+              {ticket.status !== 'closed' && (currentUser === ticket.solicitante || permission === 'admin' || permissionEvento === 'C-CCO' || permission === 'ecc' || permission == 'planner' || permissionEvento === 'Controle Supervisores') && (
                 <Button
                   type="default"
                   size="small"
@@ -352,7 +589,7 @@ const KanbanBoard = ({
                   <Form.Item
                     label={<Text strong>Resposta</Text>}
                     name='resposta'
-                    rules={[{ required: true, message: 'Campo obrigatório' }]}
+                    rules={[{ required: false, message: 'Campo obrigatório' }]}
                   >
                     <TextArea
                       placeholder='Digite a resposta do chamado'

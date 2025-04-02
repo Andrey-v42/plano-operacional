@@ -70,8 +70,8 @@ const App = () => {
     
             if (isValid) {
                 setIsAuthenticated(true);
-                // await requestPermission();
-                // await registerServiceWorker();
+                await requestPermission();
+                await registerServiceWorker();
                 setPermissionRequested(true);
             } else {
                 localStorage.removeItem('isAuthenticated');
@@ -117,6 +117,65 @@ const App = () => {
         getAuthentication();
     }, []);
 
+    useEffect(() => {
+        const getAuthentication = async () => {
+            const authStatus = JSON.parse(localStorage.getItem('isAuthenticated'));
+    
+            if (!authStatus || !authStatus.value || !authStatus.expirationDate) {
+                navigate(`/login?pipeId=${pipeId}`);
+                return;
+            }
+    
+            const isValid = authStatus.value === 'true' && authStatus.expirationDate >= new Date().getTime();
+    
+            if (isValid) {
+                setIsAuthenticated(true);
+                await requestPermission();
+                await registerServiceWorker();
+                setPermissionRequested(true);
+            } else {
+                localStorage.removeItem('isAuthenticated');
+                navigate(`/login?pipeId=${pipeId}`);
+            }
+        }
+
+        const saveToken = async (token) => {
+            try {
+                const response = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/saveToken', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        collectionName: `users`,
+                        docId: localStorage.getItem('userId'),
+                        token: token
+                    })
+                });
+                if (response.ok) console.log('Token saved successfully');
+            } catch (error) {
+                console.error('Error saving token:', error);
+            }
+        }
+    
+        const registerServiceWorker = async () => {
+            if ("serviceWorker" in navigator) {
+                try {
+                    const swPath = `/firebase-messaging-sw.js`;
+                    const registration = await navigator.serviceWorker.register(swPath);
+                    console.log("Service Worker registered at:", swPath);
+                } catch (error) {
+                    console.error("Error registering Service Worker:", error);
+                }
+            }
+        };
+    
+        const requestPermission = async () => {
+            const token = await generateToken();
+            await saveToken(token);
+        }
+
+        getAuthentication()
+    }, [navigate]);
+
     return (
         <>
         <NotificationSetup />
@@ -126,9 +185,12 @@ const App = () => {
                 collapsible
                 collapsed={collapsed}
                 style={{
-
-                    zIndex: 9999,
+                    overflow: 'auto',
+                    height: '100vh',
+                    position: 'sticky',
+                    left: 0,
                     top: 0,
+                    zIndex: 9999
                     // boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)"
                 }}
             >
@@ -136,7 +198,6 @@ const App = () => {
                 <Menu
                     theme="dark"
                     mode="vertical"
-                    style={{ position: 'sticky' }}
                     defaultSelectedKeys={selectedKey}
 
                     items={[

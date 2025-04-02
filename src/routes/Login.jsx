@@ -88,7 +88,7 @@ const Login = () => {
 
     useEffect(() => {
         const getEquipeEscalada = async (dataEvento) => {
-            const token = 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+            const token = 'pk_89229936_OROCR7DCHMR6E4DJ04OLCNO948OE64GC'
     
             const relationshipFields = [
                 "Head", "C-CCO", "A&B Supervisores", "Tickets Supervisores", "Autoatendimento Supervisores",
@@ -100,7 +100,7 @@ const Login = () => {
                 method: 'GET',
                 headers: {
                     accept: 'application/json',
-                    Authorization: 'pk_89229936_E5F2NN0B475NYDICS497EYR3O889V2XZ'
+                    Authorization: 'pk_89229936_OROCR7DCHMR6E4DJ04OLCNO948OE64GC'
                 }
             })
 

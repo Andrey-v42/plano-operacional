@@ -377,7 +377,7 @@ const TicketChatDrawer = ({ visible, ticketId, messages, fetchMessages, pipeId, 
           disabled={sending}
           style={{ marginBottom: '10px', borderRadius: '8px' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1vh' }}>
           <Upload
             fileList={fileList}
             beforeUpload={Upload.LIST_IGNORE}

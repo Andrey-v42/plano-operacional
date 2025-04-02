@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, Col, Row, Statistic, Progress, Table, Spin, Alert, Divider, Tag } from 'antd';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 
@@ -33,6 +33,8 @@ const DashboardPlano = ({ pipeId }) => {
     const [categoryData, setCategoryData] = useState([]);
     const [equipmentData, setEquipmentData] = useState([]);
     const [statusHistory, setStatusHistory] = useState([]);
+    const [refreshInterval] = useState(120000);
+    const refreshTimerRef = useRef(null);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -40,7 +42,7 @@ const DashboardPlano = ({ pipeId }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                setLoading(true);
+                // setLoading(true);
 
                 // Fetch plano operational data
                 const responsePlano = await fetch('https://southamerica-east1-zops-mobile.cloudfunctions.net/getQuerySnapshot', {
@@ -279,8 +281,21 @@ const DashboardPlano = ({ pipeId }) => {
 
         if (pipeId) {
             fetchData();
+
+            // Set up the refresh timer
+            refreshTimerRef.current = setInterval(() => {
+                console.log('Auto-refreshing dashboard data...');
+                fetchData();
+            }, refreshInterval);
         }
-    }, [pipeId]);
+
+        // Clean up the timer when component unmounts
+        return () => {
+            if (refreshTimerRef.current) {
+                clearInterval(refreshTimerRef.current);
+            }
+        };
+    }, [pipeId, refreshInterval]);
 
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
         const RADIAN = Math.PI / 180;
@@ -403,6 +418,10 @@ const DashboardPlano = ({ pipeId }) => {
         <div style={{ padding: '24px', width: '100%' }}>
             {/* <p>Visão geral dos pontos de venda e equipamentos para o evento</p> */}
 
+            <div style={{ textAlign: 'right', marginBottom: '10px' }}>
+                <small>Dados atualizados automaticamente a cada 2 minutos</small>
+            </div>
+
             <Divider orientation="left">Métricas Principais</Divider>
 
             {/* Status Cards */}
@@ -511,7 +530,7 @@ const DashboardPlano = ({ pipeId }) => {
 
             {/* Charts Row */}
             <Row gutter={16} style={{ marginBottom: '24px' }}>
-                <Col span={8}>
+                <Col span={12}>
                     <Card title="Status de Entrega">
                         <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
@@ -543,7 +562,7 @@ const DashboardPlano = ({ pipeId }) => {
                         </ResponsiveContainer>
                     </Card>
                 </Col>
-                <Col span={8}>
+                <Col span={12}>
                     <Card title="Distribuição por Setor">
                         <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
@@ -567,7 +586,7 @@ const DashboardPlano = ({ pipeId }) => {
                         </ResponsiveContainer>
                     </Card>
                 </Col>
-                <Col span={8}>
+                {/* <Col span={8}>
                     <Card title="Distribuição por Categoria">
                         <ResponsiveContainer width="100%" height={250}>
                             <PieChart>
@@ -577,7 +596,7 @@ const DashboardPlano = ({ pipeId }) => {
                                     cy="50%"
                                     labelLine={false}
                                     label={renderCustomizedLabel}
-                                    outerRadius={80}
+                                    outerRadius={70}
                                     fill="#8884d8"
                                     dataKey="value"
                                 >
@@ -586,11 +605,15 @@ const DashboardPlano = ({ pipeId }) => {
                                     ))}
                                 </Pie>
                                 <Tooltip />
-                                <Legend />
+                                <Legend
+                                    layout="horizontal"
+                                    verticalAlign="bottom"
+                                    align="center"
+                                    wrapperStyle={{ paddingTop: 20 }} />
                             </PieChart>
                         </ResponsiveContainer>
                     </Card>
-                </Col>
+                </Col> */}
             </Row>
 
             <Divider orientation="left">Equipamentos e Status</Divider>
