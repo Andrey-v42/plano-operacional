@@ -73,17 +73,6 @@ export const CadastroAtivos = ({ openNotificationSucess, addAssetToState }) => {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={8}>
             <Form.Item
-              label="Modelo"
-              name="modelo"
-              rules={[
-                { required: true, message: "Por favor, informe o modelo!" },
-              ]}
-            >
-              <Input placeholder="Modelo do ativo" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item
               label="Categoria"
               name="categoria"
               rules={[
@@ -94,10 +83,59 @@ export const CadastroAtivos = ({ openNotificationSucess, addAssetToState }) => {
               ]}
             >
               <Select placeholder="Selecione a categoria">
-                <Option value="POS">POS</Option>
-                <Option value="SmartPOS">SmartPOS</Option>
-                <Option value="Mobile">Mobile</Option>
+                <Option value="Insumo">Insumo</Option>
                 <Option value="Máquina">Máquina</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item
+              label="Tipo"
+              name="tipo"
+              rules={[
+                { required: true, message: "Por favor, selecione o tipo!" },
+              ]}
+            >
+              <Select placeholder="Selecione o tipo">
+                <Option value="SMARTPOS">SMARTPOS</Option>
+                <Option value="POS">POS</Option>
+                <Option value="TOTEM">TOTEM</Option>
+                <Option value="MOBILE">MOBILE</Option>
+                <Option value="OUTROS">OUTROS</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item
+              label="Modelo"
+              name="modelo"
+              rules={[
+                { required: true, message: "Por favor, informe o modelo!" },
+              ]}
+            >
+              <Select placeholder="Selecione o modelo">
+                <Option value="PAGP2">PAGP2</Option>
+                <Option value="PINP2">PINP2</Option>
+                <Option value="SAFRAP2">SAFRAP2</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={8}>
+            <Form.Item
+              label="Adquirência"
+              name="adquirencia"
+              rules={[
+                { required: true, message: "Por favor, selecione a adquirência!" },
+              ]}
+            >
+              <Select placeholder="Selecione a adquirência">
+                <Option value="Cielo">Cielo</Option>
+                <Option value="Stone">Stone</Option>
+                <Option value="PagSeguro">PagSeguro</Option>
+                <Option value="Rede">Rede</Option>
+                <Option value="GetNet">GetNet</Option>
+                <Option value="Safra">Safra</Option>
+                <Option value="Pinbank">Pinbank</Option>
               </Select>
             </Form.Item>
           </Col>

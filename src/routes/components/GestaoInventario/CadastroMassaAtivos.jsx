@@ -44,8 +44,10 @@ export const CadastroMassaAtivos = ({
   const downloadTemplate = () => {
     // Array com os cabeçalhos do modelo Excel
     const headers = [
-      "Modelo",
       "Categoria",
+      "Tipo",
+      "Modelo",
+      "Adquirencia",
       "RFID",
       "SerialMaquina",
       "SerialN",
@@ -65,8 +67,10 @@ export const CadastroMassaAtivos = ({
       ws,
       [
         [
+          "Máquina",
+          "SMARTPOS",
           "POS A30",
-          "POS",
+          "Cielo",
           "123456789",
           "SM12345",
           "SN12345",
@@ -76,8 +80,10 @@ export const CadastroMassaAtivos = ({
           "São Paulo - SP (Matriz)",
         ],
         [
+          "Insumo",
+          "POS",
           "SmartPOS D195",
-          "SmartPOS",
+          "Stone",
           "987654321",
           "SM67890",
           "SN67890",
@@ -90,22 +96,32 @@ export const CadastroMassaAtivos = ({
       { origin: "A2" }
     );
 
-    // Adicionar validação para a coluna de Categoria (coluna B)
+    // Adicionar validação para as colunas
     ws["!validations"] = [
       {
-        sqref: "B2:B1000",
-        formulas: ['"POS,SmartPOS,Mobile,Máquina"'],
+        sqref: "A2:A1000",
+        formulas: ['"Máquina,Insumo"'],
       },
       {
-        sqref: "G2:G1000",
+        sqref: "B2:B1000",
+        formulas: ['"SMARTPOS,POS,TOTEM,MOBILE,OUTROS"'],
+      },
+      {
+        sqref: "D2:D1000",
+        formulas: ['"Cielo,Stone,PagSeguro,Rede,GetNet,Safra"'],
+      },
+      {
+        sqref: "I2:I1000",
         formulas: ['"Apto,Inapto"'],
       },
     ];
 
     // Ajustar largura das colunas
     ws["!cols"] = [
-      { width: 15 }, // Modelo
       { width: 12 }, // Categoria
+      { width: 12 }, // Tipo
+      { width: 15 }, // Modelo
+      { width: 12 }, // Adquirência
       { width: 12 }, // RFID
       { width: 15 }, // SerialMaquina
       { width: 12 }, // SerialN
@@ -141,8 +157,10 @@ export const CadastroMassaAtivos = ({
 
           // Verificar campos obrigatórios
           const requiredFields = [
-            "Modelo",
             "Categoria",
+            "Tipo",
+            "Modelo",
+            "Adquirencia",
             "SerialMaquina",
             "SerialN",
             "DeviceZ",
@@ -161,12 +179,32 @@ export const CadastroMassaAtivos = ({
           }
 
           // Verificar valores válidos para categoria
-          const categoriasValidas = ["POS", "SmartPOS", "Mobile", "Máquina"];
+          const categoriasValidas = ["Máquina", "Insumo"];
           if (row.Categoria && !categoriasValidas.includes(row.Categoria)) {
             errors.push({
               row: rowNumber,
               field: "Categoria",
               message: `Valor inválido. Use: ${categoriasValidas.join(", ")}`,
+            });
+          }
+          
+          // Verificar valores válidos para tipo
+          const tiposValidos = ["SMARTPOS", "POS", "TOTEM", "MOBILE", "OUTROS"];
+          if (row.Tipo && !tiposValidos.includes(row.Tipo)) {
+            errors.push({
+              row: rowNumber,
+              field: "Tipo",
+              message: `Valor inválido. Use: ${tiposValidos.join(", ")}`,
+            });
+          }
+          
+          // Verificar valores válidos para adquirência
+          const adquirenciasValidas = ["Cielo", "Stone", "PagSeguro", "Pinbank", "Rede", "GetNet", "Safra"];
+          if (row.Adquirencia && !adquirenciasValidas.includes(row.Adquirencia)) {
+            errors.push({
+              row: rowNumber,
+              field: "Adquirencia",
+              message: `Valor inválido. Use: ${adquirenciasValidas.join(", ")}`,
             });
           }
 
@@ -276,8 +314,10 @@ export const CadastroMassaAtivos = ({
   // Colunas para a tabela de dados
   const columns = [
     { title: "Linha", dataIndex: "rowNumber", key: "rowNumber" },
-    { title: "Modelo", dataIndex: "Modelo", key: "modelo" },
     { title: "Categoria", dataIndex: "Categoria", key: "categoria" },
+    { title: "Tipo", dataIndex: "Tipo", key: "tipo" },
+    { title: "Modelo", dataIndex: "Modelo", key: "modelo" },
+    { title: "Adquirência", dataIndex: "Adquirencia", key: "adquirencia" },
     { title: "RFID", dataIndex: "RFID", key: "rfid" },
     {
       title: "Serial da Máquina",
@@ -308,8 +348,10 @@ export const CadastroMassaAtivos = ({
 
     // Converter dados para o formato esperado
     const formattedData = data.map((row) => ({
-      modelo: row.Modelo,
       categoria: row.Categoria,
+      tipo: row.Tipo,
+      modelo: row.Modelo,
+      adquirencia: row.Adquirencia,
       rfid: row.RFID || "",
       serialMaquina: row.SerialMaquina,
       serialN: row.SerialN,
@@ -401,9 +443,9 @@ export const CadastroMassaAtivos = ({
                         ativos em massa.
                       </p>
                       <p>
-                        4. Campos obrigatórios: Modelo, Categoria, Serial da
-                        Máquina, Serial N, Device Z, Situação, Detalhamento e
-                        Alocação.
+                        4. Campos obrigatórios: Categoria, Tipo, Modelo, Adquirência, 
+                        Serial da Máquina, Serial N, Device Z, Situação, 
+                        Detalhamento e Alocação.
                       </p>
                     </>
                   }

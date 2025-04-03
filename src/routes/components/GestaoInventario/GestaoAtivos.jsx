@@ -32,12 +32,25 @@ const calculateAssetMetrics = (filteredAssets) => {
     ? Object.keys(modelosCount).reduce((a, b) => 
         modelosCount[a] > modelosCount[b] ? a : b, '')
     : "N/A";
+    
+  const tiposCount = {};
+  filteredAssets.forEach((asset) => {
+    if (asset.tipo) {
+      tiposCount[asset.tipo] = (tiposCount[asset.tipo] || 0) + 1;
+    }
+  });
+  
+  const tipoMaisComum = Object.keys(tiposCount).length > 0
+    ? Object.keys(tiposCount).reduce((a, b) => 
+        tiposCount[a] > tiposCount[b] ? a : b, '')
+    : "N/A";
 
   return {
     totalAssets,
     inaptosAssets,
     aptosAssets,
     modeloMaisComum,
+    tipoMaisComum
   };
 };
 
@@ -59,20 +72,32 @@ export const GestaoAtivos = ({
     console.warn('setLoadingAssets not provided to GestaoAtivos component');
   });
 
+  const [categoriaFilter, setCategoriaFilter] = useState("all");
+  const [tipoFilter, setTipoFilter] = useState("all");
   const [modeloFilter, setModeloFilter] = useState("all");
-  const [assetCategoryFilter, setAssetCategoryFilter] = useState("all");
+  const [adquirenciaFilter, setAdquirenciaFilter] = useState("all");
 
   // Definição das colunas da tabela
   const assetsColumns = [
+    {
+      title: "Categoria",
+      dataIndex: "categoria",
+      key: "categoria",
+    },
+    {
+      title: "Tipo",
+      dataIndex: "tipo",
+      key: "tipo",
+    },
     {
       title: "Modelo",
       dataIndex: "modelo",
       key: "modelo",
     },
     {
-      title: "Categoria",
-      dataIndex: "categoria",
-      key: "categoria",
+      title: "Adquirência",
+      dataIndex: "adquirencia",
+      key: "adquirencia",
     },
     {
       title: "RFID",
@@ -170,8 +195,10 @@ export const GestaoAtivos = ({
   const handleAssetSearch = (value) => {
     const filtered = assets.filter(
       (asset) =>
-        asset.modelo.toLowerCase().includes(value.toLowerCase()) ||
         asset.categoria.toLowerCase().includes(value.toLowerCase()) ||
+        (asset.tipo && asset.tipo.toLowerCase().includes(value.toLowerCase())) ||
+        asset.modelo.toLowerCase().includes(value.toLowerCase()) ||
+        (asset.adquirencia && asset.adquirencia.toLowerCase().includes(value.toLowerCase())) ||
         asset.serialMaquina.toLowerCase().includes(value.toLowerCase()) ||
         asset.serialN.toLowerCase().includes(value.toLowerCase()) ||
         asset.rfid.toLowerCase().includes(value.toLowerCase()) ||
@@ -181,46 +208,63 @@ export const GestaoAtivos = ({
     setFilteredAssets(filtered);
   };
 
-  const handleModeloChange = (value) => {
-    setModeloFilter(value);
-    if (assetCategoryFilter !== "all") {
-      const filtered =
-        value === "all"
-          ? assets.filter((asset) => asset.categoria === assetCategoryFilter)
-          : assets.filter(
-              (asset) =>
-                asset.modelo === value &&
-                asset.categoria === assetCategoryFilter
-            );
-      setFilteredAssets(filtered);
-    } else {
-      const filtered =
-        value === "all"
-          ? assets
-          : assets.filter((asset) => asset.modelo === value);
-      setFilteredAssets(filtered);
+  const applyFilters = () => {
+    let filtered = [...assets];
+    
+    // Aplicar filtro de categoria
+    if (categoriaFilter !== "all") {
+      filtered = filtered.filter(asset => asset.categoria === categoriaFilter);
     }
+    
+    // Aplicar filtro de tipo
+    if (tipoFilter !== "all") {
+      filtered = filtered.filter(asset => asset.tipo === tipoFilter);
+    }
+    
+    // Aplicar filtro de modelo
+    if (modeloFilter !== "all") {
+      filtered = filtered.filter(asset => asset.modelo === modeloFilter);
+    }
+    
+    // Aplicar filtro de adquirência
+    if (adquirenciaFilter !== "all") {
+      filtered = filtered.filter(asset => asset.adquirencia === adquirenciaFilter);
+    }
+    
+    setFilteredAssets(filtered);
   };
 
-  const handleAssetCategoryChange = (value) => {
-    setAssetCategoryFilter(value);
-    if (modeloFilter !== "all") {
-      const filtered =
-        value === "all"
-          ? assets.filter((asset) => asset.modelo === modeloFilter)
-          : assets.filter(
-              (asset) =>
-                asset.categoria === value && asset.modelo === modeloFilter
-            );
-      setFilteredAssets(filtered);
-    } else {
-      const filtered =
-        value === "all"
-          ? assets
-          : assets.filter((asset) => asset.categoria === value);
-      setFilteredAssets(filtered);
-    }
+  const handleCategoriaChange = (value) => {
+    setCategoriaFilter(value);
+    setTimeout(() => {
+      applyFilters();
+    }, 0);
   };
+  
+  const handleTipoChange = (value) => {
+    setTipoFilter(value);
+    setTimeout(() => {
+      applyFilters();
+    }, 0);
+  };
+
+  const handleModeloChange = (value) => {
+    setModeloFilter(value);
+    setTimeout(() => {
+      applyFilters();
+    }, 0);
+  };
+
+  const handleAdquirenciaChange = (value) => {
+    setAdquirenciaFilter(value);
+    setTimeout(() => {
+      applyFilters();
+    }, 0);
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [categoriaFilter, tipoFilter, modeloFilter, adquirenciaFilter]);
 
   // Calcular métricas
   const assetMetrics = calculateAssetMetrics(filteredAssets);
@@ -228,7 +272,7 @@ export const GestaoAtivos = ({
   return (
     <>
       <Row gutter={[16, 16]} style={{ marginBottom: "1rem" }}>
-        <Col xs={24} md={8}>
+        <Col xs={24} md={6}>
           <Search
             placeholder="Buscar ativos"
             onSearch={handleAssetSearch}
@@ -236,31 +280,65 @@ export const GestaoAtivos = ({
             allowClear
           />
         </Col>
-        <Col xs={24} md={8}>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Filtrar por categoria"
-            onChange={handleAssetCategoryChange}
-            value={assetCategoryFilter}
-            options={[
-              { label: "Todas", value: "all" },
-              ...Array.from(new Set(assets.map(a => a.categoria)))
-                .map(cat => ({ label: cat, value: cat }))
-            ]}
-          />
-        </Col>
-        <Col xs={24} md={8}>
-          <Select
-            style={{ width: "100%" }}
-            placeholder="Filtrar por modelo"
-            onChange={handleModeloChange}
-            value={modeloFilter}
-            options={[
-              { label: "Todos", value: "all" },
-              ...Array.from(new Set(assets.map(a => a.modelo)))
-                .map(modelo => ({ label: modelo, value: modelo }))
-            ]}
-          />
+        <Col xs={24} md={18}>
+          <Row gutter={[8, 8]}>
+            <Col xs={24} md={6}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Filtrar por categoria"
+                onChange={handleCategoriaChange}
+                value={categoriaFilter}
+                options={[
+                  { label: "Todas", value: "all" },
+                  ...Array.from(new Set(assets.map(a => a.categoria)))
+                    .filter(Boolean)
+                    .map(cat => ({ label: cat, value: cat }))
+                ]}
+              />
+            </Col>
+            <Col xs={24} md={6}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Filtrar por tipo"
+                onChange={handleTipoChange}
+                value={tipoFilter}
+                options={[
+                  { label: "Todos", value: "all" },
+                  ...Array.from(new Set(assets.map(a => a.tipo)))
+                    .filter(Boolean)
+                    .map(tipo => ({ label: tipo, value: tipo }))
+                ]}
+              />
+            </Col>
+            <Col xs={24} md={6}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Filtrar por modelo"
+                onChange={handleModeloChange}
+                value={modeloFilter}
+                options={[
+                  { label: "Todos", value: "all" },
+                  ...Array.from(new Set(assets.map(a => a.modelo)))
+                    .filter(Boolean)
+                    .map(modelo => ({ label: modelo, value: modelo }))
+                ]}
+              />
+            </Col>
+            <Col xs={24} md={6}>
+              <Select
+                style={{ width: "100%" }}
+                placeholder="Filtrar por adquirência"
+                onChange={handleAdquirenciaChange}
+                value={adquirenciaFilter}
+                options={[
+                  { label: "Todas", value: "all" },
+                  ...Array.from(new Set(assets.map(a => a.adquirencia)))
+                    .filter(Boolean)
+                    .map(adq => ({ label: adq, value: adq }))
+                ]}
+              />
+            </Col>
+          </Row>
         </Col>
       </Row>
 
@@ -291,8 +369,8 @@ export const GestaoAtivos = ({
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic 
-              title="Modelo Mais Comum" 
-              value={assetMetrics.modeloMaisComum}
+              title="Tipo Mais Comum" 
+              value={assetMetrics.tipoMaisComum}
               valueStyle={{ fontSize: '18px' }}
             />
           </Card>
