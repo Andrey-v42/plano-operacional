@@ -21,8 +21,18 @@ import CadastroMassaAtivos from "./components/GestaoInventario/CadastroMassaAtiv
 import MovimentacaoEstoque from "./components/GestaoInventario/MovimentacaoEstoque";
 import MovementReasonModal from "./components/GestaoInventario/MovementReasonModal";
 
-// Importar modal e outros componentes
+// Importar componentes de insumos
+import GestaoInsumos from "./components/GestaoInventario/GestaoInsumos";
+import CadastroInsumos from "./components/GestaoInventario/CadastroInsumos";
+import CadastroMassaInsumos from "./components/GestaoInventario/CadastroMassaInsumos";
+// Novo componente para cadastro com quantidade
+import CadastroInsumoQuantidade from "./components/GestaoInventario/CadastroInsumoQuantidade";
+
+// Importar modais e outros componentes
 import HistoryModal from "./components/GestaoInventario/HistoryModal";
+// Novos componentes para insumos em massa
+import HistoricoInsumoMassa from "./components/GestaoInventario/HistoricoInsumoMassa";
+import MovimentacaoInsumoMassa from "./components/GestaoInventario/MovimentacaoInsumoMassa";
 
 const { Title } = Typography;
 
@@ -36,10 +46,19 @@ const GestaoInventario = () => {
   const [filteredAssets, setFilteredAssets] = useState([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [cadastroMode, setCadastroMode] = useState('individual');
+  
+  // Estados para insumos
+  const [insumos, setInsumos] = useState([]);
+  const [filteredInsumos, setFilteredInsumos] = useState([]);
+  const [loadingInsumos, setLoadingInsumos] = useState(false);
+  const [cadastroInsumoMode, setCadastroInsumoMode] = useState('individual');
 
-  // Estados para modal de histórico
+  // Estados para modais
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isInsumoMassaHistoricoVisible, setIsInsumoMassaHistoricoVisible] = useState(false);
+  const [isMovimentacaoInsumoMassaVisible, setIsMovimentacaoInsumoMassaVisible] = useState(false);
   const [currentAsset, setCurrentAsset] = useState(null);
+  const [currentInsumo, setCurrentInsumo] = useState(null);
 
   // Notificação
   const [api, contextHolder] = notification.useNotification();
@@ -246,6 +265,97 @@ const GestaoInventario = () => {
       });
   };
 
+  // Função para adicionar um insumo ao estado
+  const addInsumoToState = (newInsumo) => {
+    // Verificar se é em massa ou individual
+    const docId = newInsumo.emMassa 
+      ? `${newInsumo.tipo}_${newInsumo.modelo}_${newInsumo.alocacao}`.replace(/\s+/g, '_')
+      : newInsumo.rfid;
+    
+    // Verificar se o insumo já existe (para itens em massa)
+    if (newInsumo.emMassa) {
+      const existingIndex = insumos.findIndex(item => 
+        item.emMassa && 
+        item.tipo === newInsumo.tipo && 
+        item.modelo === newInsumo.modelo && 
+        item.alocacao === newInsumo.alocacao
+      );
+      
+      if (existingIndex !== -1) {
+        // Se já existe, atualizar o item existente
+        const updatedInsumos = [...insumos];
+        const existingItem = {...updatedInsumos[existingIndex]};
+        
+        // Atualizar quantidade
+        existingItem.quantidade = (existingItem.quantidade || 0) + (newInsumo.quantidade || 1);
+        
+        // Atualizar histórico
+        existingItem.historico = [
+          ...(newInsumo.historico || []),
+          ...(existingItem.historico || [])
+        ];
+        
+        // Atualizar valor total se aplicável
+        if (existingItem.valorUnitario) {
+          existingItem.valorTotal = existingItem.valorUnitario * existingItem.quantidade;
+        }
+        
+        updatedInsumos[existingIndex] = existingItem;
+        
+        // Atualizar estado
+        setInsumos(updatedInsumos);
+        setFilteredInsumos(updatedInsumos);
+        
+        return 1;
+      }
+    }
+    
+    // Se não existe ou é individual, adicionar normalmente
+    const insumoWithId = {
+      ...newInsumo, 
+      id: docId
+    };
+    
+    setInsumos([...insumos, insumoWithId]);
+    setFilteredInsumos([...filteredInsumos, insumoWithId]);
+    
+    return 1;
+  };
+
+  // Função para atualizar um insumo após movimentação
+  const handleInsumoUpdated = (updatedInsumo) => {
+    const docId = updatedInsumo.id || updatedInsumo.rfid || 
+                  `${updatedInsumo.tipo}_${updatedInsumo.modelo}_${updatedInsumo.alocacao}`.replace(/\s+/g, '_');
+    
+    // Atualizar o estado local
+    const updatedInsumos = insumos.map(item => {
+      // Para itens em massa, comparar tipo, modelo e alocação
+      if (updatedInsumo.emMassa && item.emMassa &&
+          item.tipo === updatedInsumo.tipo &&
+          item.modelo === updatedInsumo.modelo &&
+          item.alocacao === updatedInsumo.alocacao) {
+        return {...updatedInsumo, id: docId};
+      }
+      // Para itens individuais, comparar por ID
+      else if (item.id === updatedInsumo.id || item.rfid === updatedInsumo.rfid) {
+        return {...updatedInsumo, id: docId};
+      }
+      return item;
+    });
+    
+    setInsumos(updatedInsumos);
+    setFilteredInsumos(updatedInsumos.filter(item => 
+      filteredInsumos.some(filteredItem => {
+        if (item.emMassa && filteredItem.emMassa) {
+          return filteredItem.tipo === item.tipo && 
+                 filteredItem.modelo === item.modelo && 
+                 filteredItem.alocacao === item.alocacao;
+        }
+        return filteredItem.id === item.id || filteredItem.rfid === item.rfid;
+      })
+    ));
+  };
+
   // Funções auxiliares para o modal de histórico
   const showAssetHistory = (record) => {
     // Encontramos o ativo atualizado para garantir que temos o histórico mais recente
@@ -253,9 +363,36 @@ const GestaoInventario = () => {
     setCurrentAsset(currentAssetData);
     setIsModalVisible(true);
   };
+  
+  // Função para mostrar histórico de um insumo
+  const showInsumoHistory = (record) => {
+    if (record.emMassa) {
+      // Para insumos em massa, usar o modal específico
+      setCurrentInsumo(record);
+      setIsInsumoMassaHistoricoVisible(true);
+    } else {
+      // Para insumos individuais, usar o modal genérico
+      setCurrentAsset(record);
+      setIsModalVisible(true);
+    }
+  };
+
+  // Função para mostrar o modal de movimentação de insumo em massa
+  const showMovimentacaoInsumoMassa = (record) => {
+    setCurrentInsumo(record);
+    setIsMovimentacaoInsumoMassaVisible(true);
+  };
 
   const handleModalCancel = () => {
     setIsModalVisible(false);
+  };
+
+  const handleInsumoMassaHistoricoCancel = () => {
+    setIsInsumoMassaHistoricoVisible(false);
+  };
+
+  const handleMovimentacaoInsumoMassaCancel = () => {
+    setIsMovimentacaoInsumoMassaVisible(false);
   };
 
   // Função para renderizar o componente de cadastro correto
@@ -273,6 +410,57 @@ const GestaoInventario = () => {
         <CadastroMassaAtivos 
           openNotificationSucess={openNotificationSucess} 
           addAssetsToState={addAssetsToState}
+          pipeId={pipeId}
+        />
+      );
+    }
+  };
+  
+  // Função para renderizar o componente de cadastro de insumo
+  const renderCadastroInsumoComponent = () => {
+    if (cadastroInsumoMode === 'individual') {
+      return (
+        <CadastroInsumos 
+          openNotificationSucess={openNotificationSucess} 
+          addInsumoToState={(newInsumo) => {
+            const result = addInsumoToState(newInsumo);
+            openNotificationSucess("Insumo cadastrado com sucesso!");
+            setActiveTab("5"); // Switch to insumos management tab
+            return result;
+          }}
+          pipeId={pipeId}
+        />
+      );
+    } else if (cadastroInsumoMode === 'massa') {
+      return (
+        <CadastroMassaInsumos 
+          openNotificationSucess={openNotificationSucess} 
+          addInsumosToState={(newInsumos) => {
+            let count = 0;
+            newInsumos.forEach(insumo => {
+              count += addInsumoToState(insumo);
+            });
+            openNotificationSucess(`${count} insumos cadastrados com sucesso!`);
+            setActiveTab("5"); // Switch to insumos management tab
+            return count;
+          }}
+          pipeId={pipeId}
+        />
+      );
+    } else { // quantidade
+      return (
+        <CadastroInsumoQuantidade 
+          openNotificationSucess={openNotificationSucess} 
+          addInsumoToState={(newInsumo) => {
+            const result = addInsumoToState(newInsumo);
+            if (newInsumo.emMassa) {
+              openNotificationSucess(`${newInsumo.quantidade} unidades de ${newInsumo.tipo} - ${newInsumo.modelo} cadastradas com sucesso!`);
+            } else {
+              openNotificationSucess("Insumo cadastrado com sucesso!");
+            }
+            setActiveTab("5"); // Switch to insumos management tab
+            return result;
+          }}
           pipeId={pipeId}
         />
       );
@@ -302,13 +490,15 @@ const GestaoInventario = () => {
       children: (
         <GestaoAtivos 
           assets={assets}
-          setAssets={setAssets} // Add this line to pass the setter function
+          setAssets={setAssets}
           filteredAssets={filteredAssets}
           setFilteredAssets={setFilteredAssets}
           loadingAssets={loadingAssets}
-          setLoadingAssets={setLoadingAssets} // Add this line too
+          setLoadingAssets={setLoadingAssets}
           showAssetHistory={showAssetHistory}
           pipeId={pipeId}
+          openNotificationSucess={openNotificationSucess}
+          openNotificationFailure={openNotificationFailure}
         />
       )
     },
@@ -344,6 +534,47 @@ const GestaoInventario = () => {
           updateAssets={updateAssets}
         />
       )
+    },
+    {
+      key: "5",
+      label: "Gestão de Insumos",
+      children: (
+        <GestaoInsumos 
+          insumos={insumos}
+          setInsumos={setInsumos}
+          filteredInsumos={filteredInsumos}
+          setFilteredInsumos={setFilteredInsumos}
+          loadingInsumos={loadingInsumos}
+          setLoadingInsumos={setLoadingInsumos}
+          showInsumoHistory={showInsumoHistory}
+          showMovimentacaoInsumoMassa={showMovimentacaoInsumoMassa}
+          pipeId={pipeId}
+          openNotificationSucess={openNotificationSucess}
+          openNotificationFailure={openNotificationFailure}
+        />
+      )
+    },
+    {
+      key: "6",
+      label: "Cadastro de Insumos",
+      children: (
+        <div style={{ padding: "20px 0" }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Title level={4}>Selecione o modo de cadastro:</Title>
+            <Radio.Group 
+              value={cadastroInsumoMode} 
+              onChange={(e) => setCadastroInsumoMode(e.target.value)}
+              buttonStyle="solid"
+            >
+              <Radio.Button value="individual">Cadastro Individual</Radio.Button>
+              <Radio.Button value="massa">Importação em Massa</Radio.Button>
+              <Radio.Button value="quantidade">Cadastro com Quantidade</Radio.Button>
+            </Radio.Group>
+            <Divider />
+            {renderCadastroInsumoComponent()}
+          </Space>
+        </div>
+      )
     }
   ];
 
@@ -359,11 +590,27 @@ const GestaoInventario = () => {
         style={{ marginBottom: "20px" }}
       />
 
-      {/* Modal de histórico */}
+      {/* Modal de histórico padrão */}
       <HistoryModal 
         isModalVisible={isModalVisible}
         currentAsset={currentAsset}
         handleModalCancel={handleModalCancel}
+      />
+      
+      {/* Modal de histórico para insumos em massa */}
+      <HistoricoInsumoMassa 
+        insumo={currentInsumo}
+        visible={isInsumoMassaHistoricoVisible}
+        onClose={handleInsumoMassaHistoricoCancel}
+      />
+      
+      {/* Modal de movimentação para insumos em massa */}
+      <MovimentacaoInsumoMassa
+        insumo={currentInsumo}
+        visible={isMovimentacaoInsumoMassaVisible}
+        onClose={handleMovimentacaoInsumoMassaCancel}
+        openNotificationSucess={openNotificationSucess}
+        onInsumoUpdated={handleInsumoUpdated}
       />
     </div>
   );
